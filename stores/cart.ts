@@ -54,10 +54,41 @@ export const useCartStore = defineStore('cart', {
     clearCart() {
       this.items = []
       this.tableNumber = ''
+      // ストレージからも削除（会計完了時以外のカートクリア時はテーブル番号は保持）
+      // 注意: 会計完了時は clearSession() を使用すること
     },
 
     setTableNumber(tableNumber: string) {
       this.tableNumber = tableNumber
+      // ローカルストレージに保存
+      if (typeof window !== 'undefined') {
+        if (tableNumber) {
+          localStorage.setItem('tableNumber', tableNumber)
+        } else {
+          localStorage.removeItem('tableNumber')
+        }
+      }
+    },
+
+    loadTableNumberFromStorage() {
+      if (typeof window !== 'undefined') {
+        const stored = localStorage.getItem('tableNumber')
+        if (stored) {
+          this.tableNumber = stored
+        }
+      }
+    },
+
+    clearSession() {
+      // 会計完了時にセッション情報をクリア
+      this.items = []
+      this.tableNumber = ''
+      this.visitorId = null
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('tableNumber')
+        localStorage.removeItem('activeOrderId')
+        localStorage.removeItem('activeVisitorId')
+      }
     },
 
     setVisitorId(visitorId: string | null) {

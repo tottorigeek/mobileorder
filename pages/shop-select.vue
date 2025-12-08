@@ -241,6 +241,7 @@ onMounted(async () => {
   } else {
     // 既に店舗とテーブル番号が設定されている場合はスキップ
     shopStore.loadShopFromStorage()
+    cartStore.loadTableNumberFromStorage()
     if (shopStore.currentShop && cartStore.tableNumber) {
       // 既に設定済みの場合は顧客ページへ
       if (mode === 'staff') {

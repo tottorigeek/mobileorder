@@ -187,6 +187,7 @@
 import { useOrderStore } from '~/stores/order'
 import { useVisitorStore } from '~/stores/visitor'
 import { useCartStore } from '~/stores/cart'
+import { useShopStore } from '~/stores/shop'
 import type { OrderStatus, Order, PaymentMethod } from '~/types'
 import CustomerBottomNav from '~/components/CustomerBottomNav.vue'
 
@@ -194,6 +195,7 @@ const route = useRoute()
 const orderStore = useOrderStore()
 const visitorStore = useVisitorStore()
 const cartStore = useCartStore()
+const shopStore = useShopStore()
 const orderId = route.params.id as string
 
 // 注文を取得
@@ -294,10 +296,8 @@ const processPayment = async (method: PaymentMethod) => {
     showPaymentMethod.value = false
     
     // 支払い完了時にセッション情報をクリア（精算完了したので/shop-selectに戻れるようにする）
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('activeOrderId')
-      localStorage.removeItem('activeVisitorId')
-    }
+    cartStore.clearSession()
+    shopStore.setCurrentShop(null)
   } catch (error: any) {
     alert('支払い処理に失敗しました: ' + (error.message || 'エラーが発生しました'))
   } finally {

@@ -198,8 +198,9 @@ onMounted(async () => {
       return
     }
   } else {
-    // QRコードから来ていない場合：ストレージから店舗を読み込み
+    // QRコードから来ていない場合：ストレージから店舗とテーブル番号を読み込み
     shopStore.loadShopFromStorage()
+    cartStore.loadTableNumberFromStorage()
     
     // 精算完了前の注文がある場合は、店舗やテーブル番号がなくても/shop-selectにリダイレクトしない
     const activeOrderId = typeof window !== 'undefined' ? localStorage.getItem('activeOrderId') : null
