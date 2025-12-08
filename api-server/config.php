@@ -95,7 +95,10 @@ function getJWTFromHeader() {
     $headers = null;
     
     // 複数の方法でAuthorizationヘッダーを取得
-    if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+    // エックスサーバーでは、リバースプロキシ経由でREDIRECT_HTTP_AUTHORIZATIONに設定される場合がある
+    if (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+        $headers = trim($_SERVER['REDIRECT_HTTP_AUTHORIZATION']);
+    } else if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
         $headers = trim($_SERVER['HTTP_AUTHORIZATION']);
     } else if (isset($_SERVER['Authorization'])) {
         $headers = trim($_SERVER['Authorization']);
@@ -250,13 +253,30 @@ function checkAuth() {
     if (!$token) {
         // デバッグ情報（本番環境では削除推奨）
         $debugInfo = [];
+        $debugInfo['has_redirect_http_authorization'] = isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION']);
         $debugInfo['has_http_authorization'] = isset($_SERVER['HTTP_AUTHORIZATION']);
         $debugInfo['has_authorization'] = isset($_SERVER['Authorization']);
         $debugInfo['has_apache_request_headers'] = function_exists('apache_request_headers');
         $debugInfo['has_getallheaders'] = function_exists('getallheaders');
+        if (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+            $debugInfo['redirect_http_authorization'] = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+        }
+        if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+            $debugInfo['http_authorization'] = $_SERVER['HTTP_AUTHORIZATION'];
+        }
         if (function_exists('apache_request_headers')) {
             $debugInfo['apache_headers'] = apache_request_headers();
         }
+        if (function_exists('getallheaders')) {
+            $debugInfo['getallheaders_result'] = getallheaders();
+        }
+        if (function_exists('getallheaders')) {
+            $debugInfo['getallheaders_result'] = getallheaders();
+        }
+        // すべての$_SERVER変数からauthorizationを検索
+        $debugInfo['server_keys'] = array_keys(array_filter($_SERVER, function($key) {
+            return stripos($key, 'auth') !== false;
+        }, ARRAY_FILTER_USE_KEY));
         
         http_response_code(401);
         echo json_encode([

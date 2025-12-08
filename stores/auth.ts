@@ -85,11 +85,23 @@ export const useAuthStore = defineStore('auth', {
           throw new Error('Token not found')
         }
         
-        const user = await $fetch<User>(`${apiBase}/auth/me`, {
+        // 直接fetchを使用して、確実にAuthorizationヘッダーを送信
+        const response = await fetch(`${apiBase}/auth/me`, {
+          method: 'GET',
           headers: {
-            'Authorization': `Bearer ${token}`
-          }
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          cache: 'no-store'
         })
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+          throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+        }
+        
+        const user = await response.json() as User
         this.user = user
         this.token = token
         this.isAuthenticated = true

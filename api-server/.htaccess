@@ -10,6 +10,13 @@ ErrorDocument 404 /radish/index.php
 # CORS設定はPHP側で動的に設定します
 # セッションを使用するため、具体的なオリジンを指定する必要があります
 
+# Authorizationヘッダーを保持（リバースプロキシ経由でも削除されないように）
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+</IfModule>
+
 # URLリライト（APIルーティング）
 <IfModule mod_rewrite.c>
     RewriteEngine On
