@@ -51,22 +51,55 @@ switch ($method) {
 
 /**
  * 注文一覧取得
+ * 店舗スタッフのみ（認証必須）、またはクエリパラメータで店舗コード指定の場合は公開（顧客側の注文確認用）
  */
 function getOrders() {
     try {
         $pdo = getDbConnection();
         
-        // 店舗IDの取得（認証済みの場合はJWTから、顧客側の場合はクエリパラメータから）
-        $shopId = getShopId();
+        // 店舗IDの取得
+        // 1. 認証されている場合はJWTから取得（店舗スタッフ）
+        // 2. 認証されていない場合はクエリパラメータからshop_codeを取得（顧客側）
+        $shopId = null;
+        $token = getJWTFromHeader();
+        
+        if ($token) {
+            // 認証済みの場合：JWTからshop_idを取得
+            $payload = verifyJWT($token);
+            if ($payload && isset($payload['shop_id'])) {
+                $shopId = $payload['shop_id'];
+            }
+        }
         
         if (!$shopId) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Shop ID or shop code is required']);
-            return;
+            // 認証されていない場合：クエリパラメータからshop_codeを取得
+            $shopCode = $_GET['shop'] ?? null;
+            
+            if (!$shopCode) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Shop code is required for unauthenticated requests']);
+                return;
+            }
+            
+            // shop_codeからshop_idを取得
+            $stmt = $pdo->prepare("SELECT id FROM shops WHERE code = :code AND is_active = 1");
+            $stmt->execute([':code' => $shopCode]);
+            $shop = $stmt->fetch();
+            
+            if (!$shop) {
+                http_response_code(404);
+                echo json_encode(['error' => 'Shop not found or inactive']);
+                return;
+            }
+            
+            $shopId = $shop['id'];
         }
         
         // ステータスフィルター（オプション）
         $status = $_GET['status'] ?? null;
+        
+        // テーブル番号フィルター（オプション、顧客側の注文確認用）
+        $tableNumber = $_GET['tableNumber'] ?? null;
         
         $sql = "SELECT o.*, 
                        GROUP_CONCAT(
@@ -87,6 +120,11 @@ function getOrders() {
         if ($status) {
             $sql .= " AND o.status = :status";
             $params[':status'] = $status;
+        }
+        
+        if ($tableNumber) {
+            $sql .= " AND o.table_number = :table_number";
+            $params[':table_number'] = $tableNumber;
         }
         
         $sql .= " GROUP BY o.id ORDER BY o.created_at DESC";
@@ -122,10 +160,23 @@ function getOrders() {
 
 /**
  * 注文取得（単一）
+ * 認証されている場合は同じ店舗の注文のみ取得可能、認証されていない場合は公開
  */
 function getOrder($orderId) {
     try {
         $pdo = getDbConnection();
+        
+        // 認証チェック（オプション）
+        $token = getJWTFromHeader();
+        $shopId = null;
+        
+        if ($token) {
+            // 認証済みの場合：JWTからshop_idを取得して検証
+            $payload = verifyJWT($token);
+            if ($payload && isset($payload['shop_id'])) {
+                $shopId = $payload['shop_id'];
+            }
+        }
         
         $sql = "SELECT o.*, 
                        GROUP_CONCAT(
@@ -139,16 +190,25 @@ function getOrder($orderId) {
                        ) as items_json
                 FROM orders o
                 LEFT JOIN order_items oi ON o.id = oi.order_id
-                WHERE o.id = :id
-                GROUP BY o.id";
+                WHERE o.id = :id";
+        
+        $params = [':id' => $orderId];
+        
+        // 認証されている場合は同じ店舗の注文のみ取得可能
+        if ($shopId) {
+            $sql .= " AND o.shop_id = :shop_id";
+            $params[':shop_id'] = $shopId;
+        }
+        
+        $sql .= " GROUP BY o.id";
         
         $stmt = $pdo->prepare($sql);
-        $stmt->execute([':id' => $orderId]);
+        $stmt->execute($params);
         $order = $stmt->fetch();
         
         if (!$order) {
             http_response_code(404);
-            echo json_encode(['error' => 'Order not found']);
+            echo json_encode(['error' => 'Order not found or you do not have permission to view this order']);
             return;
         }
         
@@ -176,6 +236,7 @@ function getOrder($orderId) {
 
 /**
  * 注文作成
+ * 一般顧客もQRコードでテーブル番号を読み込むことができたら注文可能
  */
 function createOrder() {
     try {
@@ -190,17 +251,56 @@ function createOrder() {
             return;
         }
         
+        // 店舗IDの取得
+        // 1. 認証されている場合はJWTから取得
+        // 2. 認証されていない場合はリクエストボディまたはクエリパラメータからshop_codeを取得
+        $shopId = null;
+        $token = getJWTFromHeader();
+        
+        if ($token) {
+            // 認証済みの場合：JWTからshop_idを取得
+            $payload = verifyJWT($token);
+            if ($payload && isset($payload['shop_id'])) {
+                $shopId = $payload['shop_id'];
+            }
+        }
+        
+        if (!$shopId) {
+            // 認証されていない場合：リクエストボディまたはクエリパラメータからshop_codeを取得
+            $shopCode = $input['shopCode'] ?? $_GET['shop'] ?? null;
+            
+            if (!$shopCode) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Shop code is required for unauthenticated requests']);
+                return;
+            }
+            
+            // shop_codeからshop_idを取得
+            $stmt = $pdo->prepare("SELECT id FROM shops WHERE code = :code AND is_active = 1");
+            $stmt->execute([':code' => $shopCode]);
+            $shop = $stmt->fetch();
+            
+            if (!$shop) {
+                http_response_code(404);
+                echo json_encode(['error' => 'Shop not found or inactive']);
+                return;
+            }
+            
+            $shopId = $shop['id'];
+        }
+        
         $pdo->beginTransaction();
         
         // 注文番号の生成
         $orderNumber = 'ORD-' . date('YmdHis') . '-' . mt_rand(1000, 9999);
         
-        // 注文の作成
-        $sql = "INSERT INTO orders (order_number, table_number, status, total_amount, created_at, updated_at)
-                VALUES (:order_number, :table_number, 'pending', :total_amount, NOW(), NOW())";
+        // 注文の作成（shop_idを含める）
+        $sql = "INSERT INTO orders (shop_id, order_number, table_number, status, total_amount, created_at, updated_at)
+                VALUES (:shop_id, :order_number, :table_number, 'pending', :total_amount, NOW(), NOW())";
         
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
+            ':shop_id' => $shopId,
             ':order_number' => $orderNumber,
             ':table_number' => $input['tableNumber'],
             ':total_amount' => $input['totalAmount']
@@ -242,9 +342,14 @@ function createOrder() {
 
 /**
  * 注文ステータス更新
+ * 店舗スタッフのみ（認証必須）
  */
 function updateOrderStatus($orderId) {
     try {
+        // 認証チェック（店舗スタッフのみ）
+        $auth = checkAuth();
+        $shopId = $auth['shop_id'];
+        
         $pdo = getDbConnection();
         
         $input = json_decode(file_get_contents('php://input'), true);
@@ -262,16 +367,18 @@ function updateOrderStatus($orderId) {
             return;
         }
         
-        $sql = "UPDATE orders SET status = :status, updated_at = NOW() WHERE id = :id";
+        // 同じ店舗の注文のみ更新可能
+        $sql = "UPDATE orders SET status = :status, updated_at = NOW() WHERE id = :id AND shop_id = :shop_id";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
             ':status' => $input['status'],
-            ':id' => $orderId
+            ':id' => $orderId,
+            ':shop_id' => $shopId
         ]);
         
         if ($stmt->rowCount() === 0) {
             http_response_code(404);
-            echo json_encode(['error' => 'Order not found']);
+            echo json_encode(['error' => 'Order not found or you do not have permission to update this order']);
             return;
         }
         
