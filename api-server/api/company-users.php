@@ -175,14 +175,22 @@ function updateUser($userId) {
             $params[':email'] = $input['email'];
         }
         
-        // 役割の変更
+        // 役割の変更（自分自身の役割変更は不可）
         if (isset($input['role'])) {
+            // 自分自身の役割は変更できない
+            if ($userId == $auth['user_id']) {
+                sendErrorResponse(400, 'Cannot change your own role');
+            }
             $updates[] = "role = :role";
             $params[':role'] = $input['role'];
         }
         
-        // 有効フラグの変更
+        // 有効フラグの変更（自分自身の有効フラグ変更は不可）
         if (isset($input['isActive'])) {
+            // 自分自身の有効フラグは変更できない
+            if ($userId == $auth['user_id']) {
+                sendErrorResponse(400, 'Cannot change your own active status');
+            }
             $updates[] = "is_active = :is_active";
             $params[':is_active'] = $input['isActive'] ? 1 : 0;
         }
