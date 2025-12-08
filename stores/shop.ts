@@ -176,6 +176,44 @@ export const useShopStore = defineStore('shop', {
       } finally {
         this.isLoading = false
       }
+    },
+
+    async deleteShop(shopId: string) {
+      this.isLoading = true
+      try {
+        const config = useRuntimeConfig()
+        const apiBase = config.public.apiBase
+        
+        // 認証トークンを取得
+        const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+        if (!token) {
+          throw new Error('認証トークンが見つかりません')
+        }
+        
+        const headers: Record<string, string> = {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+        
+        await $fetch(`${apiBase}/shops/${shopId}`, {
+          method: 'DELETE',
+          headers: headers
+        })
+        
+        // 店舗一覧から削除
+        this.shops = this.shops.filter(s => s.id !== shopId)
+        
+        // 現在の店舗も削除
+        if (this.currentShop?.id === shopId) {
+          this.currentShop = null
+          localStorage.removeItem('currentShop')
+        }
+      } catch (error) {
+        console.error('店舗の削除に失敗しました:', error)
+        throw error
+      } finally {
+        this.isLoading = false
+      }
     }
   }
 })

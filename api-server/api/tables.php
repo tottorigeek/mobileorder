@@ -7,6 +7,7 @@
  * PUT /api/tables/{id} - テーブル更新（認証必須、オーナー・マネージャーのみ）
  * DELETE /api/tables/{id} - テーブル削除（認証必須、オーナー・マネージャーのみ）
  * GET /api/tables/qr/{shop_code}/{table_number} - QRコード用テーブル情報取得（公開）
+ * GET /api/tables/shop/{shop_code} - 店舗コードからテーブル一覧取得（公開）
  */
 
 require_once __DIR__ . '/../config.php';
@@ -24,6 +25,13 @@ if (isset($pathParts[0]) && $pathParts[0] === 'qr' && isset($pathParts[1]) && is
     $shopCode = $pathParts[1];
     $tableNumber = $pathParts[2];
     getTableByQRCode($shopCode, $tableNumber);
+    exit;
+}
+
+// 店舗コードからテーブル一覧取得（公開エンドポイント）
+if (isset($pathParts[0]) && $pathParts[0] === 'shop' && isset($pathParts[1])) {
+    $shopCode = $pathParts[1];
+    getTablesByShopCode($shopCode);
     exit;
 }
 
@@ -211,6 +219,46 @@ function getTableByQRCode($shopCode, $tableNumber) {
         
     } catch (PDOException $e) {
         handleDatabaseError($e, 'fetching table by QR code');
+    }
+}
+
+/**
+ * 店舗コードからテーブル一覧取得（公開）
+ */
+function getTablesByShopCode($shopCode) {
+    try {
+        $pdo = getDbConnection();
+        
+        $stmt = $pdo->prepare("
+            SELECT st.*, s.code as shop_code, s.name as shop_name
+            FROM shop_tables st
+            INNER JOIN shops s ON st.shop_id = s.id
+            WHERE s.code = :shop_code
+            AND st.is_active = 1
+            AND s.is_active = 1
+            ORDER BY 
+                CAST(st.table_number AS UNSIGNED) ASC,
+                st.table_number ASC
+        ");
+        $stmt->execute([':shop_code' => $shopCode]);
+        $tables = $stmt->fetchAll();
+        
+        $result = array_map(function($table) {
+            return [
+                'id' => (string)$table['id'],
+                'shopId' => (string)$table['shop_id'],
+                'shopCode' => $table['shop_code'],
+                'shopName' => $table['shop_name'],
+                'tableNumber' => $table['table_number'],
+                'name' => $table['name'],
+                'capacity' => (int)$table['capacity']
+            ];
+        }, $tables);
+        
+        echo json_encode($result, JSON_UNESCAPED_UNICODE);
+        
+    } catch (PDOException $e) {
+        handleDatabaseError($e, 'fetching tables by shop code');
     }
 }
 

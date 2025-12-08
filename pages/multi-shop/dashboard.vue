@@ -2,44 +2,10 @@
   <NuxtLayout name="default" title="複数店舗管理ダッシュボード">
     <div class="space-y-6">
       <!-- ナビゲーション -->
-      <div class="flex gap-3 overflow-x-auto pb-2">
-        <NuxtLink
-          to="/multi-shop/dashboard"
-          class="px-4 py-2 bg-green-600 text-white rounded-lg font-medium whitespace-nowrap"
-        >
-          ダッシュボード
-        </NuxtLink>
-        <NuxtLink
-          to="/multi-shop/orders"
-          class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium whitespace-nowrap hover:bg-gray-100"
-        >
-          注文一覧
-        </NuxtLink>
-        <NuxtLink
-          to="/multi-shop/menus"
-          class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium whitespace-nowrap hover:bg-gray-100"
-        >
-          メニュー管理
-        </NuxtLink>
-        <NuxtLink
-          to="/multi-shop/staff"
-          class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium whitespace-nowrap hover:bg-gray-100"
-        >
-          スタッフ管理
-        </NuxtLink>
-        <NuxtLink
-          to="/admin/users/password"
-          class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium whitespace-nowrap hover:bg-gray-100"
-        >
-          パスワード変更
-        </NuxtLink>
-        <button
-          @click="handleLogout"
-          class="px-4 py-2 bg-red-100 text-red-700 rounded-lg font-medium whitespace-nowrap hover:bg-red-200 ml-auto"
-        >
-          ログアウト
-        </button>
-      </div>
+      <AdminNavigation
+        :navigation-items="navigationItems"
+        active-color="green"
+      />
 
       <!-- ヘッダー -->
       <div class="bg-white p-6 rounded-lg shadow">
@@ -182,16 +148,19 @@ import type { OrderStatus, Shop, Order } from '~/types'
 const authStore = useAuthStore()
 const shopStore = useShopStore()
 const orderStore = useOrderStore()
+const { handleLogout, checkAuthMultiShop } = useAuthCheck()
+const { getStatusLabel, getStatusClass, formatDate } = useAdminUtils()
 
 const myShops = ref<Shop[]>([])
 const selectedShopId = ref<string>('')
 const filteredOrders = ref<Order[]>([])
 
-const handleLogout = async () => {
-  if (confirm('ログアウトしますか？')) {
-    await authStore.logout()
-  }
-}
+const navigationItems = computed(() => [
+  { to: '/multi-shop/dashboard', label: 'ダッシュボード', isActive: true },
+  { to: '/multi-shop/orders', label: '注文一覧', isActive: false },
+  { to: '/multi-shop/menus', label: 'メニュー管理', isActive: false },
+  { to: '/multi-shop/staff', label: 'スタッフ管理', isActive: false }
+])
 
 const selectShop = (shop: Shop) => {
   shopStore.setCurrentShop(shop)
@@ -276,43 +245,11 @@ const recentOrders = computed(() => {
   return filteredOrders.value.slice(0, 10)
 })
 
-const getStatusLabel = (status: OrderStatus) => {
-  const labels: Record<OrderStatus, string> = {
-    pending: '受付待ち',
-    accepted: '受付済み',
-    cooking: '調理中',
-    completed: '完成',
-    cancelled: 'キャンセル'
-  }
-  return labels[status]
-}
-
-const getStatusClass = (status: OrderStatus) => {
-  const classes: Record<OrderStatus, string> = {
-    pending: 'px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm',
-    accepted: 'px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm',
-    cooking: 'px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm',
-    completed: 'px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm',
-    cancelled: 'px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm'
-  }
-  return classes[status]
-}
-
-const formatDate = (date: Date | string) => {
-  const d = typeof date === 'string' ? new Date(date) : date
-  return d.toLocaleString('ja-JP', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
 
 onMounted(async () => {
   // 認証チェック
-  authStore.loadUserFromStorage()
-  if (!authStore.isAuthenticated) {
-    await navigateTo('/staff/login')
+  const isAuthenticated = await checkAuthMultiShop()
+  if (!isAuthenticated) {
     return
   }
 
@@ -322,7 +259,7 @@ onMounted(async () => {
     
     if (myShops.value.length === 0) {
       // 所属店舗がない場合は通常の管理画面へ
-      await navigateTo('/admin/dashboard')
+      await navigateTo('/shop/dashboard')
       return
     }
 

@@ -53,7 +53,14 @@
 
       <!-- エラー -->
       <div v-else-if="error" class="p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
-        {{ error }}
+        <p class="font-semibold mb-2">エラーが発生しました</p>
+        <p>{{ error }}</p>
+        <NuxtLink
+          to="/company/shops"
+          class="mt-4 inline-block px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+        >
+          一覧に戻る
+        </NuxtLink>
       </div>
 
       <!-- 編集フォーム -->
@@ -191,17 +198,27 @@ import { useShopStore } from '~/stores/shop'
 import { useAuthStore } from '~/stores/auth'
 import type { Shop } from '~/types'
 
+definePageMeta({
+  layout: 'default'
+})
+
 const route = useRoute()
 const shopStore = useShopStore()
 const authStore = useAuthStore()
 
 const shopId = route.params.id as string
+
 const shop = ref<Shop | null>(null)
 const isLoading = ref(true)
 const isSubmitting = ref(false)
 const error = ref('')
+const errorDetails = ref('')
 const updateError = ref('')
 const success = ref(false)
+const debugInfo = ref('')
+
+// 即座にデバッグ情報を設定
+debugInfo.value = `ページ読み込み開始\nshopId: ${shopId}\nroute.path: ${route.path}\nroute.fullPath: ${route.fullPath}`
 
 const editData = ref({
   code: '',
@@ -250,7 +267,6 @@ onMounted(async () => {
 
   // 店舗情報を取得
   try {
-    // IDで直接店舗情報を取得
     const fetchedShop = await shopStore.fetchShopById(shopId)
     
     if (!fetchedShop) {

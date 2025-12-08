@@ -60,7 +60,7 @@
 
 3. **ページの追加・更新**
    - `pages/shop-select.vue` - 店舗選択ページ
-   - `pages/admin/dashboard.vue` - 管理ダッシュボード
+   - `pages/shop/dashboard.vue` - 管理ダッシュボード
    - `pages/customer/index.vue` - 店舗コード対応
    - `pages/staff/login.vue` - 認証API対応
 

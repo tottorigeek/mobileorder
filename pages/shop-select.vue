@@ -40,7 +40,7 @@
           </div>
         </div>
 
-        <!-- テーブル番号入力画面 -->
+        <!-- テーブル番号選択画面 -->
         <div v-else class="space-y-6">
           <div>
             <button
@@ -55,25 +55,43 @@
             <h1 class="text-3xl font-bold text-center mb-2 text-gray-900">
               {{ selectedShop.name }}
             </h1>
-            <p class="text-center text-gray-600 mb-8">テーブル番号を入力してください</p>
+            <p class="text-center text-gray-600 mb-8">テーブル番号を選択してください</p>
           </div>
 
-          <div class="bg-white p-6 rounded-lg shadow">
-            <label class="block text-sm font-medium text-gray-700 mb-2">
+          <div v-if="isLoadingTables" class="bg-white p-6 rounded-lg shadow text-center">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p class="mt-4 text-gray-500">テーブル一覧を読み込み中...</p>
+          </div>
+
+          <div v-else-if="availableTables.length === 0" class="bg-white p-6 rounded-lg shadow">
+            <p class="text-gray-500 text-center">利用可能なテーブルがありません</p>
+          </div>
+
+          <div v-else class="bg-white p-6 rounded-lg shadow">
+            <label class="block text-sm font-medium text-gray-700 mb-4">
               テーブル番号 <span class="text-red-500">*</span>
             </label>
-            <input
-              v-model="tableNumber"
-              type="text"
-              placeholder="テーブル番号を入力"
-              class="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              @keyup.enter="confirmTable"
-            />
-            <p v-if="errorMessage" class="mt-2 text-sm text-red-500">
+            <div class="grid grid-cols-2 gap-3">
+              <button
+                v-for="table in availableTables"
+                :key="table.id"
+                @click="selectTable(table)"
+                :class="[
+                  'p-4 rounded-lg border-2 transition-all touch-target',
+                  tableNumber === table.tableNumber
+                    ? 'border-blue-600 bg-blue-50 text-blue-700'
+                    : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
+                ]"
+              >
+                <div class="font-semibold text-lg">{{ table.tableNumber }}</div>
+                <div v-if="table.name" class="text-sm text-gray-600 mt-1">{{ table.name }}</div>
+                <div v-if="table.capacity" class="text-xs text-gray-500 mt-1">
+                  {{ table.capacity }}名
+                </div>
+              </button>
+            </div>
+            <p v-if="errorMessage" class="mt-4 text-sm text-red-500">
               {{ errorMessage }}
-            </p>
-            <p v-if="isValidating" class="mt-2 text-sm text-gray-500">
-              検証中...
             </p>
           </div>
 
@@ -94,7 +112,7 @@
 import { useShopStore } from '~/stores/shop'
 import { useCartStore } from '~/stores/cart'
 import { useTableStore } from '~/stores/table'
-import type { Shop } from '~/types'
+import type { Shop, ShopTable } from '~/types'
 
 const shopStore = useShopStore()
 const cartStore = useCartStore()
@@ -107,6 +125,8 @@ const selectedShop = ref<Shop | null>(null)
 const tableNumber = ref('')
 const errorMessage = ref('')
 const isValidating = ref(false)
+const availableTables = ref<ShopTable[]>([])
+const isLoadingTables = ref(false)
 
 onMounted(async () => {
   await shopStore.fetchShops()
@@ -121,6 +141,17 @@ onMounted(async () => {
       const shop = await shopStore.fetchShopByCode(shopCodeFromQuery)
       if (shop) {
         selectedShop.value = shop
+        
+        // テーブル一覧を取得
+        isLoadingTables.value = true
+        try {
+          const tables = await tableStore.fetchTablesByShopCode(shopCodeFromQuery)
+          availableTables.value = tables
+        } catch (error) {
+          console.error('テーブル一覧の取得に失敗しました:', error)
+        } finally {
+          isLoadingTables.value = false
+        }
         
         // テーブル番号が指定されている場合は自動設定
         if (tableNumberFromQuery) {
@@ -152,10 +183,28 @@ onMounted(async () => {
   }
 })
 
-const selectShop = (shop: Shop) => {
+const selectShop = async (shop: Shop) => {
   selectedShop.value = shop
   shopStore.setCurrentShop(shop)
   tableNumber.value = ''
+  errorMessage.value = ''
+  availableTables.value = []
+  
+  // テーブル一覧を取得
+  isLoadingTables.value = true
+  try {
+    const tables = await tableStore.fetchTablesByShopCode(shop.code)
+    availableTables.value = tables
+  } catch (error) {
+    console.error('テーブル一覧の取得に失敗しました:', error)
+    errorMessage.value = 'テーブル一覧の取得に失敗しました'
+  } finally {
+    isLoadingTables.value = false
+  }
+}
+
+const selectTable = (table: ShopTable) => {
+  tableNumber.value = table.tableNumber
   errorMessage.value = ''
 }
 

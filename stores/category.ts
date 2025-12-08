@@ -1,24 +1,25 @@
 import { defineStore } from 'pinia'
-import type { ShopTable } from '~/types'
+import type { ShopCategory } from '~/types'
 
-export const useTableStore = defineStore('table', {
+export const useCategoryStore = defineStore('category', {
   state: () => ({
-    tables: [] as ShopTable[],
+    categories: [] as ShopCategory[],
     isLoading: false,
     currentShopId: null as string | null
   }),
 
   getters: {
-    activeTables: (state) => {
-      return state.tables.filter(table => table.isActive)
+    activeCategories: (state) => {
+      return state.categories.filter(category => category.isActive)
+        .sort((a, b) => a.displayOrder - b.displayOrder)
     },
-    inactiveTables: (state) => {
-      return state.tables.filter(table => !table.isActive)
+    inactiveCategories: (state) => {
+      return state.categories.filter(category => !category.isActive)
     }
   },
 
   actions: {
-    async fetchTables(shopId: string) {
+    async fetchCategories(shopId: string) {
       this.isLoading = true
       this.currentShopId = shopId
       try {
@@ -36,24 +37,37 @@ export const useTableStore = defineStore('table', {
           'Authorization': `Bearer ${token}`
         }
         
-        const data = await $fetch<ShopTable[]>(`${apiBase}/tables?shop_id=${shopId}`, {
+        const data = await $fetch<ShopCategory[]>(`${apiBase}/categories?shop_id=${shopId}`, {
           headers: headers
         })
-        this.tables = data || []
+        this.categories = data || []
         return data || []
       } catch (error) {
-        console.error('テーブル一覧の取得に失敗しました:', error)
-        this.tables = []
+        console.error('カテゴリ一覧の取得に失敗しました:', error)
+        this.categories = []
         throw error
       } finally {
         this.isLoading = false
       }
     },
 
-    async createTable(shopId: string, tableData: {
-      tableNumber: string
-      name?: string
-      capacity?: number
+    async fetchCategoriesByShopCode(shopCode: string) {
+      try {
+        const config = useRuntimeConfig()
+        const apiBase = config.public.apiBase
+        
+        const categories = await $fetch<ShopCategory[]>(`${apiBase}/categories/shop/${encodeURIComponent(shopCode)}`)
+        return categories || []
+      } catch (error) {
+        console.error('店舗コードからのカテゴリ一覧取得に失敗しました:', error)
+        throw error
+      }
+    },
+
+    async createCategory(shopId: string, categoryData: {
+      code: string
+      name: string
+      displayOrder?: number
       isActive?: boolean
     }) {
       this.isLoading = true
@@ -73,24 +87,24 @@ export const useTableStore = defineStore('table', {
           'Authorization': `Bearer ${token}`
         }
         
-        const newTable = await $fetch<ShopTable>(`${apiBase}/tables`, {
+        const newCategory = await $fetch<ShopCategory>(`${apiBase}/categories`, {
           method: 'POST',
-          body: tableData,
+          body: categoryData,
           headers: headers
         })
         
-        // テーブル一覧に追加
-        this.tables.push(newTable)
-        return newTable
+        // カテゴリ一覧に追加
+        this.categories.push(newCategory)
+        return newCategory
       } catch (error) {
-        console.error('テーブルの作成に失敗しました:', error)
+        console.error('カテゴリの作成に失敗しました:', error)
         throw error
       } finally {
         this.isLoading = false
       }
     },
 
-    async updateTable(tableId: string, tableData: Partial<ShopTable>) {
+    async updateCategory(categoryId: string, categoryData: Partial<ShopCategory>) {
       this.isLoading = true
       try {
         const config = useRuntimeConfig()
@@ -108,28 +122,28 @@ export const useTableStore = defineStore('table', {
           'Authorization': `Bearer ${token}`
         }
         
-        const updatedTable = await $fetch<ShopTable>(`${apiBase}/tables/${tableId}`, {
+        const updatedCategory = await $fetch<ShopCategory>(`${apiBase}/categories/${categoryId}`, {
           method: 'PUT',
-          body: tableData,
+          body: categoryData,
           headers: headers
         })
         
-        // テーブル一覧を更新
-        const index = this.tables.findIndex(t => t.id === tableId)
+        // カテゴリ一覧を更新
+        const index = this.categories.findIndex(c => c.id === categoryId)
         if (index > -1) {
-          this.tables[index] = updatedTable
+          this.categories[index] = updatedCategory
         }
         
-        return updatedTable
+        return updatedCategory
       } catch (error) {
-        console.error('テーブルの更新に失敗しました:', error)
+        console.error('カテゴリの更新に失敗しました:', error)
         throw error
       } finally {
         this.isLoading = false
       }
     },
 
-    async deleteTable(tableId: string) {
+    async deleteCategory(categoryId: string) {
       this.isLoading = true
       try {
         const config = useRuntimeConfig()
@@ -146,52 +160,19 @@ export const useTableStore = defineStore('table', {
           'Authorization': `Bearer ${token}`
         }
         
-        await $fetch(`${apiBase}/tables/${tableId}`, {
+        await $fetch(`${apiBase}/categories/${categoryId}`, {
           method: 'DELETE',
           headers: headers
         })
         
-        // テーブル一覧から削除
-        this.tables = this.tables.filter(t => t.id !== tableId)
+        // カテゴリ一覧から削除
+        this.categories = this.categories.filter(c => c.id !== categoryId)
       } catch (error) {
-        console.error('テーブルの削除に失敗しました:', error)
+        console.error('カテゴリの削除に失敗しました:', error)
         throw error
       } finally {
         this.isLoading = false
       }
-    },
-
-    async fetchTableByQRCode(shopCode: string, tableNumber: string) {
-      try {
-        const config = useRuntimeConfig()
-        const apiBase = config.public.apiBase
-        
-        const table = await $fetch<ShopTable>(`${apiBase}/tables/qr/${shopCode}/${encodeURIComponent(tableNumber)}`)
-        return table
-      } catch (error) {
-        console.error('QRコードからのテーブル情報取得に失敗しました:', error)
-        throw error
-      }
-    },
-
-    async fetchTablesByShopCode(shopCode: string) {
-      try {
-        const config = useRuntimeConfig()
-        const apiBase = config.public.apiBase
-        
-        const tables = await $fetch<ShopTable[]>(`${apiBase}/tables/shop/${encodeURIComponent(shopCode)}`)
-        return tables || []
-      } catch (error) {
-        console.error('店舗コードからのテーブル一覧取得に失敗しました:', error)
-        throw error
-      }
-    },
-
-    generateQRCodeUrl(shopCode: string, tableNumber: string): string {
-      // フロントエンドのベースURLを取得
-      // QRコードは店舗選択画面へのリンクとして使用（テーブル番号は含めない）
-      const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'
-      return `${baseUrl}/shop-select?shop=${encodeURIComponent(shopCode)}&table=${encodeURIComponent(tableNumber)}`
     }
   }
 })

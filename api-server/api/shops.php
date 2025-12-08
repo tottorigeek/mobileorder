@@ -59,6 +59,14 @@ switch ($method) {
         }
         break;
     
+    case 'DELETE':
+        if ($shopId) {
+            deleteShop($shopId);
+        } else {
+            sendErrorResponse(400, 'Shop ID is required');
+        }
+        break;
+    
     default:
         sendErrorResponse(405, 'Method not allowed');
         break;
@@ -107,13 +115,14 @@ function getShops() {
         if ($hasMaxTables) {
             if ($hasShopUsers) {
                 // shop_usersテーブルが存在する場合：複数店舗オーナー対応
+                // GROUP BYを削除して複数のオーナーを取得
                 $sql = "SELECT s.id, s.code, s.name, s.description, s.address, s.phone, s.email, s.max_tables, s.is_active,
                                u.id as owner_id, u.name as owner_name, u.username as owner_username, u.email as owner_email
                         FROM shops s
                         LEFT JOIN shop_users su ON s.id = su.shop_id AND su.role = 'owner'
                         LEFT JOIN users u ON su.user_id = u.id
                         WHERE s.is_active = 1 
-                        ORDER BY s.name ASC";
+                        ORDER BY s.name ASC, u.name ASC";
             } else {
                 // shop_usersテーブルが存在しない場合：従来の方法
                 $sql = "SELECT s.id, s.code, s.name, s.description, s.address, s.phone, s.email, s.max_tables, s.is_active,
@@ -121,18 +130,19 @@ function getShops() {
                         FROM shops s
                         LEFT JOIN users u ON s.id = u.shop_id AND u.role = 'owner'
                         WHERE s.is_active = 1 
-                        ORDER BY s.name ASC";
+                        ORDER BY s.name ASC, u.name ASC";
             }
         } else {
             if ($hasShopUsers) {
                 // shop_usersテーブルが存在する場合：複数店舗オーナー対応
+                // GROUP BYを削除して複数のオーナーを取得
                 $sql = "SELECT s.id, s.code, s.name, s.description, s.address, s.phone, s.email, s.is_active,
                                u.id as owner_id, u.name as owner_name, u.username as owner_username, u.email as owner_email
                         FROM shops s
                         LEFT JOIN shop_users su ON s.id = su.shop_id AND su.role = 'owner'
                         LEFT JOIN users u ON su.user_id = u.id
                         WHERE s.is_active = 1 
-                        ORDER BY s.name ASC";
+                        ORDER BY s.name ASC, u.name ASC";
             } else {
                 // shop_usersテーブルが存在しない場合：従来の方法
                 $sql = "SELECT s.id, s.code, s.name, s.description, s.address, s.phone, s.email, s.is_active,
@@ -140,37 +150,74 @@ function getShops() {
                         FROM shops s
                         LEFT JOIN users u ON s.id = u.shop_id AND u.role = 'owner'
                         WHERE s.is_active = 1 
-                        ORDER BY s.name ASC";
+                        ORDER BY s.name ASC, u.name ASC";
             }
         }
         
         $stmt = $pdo->query($sql);
         $shops = $stmt->fetchAll();
         
-        $result = array_map(function($shop) use ($hasMaxTables) {
-            $owner = null;
-            if ($shop['owner_id']) {
-                $owner = [
-                    'id' => (string)$shop['owner_id'],
-                    'name' => $shop['owner_name'],
-                    'username' => $shop['owner_username'],
-                    'email' => $shop['owner_email'] ?? null
+        // 店舗ごとに複数のオーナーを配列として集約
+        $shopsMap = [];
+        foreach ($shops as $shopRow) {
+            $shopId = (string)$shopRow['id'];
+            
+            if (!isset($shopsMap[$shopId])) {
+                // 店舗情報を初期化
+                $shopsMap[$shopId] = [
+                    'id' => $shopId,
+                    'code' => $shopRow['code'],
+                    'name' => $shopRow['name'],
+                    'description' => $shopRow['description'],
+                    'address' => $shopRow['address'],
+                    'phone' => $shopRow['phone'],
+                    'email' => $shopRow['email'],
+                    'maxTables' => $hasMaxTables ? (int)$shopRow['max_tables'] : 20,
+                    'isActive' => (bool)$shopRow['is_active'],
+                    'owners' => []
                 ];
             }
             
+            // オーナーが存在する場合は追加
+            if ($shopRow['owner_id']) {
+                $owner = [
+                    'id' => (string)$shopRow['owner_id'],
+                    'name' => $shopRow['owner_name'],
+                    'username' => $shopRow['owner_username'],
+                    'email' => $shopRow['owner_email'] ?? null
+                ];
+                
+                // 重複チェック（同じオーナーIDが既に追加されていないか）
+                $ownerExists = false;
+                foreach ($shopsMap[$shopId]['owners'] as $existingOwner) {
+                    if ($existingOwner['id'] === $owner['id']) {
+                        $ownerExists = true;
+                        break;
+                    }
+                }
+                
+                if (!$ownerExists) {
+                    $shopsMap[$shopId]['owners'][] = $owner;
+                }
+            }
+        }
+        
+        // 配列に変換し、owners配列をownerに変換（後方互換性のため）
+        $result = array_map(function($shop) {
             return [
-                'id' => (string)$shop['id'],
+                'id' => $shop['id'],
                 'code' => $shop['code'],
                 'name' => $shop['name'],
                 'description' => $shop['description'],
                 'address' => $shop['address'],
                 'phone' => $shop['phone'],
                 'email' => $shop['email'],
-                'maxTables' => $hasMaxTables ? (int)$shop['max_tables'] : 20, // デフォルト値
-                'isActive' => (bool)$shop['is_active'],
-                'owner' => $owner
+                'maxTables' => $shop['maxTables'],
+                'isActive' => $shop['isActive'],
+                'owner' => count($shop['owners']) > 0 ? $shop['owners'][0] : null, // 後方互換性のため最初のオーナーを設定
+                'owners' => $shop['owners'] // 複数のオーナーを配列として追加
             ];
-        }, $shops);
+        }, array_values($shopsMap));
         
         echo json_encode($result, JSON_UNESCAPED_UNICODE);
         
@@ -368,6 +415,111 @@ function updateShop($shopId) {
         
     } catch (PDOException $e) {
         handleDatabaseError($e, 'updating shop');
+    }
+}
+
+/**
+ * 店舗削除（認証必須、companyロールのみ）
+ */
+function deleteShop($shopId) {
+    try {
+        // 認証チェック（companyロールのみ）
+        $auth = checkPermission(['company']);
+        
+        $pdo = getDbConnection();
+        
+        // 店舗の存在確認
+        $shopStmt = $pdo->prepare("SELECT id, name FROM shops WHERE id = :id");
+        $shopStmt->execute([':id' => $shopId]);
+        $shop = $shopStmt->fetch();
+        
+        if (!$shop) {
+            sendNotFoundError('Shop');
+        }
+        
+        // shop_usersテーブルが存在するか確認
+        $hasShopUsers = false;
+        try {
+            $checkShopUsers = $pdo->query("SHOW TABLES LIKE 'shop_users'");
+            $hasShopUsers = $checkShopUsers->rowCount() > 0;
+        } catch (Exception $e) {
+            // テーブル確認に失敗した場合は続行
+        }
+        
+        // オーナーが存在するかチェック
+        $hasOwner = false;
+        if ($hasShopUsers) {
+            $ownerStmt = $pdo->prepare("
+                SELECT COUNT(*) as count 
+                FROM shop_users 
+                WHERE shop_id = :shop_id AND role = 'owner'
+            ");
+            $ownerStmt->execute([':shop_id' => $shopId]);
+            $ownerCount = $ownerStmt->fetch()['count'];
+            $hasOwner = $ownerCount > 0;
+        } else {
+            // 従来の方法：usersテーブルから確認
+            $ownerStmt = $pdo->prepare("
+                SELECT COUNT(*) as count 
+                FROM users 
+                WHERE shop_id = :shop_id AND role = 'owner'
+            ");
+            $ownerStmt->execute([':shop_id' => $shopId]);
+            $ownerCount = $ownerStmt->fetch()['count'];
+            $hasOwner = $ownerCount > 0;
+        }
+        
+        if ($hasOwner) {
+            sendErrorResponse(400, 'Cannot delete shop: Owner exists. Please remove the owner first.');
+        }
+        
+        // 関連データの削除（外部キー制約がある場合に備えて）
+        // shop_tablesテーブルから削除
+        try {
+            $deleteTablesStmt = $pdo->prepare("DELETE FROM shop_tables WHERE shop_id = :shop_id");
+            $deleteTablesStmt->execute([':shop_id' => $shopId]);
+        } catch (Exception $e) {
+            // テーブルが存在しない場合は無視
+        }
+        
+        // shop_categoriesテーブルから削除
+        try {
+            $deleteCategoriesStmt = $pdo->prepare("DELETE FROM shop_categories WHERE shop_id = :shop_id");
+            $deleteCategoriesStmt->execute([':shop_id' => $shopId]);
+        } catch (Exception $e) {
+            // テーブルが存在しない場合は無視
+        }
+        
+        // shop_usersテーブルから削除
+        if ($hasShopUsers) {
+            try {
+                $deleteShopUsersStmt = $pdo->prepare("DELETE FROM shop_users WHERE shop_id = :shop_id");
+                $deleteShopUsersStmt->execute([':shop_id' => $shopId]);
+            } catch (Exception $e) {
+                // エラーは無視
+            }
+        }
+        
+        // usersテーブルから削除（shop_idが設定されている場合）
+        try {
+            $deleteUsersStmt = $pdo->prepare("DELETE FROM users WHERE shop_id = :shop_id");
+            $deleteUsersStmt->execute([':shop_id' => $shopId]);
+        } catch (Exception $e) {
+            // エラーは無視
+        }
+        
+        // 店舗を削除（物理削除）
+        $deleteStmt = $pdo->prepare("DELETE FROM shops WHERE id = :id");
+        $deleteStmt->execute([':id' => $shopId]);
+        
+        if ($deleteStmt->rowCount() === 0) {
+            sendNotFoundError('Shop');
+        }
+        
+        echo json_encode(['success' => true], JSON_UNESCAPED_UNICODE);
+        
+    } catch (PDOException $e) {
+        handleDatabaseError($e, 'deleting shop');
     }
 }
 

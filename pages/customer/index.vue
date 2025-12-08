@@ -1,24 +1,40 @@
 <template>
   <NuxtLayout name="default" title="メニュー一覧">
     <div class="space-y-6">
+      <!-- 席情報表示 -->
+      <div v-if="cartStore.tableNumber" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-sm text-blue-600 font-medium mb-1">ご利用中の席</div>
+            <div class="flex items-center gap-3">
+              <div class="text-xl font-bold text-gray-900">
+                テーブル {{ cartStore.tableNumber }}
+              </div>
+              <div v-if="currentTableInfo?.name" class="text-sm text-gray-600">
+                {{ currentTableInfo.name }}
+              </div>
+              <div v-if="currentTableInfo?.capacity" class="text-sm text-gray-500">
+                （定員: {{ currentTableInfo.capacity }}名）
+              </div>
+            </div>
+          </div>
+          <NuxtLink
+            to="/shop-select"
+            class="text-sm text-blue-600 hover:text-blue-700 underline"
+          >
+            変更
+          </NuxtLink>
+        </div>
+      </div>
+
       <!-- 番号入力 -->
       <NumberInput />
 
       <!-- カテゴリフィルター -->
-      <div class="flex gap-2 overflow-x-auto pb-2">
-        <button
-          v-for="category in categories"
-          :key="category.value"
-          :class="[
-            'px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors touch-target',
-            menuStore.selectedCategory === category.value
-              ? 'bg-blue-600 text-white'
-              : 'bg-white text-gray-700 hover:bg-gray-100'
-          ]"
-          @click="menuStore.setCategory(category.value)"
-        >
-          {{ category.label }}
-        </button>
+      <div v-if="isLoadingCategories" class="flex gap-2 overflow-x-auto pb-2">
+        <div class="px-4 py-2 rounded-lg bg-gray-100 animate-pulse">読み込み中...</div>
+      </div>
+      <div v-else class="flex gap-2 overflow-x-auto pb-2">
         <button
           :class="[
             'px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors touch-target',
@@ -29,6 +45,19 @@
           @click="menuStore.setCategory(null)"
         >
           すべて
+        </button>
+        <button
+          v-for="category in shopCategories"
+          :key="category.code"
+          :class="[
+            'px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors touch-target',
+            menuStore.selectedCategory === category.code
+              ? 'bg-blue-600 text-white'
+              : 'bg-white text-gray-700 hover:bg-gray-100'
+          ]"
+          @click="menuStore.setCategory(category.code)"
+        >
+          {{ category.name }}
         </button>
       </div>
 
@@ -61,19 +90,22 @@
 <script setup lang="ts">
 import { useMenuStore } from '~/stores/menu'
 import { useCartStore } from '~/stores/cart'
+import { useShopStore } from '~/stores/shop'
+import { useTableStore } from '~/stores/table'
+import { useCategoryStore } from '~/stores/category'
+import type { ShopTable, ShopCategory } from '~/types'
 import MenuCard from '~/components/MenuCard.vue'
 import NumberInput from '~/components/NumberInput.vue'
 
 const menuStore = useMenuStore()
 const cartStore = useCartStore()
-
-const categories = [
-  { value: 'food', label: '食べ物' },
-  { value: 'drink', label: '飲み物' },
-  { value: 'dessert', label: 'デザート' }
-]
-
 const shopStore = useShopStore()
+const tableStore = useTableStore()
+const categoryStore = useCategoryStore()
+
+const currentTableInfo = ref<ShopTable | null>(null)
+const shopCategories = ref<ShopCategory[]>([])
+const isLoadingCategories = ref(false)
 
 onMounted(async () => {
   // ストレージから店舗を読み込み
@@ -89,6 +121,32 @@ onMounted(async () => {
   if (!cartStore.tableNumber) {
     await navigateTo('/shop-select')
     return
+  }
+  
+  // テーブル情報を取得
+  try {
+    const tableInfo = await tableStore.fetchTableByQRCode(
+      shopStore.currentShop.code,
+      cartStore.tableNumber
+    )
+    currentTableInfo.value = tableInfo
+  } catch (error) {
+    console.error('テーブル情報の取得に失敗しました:', error)
+    // エラーが発生してもテーブル番号だけは表示する
+    currentTableInfo.value = null
+  }
+  
+  // 店舗独自カテゴリを取得
+  isLoadingCategories.value = true
+  try {
+    const categories = await categoryStore.fetchCategoriesByShopCode(shopStore.currentShop.code)
+    shopCategories.value = categories
+  } catch (error) {
+    console.error('カテゴリ一覧の取得に失敗しました:', error)
+    // エラーが発生してもメニューは表示する
+    shopCategories.value = []
+  } finally {
+    isLoadingCategories.value = false
   }
   
   // メニューを取得（店舗IDを含める）

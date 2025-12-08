@@ -2,38 +2,10 @@
   <NuxtLayout name="default" title="スタッフ管理">
     <div class="space-y-6">
       <!-- ナビゲーション -->
-      <div class="flex gap-3 overflow-x-auto pb-2">
-        <NuxtLink
-          to="/admin/dashboard"
-          class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium whitespace-nowrap hover:bg-gray-100"
-        >
-          ダッシュボード
-        </NuxtLink>
-        <NuxtLink
-          to="/admin/users"
-          class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium whitespace-nowrap"
-        >
-          スタッフ管理
-        </NuxtLink>
-        <NuxtLink
-          to="/staff/orders"
-          class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium whitespace-nowrap hover:bg-gray-100"
-        >
-          注文管理
-        </NuxtLink>
-        <NuxtLink
-          to="/admin/users/password"
-          class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium whitespace-nowrap hover:bg-gray-100"
-        >
-          パスワード変更
-        </NuxtLink>
-        <button
-          @click="handleLogout"
-          class="px-4 py-2 bg-red-100 text-red-700 rounded-lg font-medium whitespace-nowrap hover:bg-red-200 ml-auto"
-        >
-          ログアウト
-        </button>
-      </div>
+      <AdminNavigation
+        :navigation-items="navigationItems"
+        active-color="blue"
+      />
 
       <!-- ヘッダー -->
       <div class="flex justify-between items-center">
@@ -58,51 +30,17 @@
       </div>
 
       <div v-else class="space-y-3">
-        <div
+        <StaffCard
           v-for="user in userStore.users"
           :key="user.id"
-          class="bg-white p-4 rounded-lg shadow"
-        >
-          <div class="flex justify-between items-start">
-            <div class="flex-1">
-              <div class="flex items-center gap-2 mb-2">
-                <h3 class="text-lg font-semibold">{{ user.name }}</h3>
-                <span :class="getRoleBadgeClass(user.role)">
-                  {{ getRoleLabel(user.role) }}
-                </span>
-                <span v-if="!user.isActive" class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-sm">
-                  無効
-                </span>
-              </div>
-              <p class="text-sm text-gray-600 mb-1">ユーザー名: {{ user.username }}</p>
-              <p v-if="user.email" class="text-sm text-gray-600 mb-1">メール: {{ user.email }}</p>
-              <p v-if="user.lastLoginAt" class="text-xs text-gray-500">
-                最終ログイン: {{ formatDate(user.lastLoginAt) }}
-              </p>
-            </div>
-            <div class="flex flex-wrap gap-2">
-              <NuxtLink
-                :to="`/admin/users/${user.id}/edit`"
-                class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors touch-target text-sm"
-              >
-                編集
-              </NuxtLink>
-              <NuxtLink
-                :to="`/admin/users/${user.id}/password`"
-                class="px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors touch-target text-sm"
-              >
-                パスワード変更
-              </NuxtLink>
-              <button
-                v-if="authStore.isOwner && user.id !== authStore.user?.id"
-                @click="confirmDelete(user)"
-                class="px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors touch-target text-sm"
-              >
-                削除
-              </button>
-            </div>
-          </div>
-        </div>
+          :staff="user"
+          :show-shop-name="false"
+          :show-current-user-badge="false"
+          :edit-path="`/shop/users/${user.id}/edit`"
+          :password-path="`/shop/users/${user.id}/password`"
+          :can-delete="authStore.isOwner && user.id !== authStore.user?.id"
+          @delete="confirmDelete"
+        />
       </div>
     </div>
 
@@ -296,16 +234,19 @@
 <script setup lang="ts">
 import { useUserStore, type CreateUserInput, type UpdateUserInput } from '~/stores/user'
 import { useAuthStore } from '~/stores/auth'
+import { useShopStore } from '~/stores/shop'
 import type { User } from '~/types'
 
 const userStore = useUserStore()
 const authStore = useAuthStore()
+const shopStore = useShopStore()
+const { handleLogout, checkAuth } = useAuthCheck()
 
-const handleLogout = async () => {
-  if (confirm('ログアウトしますか？')) {
-    await authStore.logout()
-  }
-}
+const navigationItems = computed(() => [
+  { to: '/shop/dashboard', label: 'ダッシュボード', isActive: false },
+  { to: '/shop/users', label: 'スタッフ管理', isActive: true },
+  { to: '/staff/orders', label: '注文管理', isActive: false }
+])
 
 const showAddModal = ref(false)
 const showEditModal = ref(false)
@@ -329,34 +270,6 @@ const editUserData = ref<UpdateUserInput>({
   isActive: true
 })
 
-const getRoleLabel = (role: string) => {
-  const labels: Record<string, string> = {
-    owner: 'オーナー',
-    manager: '管理者',
-    staff: 'スタッフ'
-  }
-  return labels[role] || role
-}
-
-const getRoleBadgeClass = (role: string) => {
-  const classes: Record<string, string> = {
-    owner: 'px-2 py-1 bg-purple-100 text-purple-800 rounded text-sm',
-    manager: 'px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm',
-    staff: 'px-2 py-1 bg-gray-100 text-gray-800 rounded text-sm'
-  }
-  return classes[role] || ''
-}
-
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString)
-  return date.toLocaleString('ja-JP', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
 
 const handleAddUser = async () => {
   isSubmitting.value = true
@@ -419,16 +332,15 @@ const confirmDelete = async (user: User) => {
 
 onMounted(async () => {
   // 認証チェック
-  authStore.loadUserFromStorage()
-  if (!authStore.isAuthenticated || !authStore.isManager) {
-    await navigateTo('/staff/login')
+  const isAuthenticated = await checkAuth()
+  if (!isAuthenticated) {
     return
   }
-  
-  // 店舗情報の確認
-  shopStore.loadShopFromStorage()
-  if (!shopStore.currentShop && authStore.user?.shop) {
-    shopStore.setCurrentShop(authStore.user.shop)
+
+  // マネージャー権限チェック
+  if (!authStore.isManager) {
+    await navigateTo('/staff/login')
+    return
   }
   
   await userStore.fetchUsers()

@@ -63,7 +63,7 @@
 
           <div class="flex gap-3">
             <NuxtLink
-              to="/admin/users"
+              to="/shop/users"
               class="flex-1 px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-center touch-target"
             >
               キャンセル
@@ -117,7 +117,7 @@ const handleUpdateUser = async () => {
     
     // 2秒後にリダイレクト
     setTimeout(() => {
-      navigateTo('/admin/users')
+      navigateTo('/shop/users')
     }, 2000)
   } catch (err: any) {
     error.value = err?.data?.error || 'スタッフ情報の更新に失敗しました'
@@ -142,7 +142,7 @@ onMounted(async () => {
 
   // 自分の情報、または管理者権限が必要
   if (userId !== authStore.user?.id && !authStore.isManager) {
-    await navigateTo('/admin/dashboard')
+    await navigateTo('/shop/dashboard')
     return
   }
 

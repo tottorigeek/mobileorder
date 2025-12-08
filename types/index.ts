@@ -12,7 +12,20 @@ export interface Menu {
   isRecommended?: boolean
 }
 
-export type MenuCategory = 'drink' | 'food' | 'dessert' | 'other'
+export type MenuCategory = string // 店舗独自カテゴリコード
+
+export interface ShopCategory {
+  id: string
+  shopId: string
+  shopCode: string
+  shopName: string
+  code: string
+  name: string
+  displayOrder: number
+  isActive: boolean
+  createdAt?: string
+  updatedAt?: string
+}
 
 export interface CartItem {
   menu: Menu

@@ -3,19 +3,16 @@
     <div class="max-w-md mx-auto space-y-6">
       <div class="bg-white p-6 rounded-lg shadow">
         <h2 class="text-xl font-bold mb-4">パスワード変更</h2>
-        <p v-if="user" class="text-sm text-gray-600 mb-4">
-          {{ user.name }}さんのパスワードを変更します
-        </p>
 
         <form @submit.prevent="handleChangePassword" class="space-y-4">
-          <div v-if="isOwnPassword">
+          <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">
               現在のパスワード <span class="text-red-500">*</span>
             </label>
             <input
               v-model="passwordData.currentPassword"
               type="password"
-              :required="isOwnPassword"
+              required
               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="現在のパスワードを入力"
             />
@@ -41,7 +38,7 @@
               新しいパスワード（確認） <span class="text-red-500">*</span>
             </label>
             <input
-              v-model="confirmPassword"
+              v-model="passwordData.confirmPassword"
               type="password"
               required
               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -59,7 +56,7 @@
 
           <div class="flex gap-3">
             <NuxtLink
-              to="/admin/users"
+              to="/shop/users"
               class="flex-1 px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-center touch-target"
             >
               キャンセル
@@ -82,40 +79,30 @@
 import { useUserStore, type ChangePasswordInput } from '~/stores/user'
 import { useAuthStore } from '~/stores/auth'
 import { useShopStore } from '~/stores/shop'
-import type { User } from '~/types'
 
-const route = useRoute()
 const userStore = useUserStore()
 const authStore = useAuthStore()
 const shopStore = useShopStore()
 
-const userId = route.params.id as string
-const user = ref<User | null>(null)
 const isSubmitting = ref(false)
 const error = ref('')
 const success = ref(false)
-const confirmPassword = ref('')
 
-const passwordData = ref<ChangePasswordInput>({
+const passwordData = ref<ChangePasswordInput & { confirmPassword: string }>({
   currentPassword: '',
-  newPassword: ''
-})
-
-const isOwnPassword = computed(() => {
-  return userId === authStore.user?.id
+  newPassword: '',
+  confirmPassword: ''
 })
 
 const isFormValid = computed(() => {
-  if (isOwnPassword.value && !passwordData.value.currentPassword) {
-    return false
-  }
-  return passwordData.value.newPassword.length >= 6 &&
-         passwordData.value.newPassword === confirmPassword.value
+  return passwordData.value.currentPassword &&
+         passwordData.value.newPassword.length >= 6 &&
+         passwordData.value.newPassword === passwordData.value.confirmPassword
 })
 
 const handleChangePassword = async () => {
   if (!isFormValid.value) {
-    error.value = 'パスワードが一致しないか、6文字未満です'
+    error.value = 'パスワードが一致しません'
     return
   }
 
@@ -124,27 +111,48 @@ const handleChangePassword = async () => {
   success.value = false
 
   try {
-    // 自分のパスワード変更の場合は現在のパスワードが必要
-    const input: ChangePasswordInput = {
-      currentPassword: isOwnPassword.value ? passwordData.value.currentPassword : '',
-      newPassword: passwordData.value.newPassword
+    if (!authStore.user) {
+      throw new Error('ユーザー情報が取得できません')
     }
 
-    await userStore.changePassword(userId, input)
+    await userStore.changePassword(authStore.user.id, {
+      currentPassword: passwordData.value.currentPassword,
+      newPassword: passwordData.value.newPassword
+    })
 
     success.value = true
     passwordData.value = {
       currentPassword: '',
-      newPassword: ''
+      newPassword: '',
+      confirmPassword: ''
     }
-    confirmPassword.value = ''
 
     // 3秒後にリダイレクト
     setTimeout(() => {
-      navigateTo('/admin/users')
+      navigateTo('/shop/users')
     }, 3000)
   } catch (err: any) {
-    error.value = err?.data?.error || 'パスワードの変更に失敗しました'
+    // エラーメッセージの取得
+    let errorMessage = 'パスワードの変更に失敗しました'
+    
+    if (err?.message) {
+      errorMessage = err.message
+    } else if (err?.data?.error) {
+      errorMessage = err.data.error
+    } else if (err?.error) {
+      errorMessage = err.error
+    }
+    
+    // 401エラーの場合は、ログイン画面にリダイレクト
+    if (err?.status === 401) {
+      error.value = 'セッションが無効です。再度ログインしてください。'
+      setTimeout(() => {
+        navigateTo('/staff/login')
+      }, 2000)
+      return
+    }
+    
+    error.value = errorMessage
   } finally {
     isSubmitting.value = false
   }
@@ -162,18 +170,6 @@ onMounted(async () => {
   shopStore.loadShopFromStorage()
   if (!shopStore.currentShop && authStore.user?.shop) {
     shopStore.setCurrentShop(authStore.user.shop)
-  }
-
-  // 自分のパスワード変更、または管理者権限が必要
-  if (userId !== authStore.user?.id && !authStore.isManager) {
-    await navigateTo('/admin/dashboard')
-    return
-  }
-
-  try {
-    user.value = await userStore.fetchUser(userId)
-  } catch (err: any) {
-    error.value = err?.data?.error || 'ユーザー情報の取得に失敗しました'
   }
 })
 </script>

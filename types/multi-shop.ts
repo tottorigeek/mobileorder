@@ -19,7 +19,8 @@ export interface Shop {
   isActive: boolean
   shopRole?: 'owner' | 'manager' | 'staff' // この店舗での役割
   isPrimary?: boolean // 主店舗フラグ
-  owner?: ShopOwner | null // オーナー情報
+  owner?: ShopOwner | null // オーナー情報（後方互換性のため）
+  owners?: ShopOwner[] // 複数のオーナー情報
   createdAt?: string
   updatedAt?: string
 }

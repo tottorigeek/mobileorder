@@ -28,7 +28,7 @@
           エラーログ
         </NuxtLink>
         <NuxtLink
-          to="/admin/users/password"
+          to="/shop/users/password"
           class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium whitespace-nowrap hover:bg-gray-100"
         >
           パスワード変更
@@ -78,7 +78,20 @@
               </div>
               <p class="text-sm text-gray-600 mb-1">コード: {{ shop.code }}</p>
               <p v-if="shop.description" class="text-sm text-gray-600 mb-1">{{ shop.description }}</p>
-              <p v-if="shop.address" class="text-sm text-gray-500">{{ shop.address }}</p>
+              <p v-if="shop.address" class="text-sm text-gray-500 mb-1">{{ shop.address }}</p>
+              <div v-if="shop.owners && shop.owners.length > 0" class="text-sm text-gray-600 mt-1">
+                <span class="font-medium">オーナー:</span>
+                <span v-for="(owner, index) in shop.owners" :key="owner.id" class="ml-1">
+                  {{ owner.name }}
+                  <span v-if="owner.email" class="text-gray-500">({{ owner.email }})</span>
+                  <span v-if="index < shop.owners.length - 1" class="text-gray-400">, </span>
+                </span>
+              </div>
+              <p v-else-if="shop.owner" class="text-sm text-gray-600 mt-1">
+                <span class="font-medium">オーナー:</span> {{ shop.owner.name }}
+                <span v-if="shop.owner.email" class="text-gray-500">({{ shop.owner.email }})</span>
+              </p>
+              <p v-else class="text-sm text-gray-400 mt-1">オーナー未設定</p>
             </div>
             <div class="flex gap-2">
               <NuxtLink
@@ -87,6 +100,17 @@
               >
                 編集
               </NuxtLink>
+              <button
+                @click="handleDeleteShop(shop)"
+                :class="[
+                  'px-3 py-1 rounded transition-colors touch-target text-sm',
+                  (shop.owners && shop.owners.length > 0) || shop.owner
+                    ? 'bg-gray-300 text-gray-600 hover:bg-gray-400'
+                    : 'bg-red-200 text-red-700 hover:bg-red-300'
+                ]"
+              >
+                削除
+              </button>
             </div>
           </div>
         </div>
@@ -211,6 +235,10 @@ import { useShopStore } from '~/stores/shop'
 import { useAuthStore } from '~/stores/auth'
 import type { Shop } from '~/types'
 
+definePageMeta({
+  layout: 'default'
+})
+
 const shopStore = useShopStore()
 const authStore = useAuthStore()
 
@@ -254,6 +282,28 @@ const handleAddShop = async () => {
     addError.value = error?.data?.error || '店舗の追加に失敗しました'
   } finally {
     isSubmitting.value = false
+  }
+}
+
+const handleDeleteShop = async (shop: Shop) => {
+  // オーナーが存在する場合は削除を拒否
+  const hasOwners = (shop.owners && shop.owners.length > 0) || shop.owner
+  if (hasOwners) {
+    alert(`店舗「${shop.name}」にはオーナーが設定されています。\n削除するには、まずオーナーを解除してください。`)
+    return
+  }
+  
+  // 確認ダイアログ
+  if (!confirm(`店舗「${shop.name}」を削除しますか？\nこの操作は取り消せません。`)) {
+    return
+  }
+  
+  try {
+    await shopStore.deleteShop(shop.id)
+    alert('店舗を削除しました')
+  } catch (error: any) {
+    const errorMessage = error?.data?.error || error?.message || '店舗の削除に失敗しました'
+    alert(errorMessage)
   }
 }
 

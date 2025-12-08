@@ -2,38 +2,10 @@
   <NuxtLayout name="default" title="ダッシュボード">
     <div class="space-y-6">
       <!-- ナビゲーション -->
-      <div class="flex gap-3 overflow-x-auto pb-2">
-        <NuxtLink
-          to="/admin/dashboard"
-          class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium whitespace-nowrap"
-        >
-          ダッシュボード
-        </NuxtLink>
-        <NuxtLink
-          to="/admin/users"
-          class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium whitespace-nowrap hover:bg-gray-100"
-        >
-          スタッフ管理
-        </NuxtLink>
-        <NuxtLink
-          to="/staff/orders"
-          class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium whitespace-nowrap hover:bg-gray-100"
-        >
-          注文管理
-        </NuxtLink>
-        <NuxtLink
-          to="/admin/users/password"
-          class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium whitespace-nowrap hover:bg-gray-100"
-        >
-          パスワード変更
-        </NuxtLink>
-        <button
-          @click="handleLogout"
-          class="px-4 py-2 bg-red-100 text-red-700 rounded-lg font-medium whitespace-nowrap hover:bg-red-200 ml-auto"
-        >
-          ログアウト
-        </button>
-      </div>
+      <AdminNavigation
+        :navigation-items="navigationItems"
+        active-color="blue"
+      />
       <div class="bg-white p-6 rounded-lg shadow">
         <h2 class="text-2xl font-bold mb-4">今日の売上</h2>
         <p class="text-4xl font-bold text-blue-600">¥{{ todaySales.toLocaleString() }}</p>
@@ -94,12 +66,15 @@ import type { OrderStatus } from '~/types'
 
 const authStore = useAuthStore()
 const shopStore = useShopStore()
+const { handleLogout, checkAuth } = useAuthCheck()
+const { getStatusLabel, getStatusClass, formatDate } = useAdminUtils()
 
-const handleLogout = async () => {
-  if (confirm('ログアウトしますか？')) {
-    await authStore.logout()
-  }
-}
+const navigationItems = computed(() => [
+  { to: '/shop/dashboard', label: 'ダッシュボード', isActive: true },
+  { to: '/shop/users', label: 'スタッフ管理', isActive: false },
+  { to: '/staff/tables', label: 'テーブル設定', isActive: false },
+  { to: '/staff/orders', label: '注文管理', isActive: false }
+])
 
 const orderStore = useOrderStore()
 
@@ -137,57 +112,11 @@ const recentOrders = computed(() => {
   return orderStore.orders.slice(0, 5)
 })
 
-const getStatusLabel = (status: OrderStatus) => {
-  const labels: Record<OrderStatus, string> = {
-    pending: '受付待ち',
-    accepted: '受付済み',
-    cooking: '調理中',
-    completed: '完成',
-    cancelled: 'キャンセル'
-  }
-  return labels[status]
-}
-
-const getStatusClass = (status: OrderStatus) => {
-  const classes: Record<OrderStatus, string> = {
-    pending: 'px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm',
-    accepted: 'px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm',
-    cooking: 'px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm',
-    completed: 'px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm',
-    cancelled: 'px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm'
-  }
-  return classes[status]
-}
-
-const formatDate = (date: Date | string) => {
-  const d = typeof date === 'string' ? new Date(date) : date
-  return d.toLocaleString('ja-JP', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
-
 onMounted(async () => {
   // 認証チェック
-  authStore.loadUserFromStorage()
-  if (!authStore.isAuthenticated) {
-    await navigateTo('/staff/login')
+  const isAuthenticated = await checkAuth()
+  if (!isAuthenticated) {
     return
-  }
-  
-  // 店舗情報の読み込み
-  shopStore.loadShopFromStorage()
-  
-  // 店舗が選択されていない場合は店舗選択画面にリダイレクト
-  if (!shopStore.currentShop) {
-    if (authStore.user?.shop) {
-      shopStore.setCurrentShop(authStore.user.shop)
-    } else {
-      await navigateTo('/staff/shop-select')
-      return
-    }
   }
   
   await orderStore.fetchOrders()

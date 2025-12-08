@@ -2,44 +2,10 @@
   <NuxtLayout name="default" title="スタッフ管理">
     <div class="space-y-6">
       <!-- ナビゲーション -->
-      <div class="flex gap-3 overflow-x-auto pb-2">
-        <NuxtLink
-          to="/multi-shop/dashboard"
-          class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium whitespace-nowrap hover:bg-gray-100"
-        >
-          ダッシュボード
-        </NuxtLink>
-        <NuxtLink
-          to="/multi-shop/orders"
-          class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium whitespace-nowrap hover:bg-gray-100"
-        >
-          注文一覧
-        </NuxtLink>
-        <NuxtLink
-          to="/multi-shop/menus"
-          class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium whitespace-nowrap hover:bg-gray-100"
-        >
-          メニュー管理
-        </NuxtLink>
-        <NuxtLink
-          to="/multi-shop/staff"
-          class="px-4 py-2 bg-green-600 text-white rounded-lg font-medium whitespace-nowrap"
-        >
-          スタッフ管理
-        </NuxtLink>
-        <NuxtLink
-          to="/admin/users/password"
-          class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium whitespace-nowrap hover:bg-gray-100"
-        >
-          パスワード変更
-        </NuxtLink>
-        <button
-          @click="handleLogout"
-          class="px-4 py-2 bg-red-100 text-red-700 rounded-lg font-medium whitespace-nowrap hover:bg-red-200 ml-auto"
-        >
-          ログアウト
-        </button>
-      </div>
+      <AdminNavigation
+        :navigation-items="navigationItems"
+        active-color="green"
+      />
 
       <!-- フィルター -->
       <div class="bg-white p-4 rounded-lg shadow">
@@ -77,44 +43,17 @@
       </div>
 
       <div v-else class="space-y-3">
-        <div
+        <StaffCard
           v-for="staff in filteredStaff"
           :key="staff.id"
-          class="bg-white p-4 rounded-lg shadow"
-        >
-          <div class="flex justify-between items-start">
-            <div class="flex-1">
-              <div class="flex items-center gap-2 mb-2">
-                <h3 class="text-lg font-semibold">{{ staff.name }}</h3>
-                <span v-if="isCurrentUser(staff.id)" class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">
-                  自分
-                </span>
-                <span :class="getRoleBadgeClass(staff.role)">
-                  {{ getRoleLabel(staff.role) }}
-                </span>
-                <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
-                  {{ getShopName(staff.shopId) }}
-                </span>
-                <span v-if="!staff.isActive" class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-sm">
-                  無効
-                </span>
-              </div>
-              <p class="text-sm text-gray-600 mb-1">ユーザー名: {{ staff.username }}</p>
-              <p v-if="staff.email" class="text-sm text-gray-600 mb-1">メール: {{ staff.email }}</p>
-              <p v-if="staff.lastLoginAt" class="text-xs text-gray-500">
-                最終ログイン: {{ formatDate(staff.lastLoginAt) }}
-              </p>
-            </div>
-            <div class="flex gap-2">
-              <NuxtLink
-                :to="`/admin/users/${staff.id}/edit`"
-                class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors touch-target text-sm"
-              >
-                編集
-              </NuxtLink>
-            </div>
-          </div>
-        </div>
+          :staff="staff"
+          :shops="myShops"
+          :show-shop-name="true"
+          :show-current-user-badge="true"
+          :show-password-button="false"
+          :show-delete-button="false"
+          :edit-path="`/shop/users/${staff.id}/edit`"
+        />
       </div>
     </div>
   </NuxtLayout>
@@ -127,6 +66,7 @@ import type { Shop, User } from '~/types'
 
 const authStore = useAuthStore()
 const shopStore = useShopStore()
+const { handleLogout, checkAuthMultiShop } = useAuthCheck()
 
 const myShops = ref<Shop[]>([])
 const selectedShopId = ref<string>('')
@@ -134,11 +74,12 @@ const allStaff = ref<User[]>([])
 const filteredStaff = ref<User[]>([])
 const isLoading = ref(false)
 
-const handleLogout = async () => {
-  if (confirm('ログアウトしますか？')) {
-    await authStore.logout()
-  }
-}
+const navigationItems = computed(() => [
+  { to: '/multi-shop/dashboard', label: 'ダッシュボード', isActive: false },
+  { to: '/multi-shop/orders', label: '注文一覧', isActive: false },
+  { to: '/multi-shop/menus', label: 'メニュー管理', isActive: false },
+  { to: '/multi-shop/staff', label: 'スタッフ管理', isActive: true }
+])
 
 const filterStaff = () => {
   if (selectedShopId.value) {
@@ -148,43 +89,6 @@ const filterStaff = () => {
   }
 }
 
-const getShopName = (shopId: string) => {
-  const shop = myShops.value.find(s => s.id === shopId)
-  return shop?.name || '不明'
-}
-
-const getRoleLabel = (role: string) => {
-  const labels: Record<string, string> = {
-    owner: 'オーナー',
-    manager: '管理者',
-    staff: 'スタッフ'
-  }
-  return labels[role] || role
-}
-
-const isCurrentUser = (staffId: string) => {
-  return authStore.user?.id === staffId
-}
-
-const getRoleBadgeClass = (role: string) => {
-  const classes: Record<string, string> = {
-    owner: 'px-2 py-1 bg-purple-100 text-purple-800 rounded text-sm',
-    manager: 'px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm',
-    staff: 'px-2 py-1 bg-gray-100 text-gray-800 rounded text-sm'
-  }
-  return classes[role] || ''
-}
-
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString)
-  return date.toLocaleString('ja-JP', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
 
 const fetchAllStaff = async () => {
   isLoading.value = true
@@ -223,9 +127,8 @@ const fetchAllStaff = async () => {
 
 onMounted(async () => {
   // 認証チェック
-  authStore.loadUserFromStorage()
-  if (!authStore.isAuthenticated) {
-    await navigateTo('/staff/login')
+  const isAuthenticated = await checkAuthMultiShop()
+  if (!isAuthenticated) {
     return
   }
 
@@ -234,7 +137,7 @@ onMounted(async () => {
     myShops.value = await shopStore.fetchMyShops()
     
     if (myShops.value.length === 0) {
-      await navigateTo('/admin/dashboard')
+      await navigateTo('/shop/dashboard')
       return
     }
 

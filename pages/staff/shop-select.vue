@@ -119,7 +119,7 @@ const goToDashboard = async () => {
     alert('店舗を選択してください')
     return
   }
-  await navigateTo('/admin/dashboard')
+  await navigateTo('/shop/dashboard')
 }
 
 const handleLogout = async () => {
