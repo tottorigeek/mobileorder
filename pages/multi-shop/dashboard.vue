@@ -257,7 +257,7 @@ const getShopName = (shopId: string) => {
 
 const getShopSales = (shopId: string) => {
   const today = new Date().toISOString().split('T')[0]
-  return filteredOrders.value
+  return orderStore.orders
     .filter(order => {
       const orderDate = new Date(order.createdAt).toISOString().split('T')[0]
       return order.shopId === shopId && orderDate === today && order.status === 'completed'
@@ -267,20 +267,20 @@ const getShopSales = (shopId: string) => {
 
 const getShopOrders = (shopId: string) => {
   const today = new Date().toISOString().split('T')[0]
-  return filteredOrders.value.filter(order => {
+  return orderStore.orders.filter(order => {
     const orderDate = new Date(order.createdAt).toISOString().split('T')[0]
     return order.shopId === shopId && orderDate === today
   }).length
 }
 
 const getShopPendingOrders = (shopId: string) => {
-  return filteredOrders.value.filter(order => 
+  return orderStore.orders.filter(order => 
     order.shopId === shopId && order.status === 'pending'
   ).length
 }
 
 const getShopCookingOrders = (shopId: string) => {
-  return filteredOrders.value.filter(order => 
+  return orderStore.orders.filter(order => 
     order.shopId === shopId && order.status === 'cooking'
   ).length
 }

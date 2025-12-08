@@ -142,6 +142,7 @@ function getOrders() {
             
             return [
                 'id' => (string)$order['id'],
+                'shopId' => (string)$order['shop_id'],
                 'orderNumber' => $order['order_number'],
                 'tableNumber' => $order['table_number'],
                 'items' => $items,
@@ -161,7 +162,8 @@ function getOrders() {
 
 /**
  * 注文取得（単一）
- * 認証されている場合は同じ店舗の注文のみ取得可能、認証されていない場合は公開
+ * 認証されている場合は所属する店舗の注文のみ取得可能、認証されていない場合は公開
+ * 複数店舗対応: ユーザーが所属するすべての店舗の注文を取得可能
  */
 function getOrder($orderId) {
     try {
@@ -169,13 +171,40 @@ function getOrder($orderId) {
         
         // 認証チェック（オプション）
         $token = getJWTFromHeader();
-        $shopId = null;
+        $userShopIds = null;
         
         if ($token) {
-            // 認証済みの場合：JWTからshop_idを取得して検証
+            // 認証済みの場合：JWTからuser_idとshop_idを取得
             $payload = verifyJWT($token);
-            if ($payload && isset($payload['shop_id'])) {
-                $shopId = $payload['shop_id'];
+            if ($payload && isset($payload['user_id'])) {
+                $userId = $payload['user_id'];
+                $shopId = $payload['shop_id'] ?? null;
+                
+                // ユーザーが所属する店舗IDのリストを取得
+                $userShopIds = [];
+                
+                // shop_usersテーブルが存在するか確認
+                $tableExists = false;
+                try {
+                    $checkStmt = $pdo->query("SHOW TABLES LIKE 'shop_users'");
+                    $tableExists = $checkStmt->rowCount() > 0;
+                } catch (PDOException $e) {
+                    // テーブルが存在しない場合は既存の方法を使用
+                }
+                
+                if ($tableExists) {
+                    // 複数店舗対応: shop_usersテーブルから取得
+                    $shopUsersSql = "SELECT shop_id FROM shop_users WHERE user_id = :user_id";
+                    $shopUsersStmt = $pdo->prepare($shopUsersSql);
+                    $shopUsersStmt->execute([':user_id' => $userId]);
+                    $shopUsers = $shopUsersStmt->fetchAll(PDO::FETCH_COLUMN);
+                    $userShopIds = array_map('intval', $shopUsers);
+                } else {
+                    // 既存の方法: usersテーブルのshop_idから取得
+                    if ($shopId) {
+                        $userShopIds = [intval($shopId)];
+                    }
+                }
             }
         }
         
@@ -195,10 +224,15 @@ function getOrder($orderId) {
         
         $params = [':id' => $orderId];
         
-        // 認証されている場合は同じ店舗の注文のみ取得可能
-        if ($shopId) {
-            $sql .= " AND o.shop_id = :shop_id";
-            $params[':shop_id'] = $shopId;
+        // 認証されている場合は所属する店舗の注文のみ取得可能
+        if ($userShopIds !== null && count($userShopIds) > 0) {
+            $placeholders = [];
+            foreach ($userShopIds as $index => $shopId) {
+                $paramName = ':shop_id_' . $index;
+                $placeholders[] = $paramName;
+                $params[$paramName] = $shopId;
+            }
+            $sql .= " AND o.shop_id IN (" . implode(',', $placeholders) . ")";
         }
         
         $sql .= " GROUP BY o.id";
@@ -215,6 +249,7 @@ function getOrder($orderId) {
         
         $result = [
             'id' => (string)$order['id'],
+            'shopId' => (string)$order['shop_id'],
             'orderNumber' => $order['order_number'],
             'tableNumber' => $order['table_number'],
             'items' => $items,
