@@ -210,9 +210,14 @@ const formatDate = (date: Date | string) => {
 const updateOrderStatus = async (orderId: string, status: OrderStatus) => {
   try {
     await orderStore.updateOrderStatus(orderId, status)
+    // 更新後に注文一覧を再取得して最新の状態を反映
+    const shopIds = myShops.value.map(s => s.id)
+    await orderStore.fetchOrders(undefined, undefined, shopIds)
     filterOrders()
   } catch (error: any) {
-    alert(error?.data?.error || 'ステータスの更新に失敗しました')
+    console.error('注文ステータスの更新エラー:', error)
+    const errorMessage = error?.data?.error || error?.message || 'ステータスの更新に失敗しました'
+    alert(errorMessage)
   }
 }
 

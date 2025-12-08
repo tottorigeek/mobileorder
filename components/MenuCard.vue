@@ -33,13 +33,39 @@
           <span class="text-xl font-bold text-gray-900">
             ¥{{ menu.price.toLocaleString() }}
           </span>
-          <button
-            v-if="menu.isAvailable"
-            @click="handleAddToCart"
-            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors touch-target"
-          >
-            カートに追加
-          </button>
+          <div v-if="menu.isAvailable" class="flex items-center gap-3">
+            <!-- 数量設定 -->
+            <div class="flex items-center gap-2 bg-gray-100 rounded-lg">
+              <button
+                @click="decreaseQuantity"
+                :disabled="quantity <= 1"
+                class="w-8 h-8 rounded-l-lg bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-bold text-gray-700 transition-colors touch-target"
+              >
+                -
+              </button>
+              <input
+                v-model.number="quantity"
+                type="number"
+                min="1"
+                max="99"
+                class="w-12 h-8 text-center text-sm font-semibold bg-transparent border-0 focus:ring-0 focus:outline-none"
+                @input="handleQuantityInput"
+              />
+              <button
+                @click="increaseQuantity"
+                :disabled="quantity >= 99"
+                class="w-8 h-8 rounded-r-lg bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-bold text-gray-700 transition-colors touch-target"
+              >
+                +
+              </button>
+            </div>
+            <button
+              @click="handleAddToCart"
+              class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors touch-target"
+            >
+              カートに追加
+            </button>
+          </div>
           <span v-else class="px-4 py-2 bg-gray-300 text-gray-600 rounded-lg">
             在庫切れ
           </span>
@@ -60,8 +86,36 @@ interface Props {
 const props = defineProps<Props>()
 const cartStore = useCartStore()
 
+const quantity = ref(1)
+
+const decreaseQuantity = () => {
+  if (quantity.value > 1) {
+    quantity.value--
+  }
+}
+
+const increaseQuantity = () => {
+  if (quantity.value < 99) {
+    quantity.value++
+  }
+}
+
+const handleQuantityInput = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const value = parseInt(target.value) || 1
+  if (value < 1) {
+    quantity.value = 1
+  } else if (value > 99) {
+    quantity.value = 99
+  } else {
+    quantity.value = value
+  }
+}
+
 const handleAddToCart = () => {
-  cartStore.addItem(props.menu, 1)
+  cartStore.addItem(props.menu, quantity.value)
+  // 追加後、数量を1にリセット
+  quantity.value = 1
   // フィードバック（トーストなど）を表示する場合はここで実装
 }
 </script>

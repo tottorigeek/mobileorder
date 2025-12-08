@@ -61,7 +61,7 @@ export const useOrderStore = defineStore('order', {
         }
         
         // API経由でステータスを更新
-        const updatedOrder = await $fetch(`${apiBase}/orders/${orderId}`, {
+        const updatedOrder = await $fetch<Order>(`${apiBase}/orders/${orderId}`, {
           method: 'PUT',
           body: { status },
           headers: headers
@@ -73,14 +73,12 @@ export const useOrderStore = defineStore('order', {
           order.status = status
           order.updatedAt = new Date(updatedOrder.updatedAt)
         }
-      } catch (error) {
+        
+        return updatedOrder
+      } catch (error: any) {
         console.error('注文ステータスの更新に失敗しました:', error)
-        // フォールバック: ローカルのみ更新
-        const order = this.orders.find(o => o.id === orderId)
-        if (order) {
-          order.status = status
-          order.updatedAt = new Date()
-        }
+        // エラーを再スローして、呼び出し元で処理できるようにする
+        throw error
       } finally {
         this.isLoading = false
       }

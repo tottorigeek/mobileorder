@@ -138,6 +138,24 @@
                 </span>
                 <span class="font-bold text-blue-600">{{ getShopOrders(shop.id) }}件</span>
               </div>
+              <div class="flex justify-between items-center p-2 bg-yellow-50 rounded-lg border border-yellow-200">
+                <span class="text-gray-600 flex items-center gap-1">
+                  <svg class="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  受付待ち
+                </span>
+                <span class="font-bold text-yellow-600">{{ getShopPendingOrders(shop.id) }}件</span>
+              </div>
+              <div class="flex justify-between items-center p-2 bg-orange-50 rounded-lg border border-orange-200">
+                <span class="text-gray-600 flex items-center gap-1">
+                  <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                  調理中
+                </span>
+                <span class="font-bold text-orange-600">{{ getShopCookingOrders(shop.id) }}件</span>
+              </div>
             </div>
           </div>
         </div>
@@ -253,6 +271,18 @@ const getShopOrders = (shopId: string) => {
     const orderDate = new Date(order.createdAt).toISOString().split('T')[0]
     return order.shopId === shopId && orderDate === today
   }).length
+}
+
+const getShopPendingOrders = (shopId: string) => {
+  return filteredOrders.value.filter(order => 
+    order.shopId === shopId && order.status === 'pending'
+  ).length
+}
+
+const getShopCookingOrders = (shopId: string) => {
+  return filteredOrders.value.filter(order => 
+    order.shopId === shopId && order.status === 'cooking'
+  ).length
 }
 
 const todaySales = computed(() => {

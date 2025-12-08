@@ -335,12 +335,15 @@ function createOrder() {
 /**
  * 注文ステータス更新
  * 店舗スタッフのみ（認証必須）
+ * 複数店舗のオーナーの場合は、所属するすべての店舗の注文を更新可能
  */
 function updateOrderStatus($orderId) {
     try {
         // 認証チェック（店舗スタッフのみ）
         $auth = checkAuth();
+        $userId = $auth['user_id'];
         $shopId = $auth['shop_id'];
+        $role = $auth['role'];
         
         $pdo = getDbConnection();
         
@@ -355,13 +358,52 @@ function updateOrderStatus($orderId) {
             sendValidationError(['status' => 'Invalid status. Allowed values: ' . implode(', ', $allowedStatuses)]);
         }
         
-        // 同じ店舗の注文のみ更新可能
-        $sql = "UPDATE orders SET status = :status, updated_at = NOW() WHERE id = :id AND shop_id = :shop_id";
+        // ユーザーが所属する店舗IDのリストを取得
+        $userShopIds = [];
+        
+        // shop_usersテーブルが存在するか確認
+        $tableExists = false;
+        try {
+            $checkStmt = $pdo->query("SHOW TABLES LIKE 'shop_users'");
+            $tableExists = $checkStmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            // テーブルが存在しない場合は既存の方法を使用
+        }
+        
+        if ($tableExists) {
+            // 複数店舗対応: shop_usersテーブルから取得
+            $shopUsersSql = "SELECT shop_id FROM shop_users WHERE user_id = :user_id";
+            $shopUsersStmt = $pdo->prepare($shopUsersSql);
+            $shopUsersStmt->execute([':user_id' => $userId]);
+            $shopUsers = $shopUsersStmt->fetchAll(PDO::FETCH_COLUMN);
+            $userShopIds = array_map('intval', $shopUsers);
+        } else {
+            // 既存の方法: usersテーブルのshop_idから取得
+            $userShopIds = [intval($shopId)];
+        }
+        
+        // 注文が存在し、ユーザーが所属する店舗の注文であることを確認
+        $orderCheckSql = "SELECT shop_id FROM orders WHERE id = :id";
+        $orderCheckStmt = $pdo->prepare($orderCheckSql);
+        $orderCheckStmt->execute([':id' => $orderId]);
+        $orderShopId = $orderCheckStmt->fetchColumn();
+        
+        if (!$orderShopId) {
+            sendNotFoundError('Order');
+        }
+        
+        if (!in_array(intval($orderShopId), $userShopIds)) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Forbidden: You do not have permission to update this order']);
+            exit;
+        }
+        
+        // 注文ステータスを更新
+        $sql = "UPDATE orders SET status = :status, updated_at = NOW() WHERE id = :id";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
             ':status' => $input['status'],
-            ':id' => $orderId,
-            ':shop_id' => $shopId
+            ':id' => $orderId
         ]);
         
         if ($stmt->rowCount() === 0) {
