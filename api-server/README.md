@@ -148,7 +148,7 @@ http://mameq.xsrv.jp/radish/test-db.php
 
 ## トラブルシューティング
 
-詳細は [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) を参照してください。
+詳細は [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) と [ERROR_HANDLING.md](./ERROR_HANDLING.md) を参照してください。
 
 ### 500エラーが発生する場合
 
