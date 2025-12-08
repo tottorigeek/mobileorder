@@ -388,6 +388,9 @@ function sendErrorResponse($statusCode, $message, $details = [], $exception = nu
         );
         error_log($logMessage);
         
+        // データベースにも記録
+        logErrorToDatabase('error', $logMessage, $exception);
+        
         // デバッグモードの場合のみスタックトレースを追加
         if (DEBUG_MODE) {
             $response['debug'] = [
@@ -472,11 +475,103 @@ function handleDatabaseError($e, $operation) {
     );
     error_log($logMessage);
     
+    // データベースにも記録
+    logErrorToDatabase('error', $logMessage, $e);
+    
     // 本番環境では詳細なエラーメッセージを隠す
     $userMessage = DEBUG_MODE 
         ? "Database error during {$operation}: " . $e->getMessage()
         : "Failed to {$operation}";
     
     sendServerError($userMessage, $e);
+}
+
+/**
+ * エラーログをデータベースに記録
+ * 
+ * @param string $level エラーレベル（error, warning, info, debug）
+ * @param string $message エラーメッセージ
+ * @param Exception|null $exception 例外オブジェクト（オプション）
+ * @param array $context 追加のコンテキスト情報（オプション）
+ */
+function logErrorToDatabase($level = 'error', $message = '', $exception = null, $context = []) {
+    try {
+        $pdo = getDbConnection();
+        
+        // ユーザーIDと店舗IDを取得（認証済みの場合）
+        $userId = null;
+        $shopId = null;
+        
+        try {
+            $token = getJWTFromHeader();
+            if ($token) {
+                $payload = verifyJWT($token);
+                if ($payload) {
+                    $userId = $payload['user_id'] ?? null;
+                    $shopId = $payload['shop_id'] ?? null;
+                }
+            }
+        } catch (Exception $e) {
+            // 認証情報の取得に失敗しても続行
+        }
+        
+        // 例外情報を取得
+        $file = null;
+        $line = null;
+        $trace = null;
+        
+        if ($exception !== null) {
+            $file = $exception->getFile();
+            $line = $exception->getLine();
+            
+            // スタックトレースを取得（最大10フレーム）
+            $traceArray = [];
+            $traceFrames = $exception->getTrace();
+            $maxFrames = min(10, count($traceFrames));
+            
+            for ($i = 0; $i < $maxFrames; $i++) {
+                $frame = $traceFrames[$i];
+                $traceArray[] = [
+                    'file' => $frame['file'] ?? 'unknown',
+                    'line' => $frame['line'] ?? 0,
+                    'function' => $frame['function'] ?? 'unknown',
+                    'class' => $frame['class'] ?? null
+                ];
+            }
+            
+            if (!empty($traceArray)) {
+                $trace = json_encode($traceArray, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            }
+        }
+        
+        // リクエスト情報を取得
+        $requestMethod = $_SERVER['REQUEST_METHOD'] ?? null;
+        $requestUri = $_SERVER['REQUEST_URI'] ?? null;
+        $ipAddress = $_SERVER['REMOTE_ADDR'] ?? null;
+        
+        // エラーログをデータベースに挿入
+        $sql = "INSERT INTO error_logs 
+                (level, message, file, line, trace, user_id, shop_id, request_method, request_uri, ip_address) 
+                VALUES 
+                (:level, :message, :file, :line, :trace, :user_id, :shop_id, :request_method, :request_uri, :ip_address)";
+        
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([
+            ':level' => $level,
+            ':message' => $message,
+            ':file' => $file,
+            ':line' => $line,
+            ':trace' => $trace,
+            ':user_id' => $userId,
+            ':shop_id' => $shopId,
+            ':request_method' => $requestMethod,
+            ':request_uri' => $requestUri,
+            ':ip_address' => $ipAddress
+        ]);
+        
+    } catch (Exception $e) {
+        // エラーログの記録に失敗した場合は、通常のerror_logに記録
+        error_log("Failed to log error to database: " . $e->getMessage());
+    }
 }
 

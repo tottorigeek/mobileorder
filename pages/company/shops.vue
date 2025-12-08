@@ -22,6 +22,12 @@
           ユーザー管理
         </NuxtLink>
         <NuxtLink
+          to="/company/error-logs"
+          class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium whitespace-nowrap hover:bg-gray-100"
+        >
+          エラーログ
+        </NuxtLink>
+        <NuxtLink
           to="/admin/users/password"
           class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium whitespace-nowrap hover:bg-gray-100"
         >

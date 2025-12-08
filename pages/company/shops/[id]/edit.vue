@@ -21,6 +21,12 @@
         >
           ユーザー管理
         </NuxtLink>
+        <NuxtLink
+          to="/company/error-logs"
+          class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium whitespace-nowrap hover:bg-gray-100"
+        >
+          エラーログ
+        </NuxtLink>
         <button
           @click="handleLogout"
           class="px-4 py-2 bg-red-100 text-red-700 rounded-lg font-medium whitespace-nowrap hover:bg-red-200 ml-auto"
