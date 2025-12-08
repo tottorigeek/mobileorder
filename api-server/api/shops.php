@@ -28,8 +28,7 @@ switch ($method) {
         break;
     
     default:
-        http_response_code(405);
-        echo json_encode(['error' => 'Method not allowed']);
+        sendErrorResponse(405, 'Method not allowed');
         break;
 }
 
@@ -62,9 +61,7 @@ function getShops() {
         echo json_encode($result, JSON_UNESCAPED_UNICODE);
         
     } catch (PDOException $e) {
-        error_log("Error fetching shops: " . $e->getMessage());
-        http_response_code(500);
-        echo json_encode(['error' => 'Failed to fetch shops']);
+        handleDatabaseError($e, 'fetching shops');
     }
 }
 
@@ -84,9 +81,7 @@ function getShop($shopCode) {
         $shop = $stmt->fetch();
         
         if (!$shop) {
-            http_response_code(404);
-            echo json_encode(['error' => 'Shop not found']);
-            return;
+            sendNotFoundError('Shop');
         }
         
         echo json_encode([
@@ -101,9 +96,7 @@ function getShop($shopCode) {
         ], JSON_UNESCAPED_UNICODE);
         
     } catch (PDOException $e) {
-        error_log("Error fetching shop: " . $e->getMessage());
-        http_response_code(500);
-        echo json_encode(['error' => 'Failed to fetch shop']);
+        handleDatabaseError($e, 'fetching shop');
     }
 }
 

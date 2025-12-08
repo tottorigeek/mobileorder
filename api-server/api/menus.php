@@ -16,8 +16,7 @@ switch ($method) {
         break;
     
     default:
-        http_response_code(405);
-        echo json_encode(['error' => 'Method not allowed']);
+        sendErrorResponse(405, 'Method not allowed');
         break;
 }
 
@@ -31,9 +30,7 @@ function getMenus() {
         // 店舗IDの取得
         $shopId = getShopId();
         if (!$shopId) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Shop ID or shop code is required']);
-            return;
+            sendErrorResponse(400, 'Shop ID or shop code is required');
         }
         
         // カテゴリフィルター（オプション）
@@ -71,9 +68,7 @@ function getMenus() {
         echo json_encode($result, JSON_UNESCAPED_UNICODE);
         
     } catch (PDOException $e) {
-        error_log("Error fetching menus: " . $e->getMessage());
-        http_response_code(500);
-        echo json_encode(['error' => 'Failed to fetch menus']);
+        handleDatabaseError($e, 'fetching menus');
     }
 }
 

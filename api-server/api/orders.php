@@ -38,14 +38,12 @@ switch ($method) {
         if ($orderId) {
             updateOrderStatus($orderId);
         } else {
-            http_response_code(400);
-            echo json_encode(['error' => 'Order ID required']);
+            sendErrorResponse(400, 'Order ID required');
         }
         break;
     
     default:
-        http_response_code(405);
-        echo json_encode(['error' => 'Method not allowed']);
+        sendErrorResponse(405, 'Method not allowed');
         break;
 }
 
@@ -76,9 +74,7 @@ function getOrders() {
             $shopCode = $_GET['shop'] ?? null;
             
             if (!$shopCode) {
-                http_response_code(400);
-                echo json_encode(['error' => 'Shop code is required for unauthenticated requests']);
-                return;
+                sendErrorResponse(400, 'Shop code is required for unauthenticated requests');
             }
             
             // shop_codeからshop_idを取得
@@ -87,9 +83,7 @@ function getOrders() {
             $shop = $stmt->fetch();
             
             if (!$shop) {
-                http_response_code(404);
-                echo json_encode(['error' => 'Shop not found or inactive']);
-                return;
+                sendNotFoundError('Shop');
             }
             
             $shopId = $shop['id'];
@@ -152,9 +146,7 @@ function getOrders() {
         echo json_encode($result, JSON_UNESCAPED_UNICODE);
         
     } catch (PDOException $e) {
-        error_log("Error fetching orders: " . $e->getMessage());
-        http_response_code(500);
-        echo json_encode(['error' => 'Failed to fetch orders']);
+        handleDatabaseError($e, 'fetching orders');
     }
 }
 
@@ -207,9 +199,7 @@ function getOrder($orderId) {
         $order = $stmt->fetch();
         
         if (!$order) {
-            http_response_code(404);
-            echo json_encode(['error' => 'Order not found or you do not have permission to view this order']);
-            return;
+            sendNotFoundError('Order');
         }
         
         $items = json_decode('[' . $order['items_json'] . ']', true) ?: [];
@@ -228,9 +218,7 @@ function getOrder($orderId) {
         echo json_encode($result, JSON_UNESCAPED_UNICODE);
         
     } catch (PDOException $e) {
-        error_log("Error fetching order: " . $e->getMessage());
-        http_response_code(500);
-        echo json_encode(['error' => 'Failed to fetch order']);
+        handleDatabaseError($e, 'fetching order');
     }
 }
 
@@ -246,9 +234,10 @@ function createOrder() {
         $input = json_decode(file_get_contents('php://input'), true);
         
         if (!$input || !isset($input['tableNumber']) || !isset($input['items'])) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Invalid request data']);
-            return;
+            sendValidationError([
+                'tableNumber' => 'Table number is required',
+                'items' => 'Items are required'
+            ]);
         }
         
         // 店舗IDの取得
@@ -270,9 +259,7 @@ function createOrder() {
             $shopCode = $input['shopCode'] ?? $_GET['shop'] ?? null;
             
             if (!$shopCode) {
-                http_response_code(400);
-                echo json_encode(['error' => 'Shop code is required for unauthenticated requests']);
-                return;
+                sendErrorResponse(400, 'Shop code is required for unauthenticated requests');
             }
             
             // shop_codeからshop_idを取得
@@ -281,9 +268,7 @@ function createOrder() {
             $shop = $stmt->fetch();
             
             if (!$shop) {
-                http_response_code(404);
-                echo json_encode(['error' => 'Shop not found or inactive']);
-                return;
+                sendNotFoundError('Shop');
             }
             
             $shopId = $shop['id'];
@@ -334,9 +319,7 @@ function createOrder() {
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
         }
-        error_log("Error creating order: " . $e->getMessage());
-        http_response_code(500);
-        echo json_encode(['error' => 'Failed to create order']);
+        handleDatabaseError($e, 'creating order');
     }
 }
 
@@ -355,16 +338,12 @@ function updateOrderStatus($orderId) {
         $input = json_decode(file_get_contents('php://input'), true);
         
         if (!$input || !isset($input['status'])) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Status is required']);
-            return;
+            sendValidationError(['status' => 'Status is required']);
         }
         
         $allowedStatuses = ['pending', 'accepted', 'cooking', 'completed', 'cancelled'];
         if (!in_array($input['status'], $allowedStatuses)) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Invalid status']);
-            return;
+            sendValidationError(['status' => 'Invalid status. Allowed values: ' . implode(', ', $allowedStatuses)]);
         }
         
         // 同じ店舗の注文のみ更新可能
@@ -377,18 +356,14 @@ function updateOrderStatus($orderId) {
         ]);
         
         if ($stmt->rowCount() === 0) {
-            http_response_code(404);
-            echo json_encode(['error' => 'Order not found or you do not have permission to update this order']);
-            return;
+            sendNotFoundError('Order');
         }
         
         // 更新した注文を返す
         getOrder($orderId);
         
     } catch (PDOException $e) {
-        error_log("Error updating order status: " . $e->getMessage());
-        http_response_code(500);
-        echo json_encode(['error' => 'Failed to update order status']);
+        handleDatabaseError($e, 'updating order status');
     }
 }
 

@@ -11,9 +11,7 @@ setJsonHeader();
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method !== 'GET') {
-    http_response_code(405);
-    echo json_encode(['error' => 'Method not allowed']);
-    exit;
+    sendErrorResponse(405, 'Method not allowed');
 }
 
 try {
@@ -83,8 +81,6 @@ try {
     echo json_encode($result, JSON_UNESCAPED_UNICODE);
     
 } catch (PDOException $e) {
-    error_log("Error fetching user shops: " . $e->getMessage());
-    http_response_code(500);
-    echo json_encode(['error' => 'Failed to fetch shops']);
+    handleDatabaseError($e, 'fetching user shops');
 }
 

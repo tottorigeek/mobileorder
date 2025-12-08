@@ -48,8 +48,7 @@ switch ($endpoint) {
         break;
     
     default:
-        http_response_code(404);
-        echo json_encode(['error' => 'Endpoint not found']);
+        sendErrorResponse(404, 'Endpoint not found');
         break;
 }
 

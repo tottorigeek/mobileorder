@@ -355,3 +355,128 @@ function getShopId() {
     return null;
 }
 
+/**
+ * 統一的なエラーレスポンスを送信
+ * 
+ * @param int $statusCode HTTPステータスコード
+ * @param string $message エラーメッセージ
+ * @param array $details 追加の詳細情報（オプション）
+ * @param Exception|null $exception 例外オブジェクト（ログ用）
+ */
+function sendErrorResponse($statusCode, $message, $details = [], $exception = null) {
+    http_response_code($statusCode);
+    
+    $response = [
+        'error' => $message,
+        'status' => $statusCode
+    ];
+    
+    // デバッグモードの場合のみ詳細情報を追加
+    if (DEBUG_MODE && !empty($details)) {
+        $response['details'] = $details;
+    }
+    
+    // 例外がある場合はログに記録
+    if ($exception !== null) {
+        $logMessage = sprintf(
+            "[%s] %s: %s in %s:%d",
+            date('Y-m-d H:i:s'),
+            get_class($exception),
+            $exception->getMessage(),
+            $exception->getFile(),
+            $exception->getLine()
+        );
+        error_log($logMessage);
+        
+        // デバッグモードの場合のみスタックトレースを追加
+        if (DEBUG_MODE) {
+            $response['debug'] = [
+                'message' => $exception->getMessage(),
+                'file' => $exception->getFile(),
+                'line' => $exception->getLine()
+            ];
+        }
+    }
+    
+    echo json_encode($response, JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+/**
+ * バリデーションエラーレスポンスを送信
+ * 
+ * @param array $errors バリデーションエラーの配列
+ */
+function sendValidationError($errors) {
+    sendErrorResponse(400, 'Validation failed', ['validation_errors' => $errors]);
+}
+
+/**
+ * 認証エラーレスポンスを送信
+ * 
+ * @param string $message エラーメッセージ（デフォルト: 'Unauthorized'）
+ */
+function sendUnauthorizedError($message = 'Unauthorized') {
+    sendErrorResponse(401, $message);
+}
+
+/**
+ * 権限エラーレスポンスを送信
+ * 
+ * @param string $message エラーメッセージ（デフォルト: 'Forbidden'）
+ */
+function sendForbiddenError($message = 'Forbidden') {
+    sendErrorResponse(403, $message);
+}
+
+/**
+ * リソース未検出エラーレスポンスを送信
+ * 
+ * @param string $resource リソース名（例: 'User', 'Order'）
+ */
+function sendNotFoundError($resource = 'Resource') {
+    sendErrorResponse(404, $resource . ' not found');
+}
+
+/**
+ * 競合エラーレスポンスを送信
+ * 
+ * @param string $message エラーメッセージ
+ */
+function sendConflictError($message) {
+    sendErrorResponse(409, $message);
+}
+
+/**
+ * サーバーエラーレスポンスを送信
+ * 
+ * @param string $message エラーメッセージ（デフォルト: 'Internal server error'）
+ * @param Exception|null $exception 例外オブジェクト
+ */
+function sendServerError($message = 'Internal server error', $exception = null) {
+    sendErrorResponse(500, $message, [], $exception);
+}
+
+/**
+ * データベースエラーを処理
+ * 
+ * @param PDOException $e PDO例外オブジェクト
+ * @param string $operation 操作名（例: 'fetching orders', 'creating user'）
+ */
+function handleDatabaseError($e, $operation) {
+    $logMessage = sprintf(
+        "[%s] Database error during %s: %s",
+        date('Y-m-d H:i:s'),
+        $operation,
+        $e->getMessage()
+    );
+    error_log($logMessage);
+    
+    // 本番環境では詳細なエラーメッセージを隠す
+    $userMessage = DEBUG_MODE 
+        ? "Database error during {$operation}: " . $e->getMessage()
+        : "Failed to {$operation}";
+    
+    sendServerError($userMessage, $e);
+}
+

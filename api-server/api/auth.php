@@ -20,8 +20,7 @@ switch ($path) {
         if ($method === 'POST') {
             login();
         } else {
-            http_response_code(405);
-            echo json_encode(['error' => 'Method not allowed']);
+            sendErrorResponse(405, 'Method not allowed');
         }
         break;
     
@@ -29,8 +28,7 @@ switch ($path) {
         if ($method === 'POST') {
             logout();
         } else {
-            http_response_code(405);
-            echo json_encode(['error' => 'Method not allowed']);
+            sendErrorResponse(405, 'Method not allowed');
         }
         break;
     
@@ -38,14 +36,12 @@ switch ($path) {
         if ($method === 'GET') {
             getCurrentUser();
         } else {
-            http_response_code(405);
-            echo json_encode(['error' => 'Method not allowed']);
+            sendErrorResponse(405, 'Method not allowed');
         }
         break;
     
     default:
-        http_response_code(404);
-        echo json_encode(['error' => 'Endpoint not found']);
+        sendErrorResponse(404, 'Endpoint not found');
         break;
 }
 
@@ -59,9 +55,10 @@ function login() {
         $input = json_decode(file_get_contents('php://input'), true);
         
         if (!$input || !isset($input['username']) || !isset($input['password'])) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Username and password are required']);
-            return;
+            sendValidationError([
+                'username' => 'Username is required',
+                'password' => 'Password is required'
+            ]);
         }
         
         // まずユーザーの存在確認（店舗情報も含む）
@@ -74,46 +71,14 @@ function login() {
         $checkStmt->execute([':username' => $input['username']]);
         $userCheck = $checkStmt->fetch();
         
-        // ユーザーが存在しない場合
-        if (!$userCheck) {
-            http_response_code(401);
-            echo json_encode([
-                'error' => 'Invalid credentials',
-                'debug' => 'User not found'
-            ]);
-            return;
-        }
-        
-        // ユーザーが無効化されている場合
-        if (!$userCheck['is_active']) {
-            http_response_code(401);
-            echo json_encode([
-                'error' => 'Invalid credentials',
-                'debug' => 'User is inactive'
-            ]);
-            return;
-        }
-        
-        // 店舗が存在しない、または無効化されている場合
-        if (!$userCheck['shop_id'] || !$userCheck['shop_active']) {
-            http_response_code(401);
-            echo json_encode([
-                'error' => 'Invalid credentials',
-                'debug' => 'Shop not found or inactive',
-                'shop_id' => $userCheck['shop_id'],
-                'shop_active' => $userCheck['shop_active']
-            ]);
-            return;
-        }
-        
-        // パスワード検証
-        if (!password_verify($input['password'], $userCheck['password_hash'])) {
-            http_response_code(401);
-            echo json_encode([
-                'error' => 'Invalid credentials',
-                'debug' => 'Password mismatch'
-            ]);
-            return;
+        // ユーザーが存在しない場合、無効化されている場合、店舗が無効化されている場合、パスワードが一致しない場合
+        // セキュリティ上の理由で、すべて同じエラーメッセージを返す
+        if (!$userCheck || 
+            !$userCheck['is_active'] || 
+            !$userCheck['shop_id'] || 
+            !$userCheck['shop_active'] || 
+            !password_verify($input['password'], $userCheck['password_hash'])) {
+            sendUnauthorizedError('Invalid credentials');
         }
         
         // ログイン成功 - ユーザー情報を取得
@@ -165,9 +130,7 @@ function login() {
         ], JSON_UNESCAPED_UNICODE);
         
     } catch (PDOException $e) {
-        error_log("Login error: " . $e->getMessage());
-        http_response_code(500);
-        echo json_encode(['error' => 'Login failed']);
+        handleDatabaseError($e, 'login');
     }
 }
 
@@ -199,9 +162,7 @@ function getCurrentUser() {
         $user = $stmt->fetch();
         
         if (!$user) {
-            http_response_code(404);
-            echo json_encode(['error' => 'User not found']);
-            return;
+            sendNotFoundError('User');
         }
         
         echo json_encode([
@@ -218,9 +179,7 @@ function getCurrentUser() {
         ], JSON_UNESCAPED_UNICODE);
         
     } catch (PDOException $e) {
-        error_log("Get user error: " . $e->getMessage());
-        http_response_code(500);
-        echo json_encode(['error' => 'Failed to get user']);
+        handleDatabaseError($e, 'getting user');
     }
 }
 

@@ -40,8 +40,7 @@ switch ($method) {
         } elseif ($userId) {
             updateUser($userId);
         } else {
-            http_response_code(400);
-            echo json_encode(['error' => 'User ID required']);
+            sendErrorResponse(400, 'User ID required');
         }
         break;
     
@@ -49,14 +48,12 @@ switch ($method) {
         if ($userId) {
             deleteUser($userId);
         } else {
-            http_response_code(400);
-            echo json_encode(['error' => 'User ID required']);
+            sendErrorResponse(400, 'User ID required');
         }
         break;
     
     default:
-        http_response_code(405);
-        echo json_encode(['error' => 'Method not allowed']);
+        sendErrorResponse(405, 'Method not allowed');
         break;
 }
 
@@ -98,9 +95,7 @@ function getUsers() {
         echo json_encode($result, JSON_UNESCAPED_UNICODE);
         
     } catch (PDOException $e) {
-        error_log("Error fetching users: " . $e->getMessage());
-        http_response_code(500);
-        echo json_encode(['error' => 'Failed to fetch users']);
+        handleDatabaseError($e, 'fetching users');
     }
 }
 
@@ -132,9 +127,7 @@ function getUser($userId) {
         $user = $stmt->fetch();
         
         if (!$user) {
-            http_response_code(404);
-            echo json_encode(['error' => 'User not found']);
-            return;
+            sendNotFoundError('User');
         }
         
         echo json_encode([
@@ -151,9 +144,7 @@ function getUser($userId) {
         ], JSON_UNESCAPED_UNICODE);
         
     } catch (PDOException $e) {
-        error_log("Error fetching user: " . $e->getMessage());
-        http_response_code(500);
-        echo json_encode(['error' => 'Failed to fetch user']);
+        handleDatabaseError($e, 'fetching user');
     }
 }
 
@@ -171,18 +162,18 @@ function createUser() {
         $input = json_decode(file_get_contents('php://input'), true);
         
         if (!$input || !isset($input['username']) || !isset($input['password']) || !isset($input['name'])) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Username, password, and name are required']);
-            return;
+            sendValidationError([
+                'username' => 'Username is required',
+                'password' => 'Password is required',
+                'name' => 'Name is required'
+            ]);
         }
         
         // ユーザー名の重複チェック
         $checkStmt = $pdo->prepare("SELECT id FROM users WHERE username = :username");
         $checkStmt->execute([':username' => $input['username']]);
         if ($checkStmt->fetch()) {
-            http_response_code(409);
-            echo json_encode(['error' => 'Username already exists']);
-            return;
+            sendConflictError('Username already exists');
         }
         
         // パスワードハッシュ化
@@ -213,9 +204,7 @@ function createUser() {
         getUser($newUserId);
         
     } catch (PDOException $e) {
-        error_log("Error creating user: " . $e->getMessage());
-        http_response_code(500);
-        echo json_encode(['error' => 'Failed to create user']);
+        handleDatabaseError($e, 'creating user');
     }
 }
 
@@ -270,9 +259,7 @@ function updateUser($userId) {
         }
         
         if (empty($updates)) {
-            http_response_code(400);
-            echo json_encode(['error' => 'No fields to update']);
-            return;
+            sendValidationError(['fields' => 'No fields to update']);
         }
         
         $updates[] = "updated_at = NOW()";
@@ -293,9 +280,7 @@ function updateUser($userId) {
         getUser($userId);
         
     } catch (PDOException $e) {
-        error_log("Error updating user: " . $e->getMessage());
-        http_response_code(500);
-        echo json_encode(['error' => 'Failed to update user']);
+        handleDatabaseError($e, 'updating user');
     }
 }
 
@@ -318,9 +303,10 @@ function changePassword($userId) {
         $input = json_decode(file_get_contents('php://input'), true);
         
         if (!$input || !isset($input['currentPassword']) || !isset($input['newPassword'])) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Current password and new password are required']);
-            return;
+            sendValidationError([
+                'currentPassword' => 'Current password is required',
+                'newPassword' => 'New password is required'
+            ]);
         }
         
         // 自分のパスワード変更の場合は現在のパスワードを確認
@@ -330,9 +316,7 @@ function changePassword($userId) {
             $user = $userStmt->fetch();
             
             if (!$user || !password_verify($input['currentPassword'], $user['password_hash'])) {
-                http_response_code(401);
-                echo json_encode(['error' => 'Current password is incorrect']);
-                return;
+                sendUnauthorizedError('Current password is incorrect');
             }
         }
         
@@ -358,9 +342,7 @@ function changePassword($userId) {
         echo json_encode(['success' => true, 'message' => 'Password changed successfully']);
         
     } catch (PDOException $e) {
-        error_log("Error changing password: " . $e->getMessage());
-        http_response_code(500);
-        echo json_encode(['error' => 'Failed to change password']);
+        handleDatabaseError($e, 'changing password');
     }
 }
 
@@ -375,9 +357,7 @@ function deleteUser($userId) {
         
         // 自分自身は削除できない
         if ($userId == $auth['user_id']) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Cannot delete yourself']);
-            return;
+            sendErrorResponse(400, 'Cannot delete yourself');
         }
         
         $pdo = getDbConnection();
@@ -390,17 +370,13 @@ function deleteUser($userId) {
         ]);
         
         if ($stmt->rowCount() === 0) {
-            http_response_code(404);
-            echo json_encode(['error' => 'User not found']);
-            return;
+            sendNotFoundError('User');
         }
         
         echo json_encode(['success' => true, 'message' => 'User deleted successfully']);
         
     } catch (PDOException $e) {
-        error_log("Error deleting user: " . $e->getMessage());
-        http_response_code(500);
-        echo json_encode(['error' => 'Failed to delete user']);
+        handleDatabaseError($e, 'deleting user');
     }
 }
 
