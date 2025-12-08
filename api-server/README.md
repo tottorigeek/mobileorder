@@ -27,7 +27,7 @@ radish/
 │   ├── index.php      # APIルーティング
 │   ├── menus.php      # メニューAPI
 │   └── orders.php     # 注文API
-└── database.sql       # データベーススキーマ
+└── (SQLファイルは database/ フォルダに移動しました)
 ```
 
 ## セットアップ手順
@@ -48,7 +48,7 @@ FTPまたはファイルマネージャーを使用して、`api-server`ディ�
 1. サーバーパネルから **phpMyAdmin** にアクセス
 2. 作成したデータベースを選択
 3. **インポート**タブをクリック
-4. `database.sql`ファイルを選択してインポート
+4. `database/schema-multi-shop.sql`ファイルを選択してインポート
 
 ### 4. 設定ファイルの編集
 

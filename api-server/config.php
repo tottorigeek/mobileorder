@@ -56,3 +56,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
+// セッション開始
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// 認証チェック関数
+function checkAuth() {
+    if (!isset($_SESSION['user_id']) || !isset($_SESSION['shop_id'])) {
+        http_response_code(401);
+        echo json_encode(['error' => 'Unauthorized']);
+        exit;
+    }
+    return [
+        'user_id' => $_SESSION['user_id'],
+        'shop_id' => $_SESSION['shop_id'],
+        'role' => $_SESSION['role'] ?? 'staff'
+    ];
+}
+
+// 権限チェック関数
+function checkPermission($requiredRole) {
+    $auth = checkAuth();
+    $roleHierarchy = ['staff' => 1, 'manager' => 2, 'owner' => 3];
+    
+    $userLevel = $roleHierarchy[$auth['role']] ?? 0;
+    $requiredLevel = $roleHierarchy[$requiredRole] ?? 0;
+    
+    if ($userLevel < $requiredLevel) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Forbidden: Insufficient permissions']);
+        exit;
+    }
+    
+    return $auth;
+}
+
+// 店舗IDの取得（リクエストから）
+function getShopId() {
+    // セッションから取得（認証済みの場合）
+    if (isset($_SESSION['shop_id'])) {
+        return $_SESSION['shop_id'];
+    }
+    
+    // クエリパラメータから取得（顧客側）
+    if (isset($_GET['shop']) || isset($_POST['shop'])) {
+        $shopCode = $_GET['shop'] ?? $_POST['shop'];
+        $pdo = getDbConnection();
+        $stmt = $pdo->prepare("SELECT id FROM shops WHERE code = :code AND is_active = 1");
+        $stmt->execute([':code' => $shopCode]);
+        $shop = $stmt->fetch();
+        return $shop ? $shop['id'] : null;
+    }
+    
+    return null;
+}
+

@@ -74,7 +74,7 @@ http://mameq.xsrv.jp/radish/api/orders
 
 **解決方法:**
 1. phpMyAdminでデータベースを選択
-2. `database.sql`ファイルをインポート
+2. `database/schema-multi-shop.sql`ファイルをインポート
 3. テーブルが作成されたか確認
 
 ### エラー: "Failed to fetch menus"

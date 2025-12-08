@@ -17,7 +17,7 @@
    ```
 
 2. **新しいスキーマの適用**
-   - `api-server/database-multi-shop.sql`を実行
+   - `database/schema-multi-shop.sql`を実行
    - 新しいテーブル（shops, users）が作成される
 
 3. **既存データの移行**

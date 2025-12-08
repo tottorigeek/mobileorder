@@ -91,7 +91,7 @@
 │   ├── .htaccess           # URLルーティングとCORS設定
 │   ├── config.php          # データベース設定
 │   ├── index.php           # エントリーポイント
-│   ├── database.sql        # データベーススキーマ
+│   ├── (SQLファイルは database/ フォルダに移動)
 │   └── api/
 │       ├── index.php       # APIルーティング
 │       ├── menus.php       # メニューAPI

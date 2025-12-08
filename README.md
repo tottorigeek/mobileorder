@@ -70,6 +70,12 @@ GitHub Pagesへのデプロイが可能です。
 ├── assets/          # 静的アセット（CSS、画像など）
 ├── components/      # Vueコンポーネント
 ├── composables/     # コンポーザブル関数
+├── database/        # データベーススキーマとマイグレーション
+│   ├── schema.sql              # 単一店舗対応スキーマ
+│   ├── schema-multi-shop.sql   # 複数店舗対応スキーマ（推奨）
+│   ├── migration-simple.sql    # 簡易マイグレーション
+│   ├── migration-add-shop-id.sql # 完全マイグレーション
+│   └── migration-add-email.sql  # emailカラム追加マイグレーション
 ├── layouts/         # レイアウトコンポーネント
 ├── pages/           # ページコンポーネント（自動ルーティング）
 ├── stores/          # Piniaストア
@@ -106,6 +112,7 @@ GitHub Pagesへのデプロイが可能です。
 - [セットアップ完了ガイド](./SETUP_COMPLETE.md)
 - [API接続設定](./API_SETUP.md)
 - [APIサーバー README](./api-server/README.md)
+- [データベース README](./database/README.md)
 
 ## ライセンス
 

@@ -14,10 +14,17 @@
         </NuxtLink>
 
         <NuxtLink
-          to="/shop-select?mode=staff"
+          to="/staff/login"
           class="block w-full p-6 bg-purple-600 text-white rounded-lg text-center text-xl font-semibold hover:bg-purple-700 transition-colors touch-target"
         >
           店舗スタッフ用
+        </NuxtLink>
+
+        <NuxtLink
+          to="/company/login"
+          class="block w-full p-6 bg-green-600 text-white rounded-lg text-center text-xl font-semibold hover:bg-green-700 transition-colors touch-target"
+        >
+          弊社向け管理ページ
         </NuxtLink>
       </div>
     </div>

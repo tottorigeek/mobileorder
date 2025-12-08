@@ -97,6 +97,7 @@ function login() {
                 'id' => (string)$user['id'],
                 'username' => $user['username'],
                 'name' => $user['name'],
+                'email' => $user['email'] ?? null,
                 'role' => $user['role'],
                 'shop' => [
                     'id' => (string)$user['shop_id'],
@@ -131,7 +132,8 @@ function getCurrentUser() {
         $pdo = getDbConnection();
         
         $stmt = $pdo->prepare("
-            SELECT u.*, s.code as shop_code, s.name as shop_name 
+            SELECT u.id, u.shop_id, u.username, u.name, u.email, u.role, u.is_active,
+                   s.code as shop_code, s.name as shop_name 
             FROM users u
             INNER JOIN shops s ON u.shop_id = s.id
             WHERE u.id = :user_id
@@ -149,6 +151,7 @@ function getCurrentUser() {
             'id' => (string)$user['id'],
             'username' => $user['username'],
             'name' => $user['name'],
+            'email' => $user['email'] ?? null,
             'role' => $user['role'],
             'shop' => [
                 'id' => (string)$user['shop_id'],

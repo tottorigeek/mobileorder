@@ -62,6 +62,8 @@ export const useAuthStore = defineStore('auth', {
         this.user = null
         this.isAuthenticated = false
         localStorage.removeItem('auth_user')
+        // ログアウト後はトップページにリダイレクト
+        await navigateTo('/')
       }
     },
 

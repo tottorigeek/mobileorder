@@ -58,7 +58,8 @@ const selectShop = (shop: Shop) => {
   shopStore.setCurrentShop(shop)
   
   if (mode === 'staff') {
-    router.push(`/staff/login?shop=${shop.code}`)
+    // スタッフの場合はログインページへ（ログイン後に店舗選択画面が表示される）
+    router.push('/staff/login')
   } else {
     router.push(`/customer?shop=${shop.code}`)
   }

@@ -1,6 +1,33 @@
 <template>
   <NuxtLayout name="default" title="ダッシュボード">
     <div class="space-y-6">
+      <!-- ナビゲーション -->
+      <div class="flex gap-3 overflow-x-auto pb-2">
+        <NuxtLink
+          to="/admin/dashboard"
+          class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium whitespace-nowrap"
+        >
+          ダッシュボード
+        </NuxtLink>
+        <NuxtLink
+          to="/admin/users"
+          class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium whitespace-nowrap hover:bg-gray-100"
+        >
+          スタッフ管理
+        </NuxtLink>
+        <NuxtLink
+          to="/staff/orders"
+          class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium whitespace-nowrap hover:bg-gray-100"
+        >
+          注文管理
+        </NuxtLink>
+        <button
+          @click="handleLogout"
+          class="px-4 py-2 bg-red-100 text-red-700 rounded-lg font-medium whitespace-nowrap hover:bg-red-200 ml-auto"
+        >
+          ログアウト
+        </button>
+      </div>
       <div class="bg-white p-6 rounded-lg shadow">
         <h2 class="text-2xl font-bold mb-4">今日の売上</h2>
         <p class="text-4xl font-bold text-blue-600">¥{{ todaySales.toLocaleString() }}</p>
@@ -55,7 +82,18 @@
 
 <script setup lang="ts">
 import { useOrderStore } from '~/stores/order'
+import { useAuthStore } from '~/stores/auth'
+import { useShopStore } from '~/stores/shop'
 import type { OrderStatus } from '~/types'
+
+const authStore = useAuthStore()
+const shopStore = useShopStore()
+
+const handleLogout = async () => {
+  if (confirm('ログアウトしますか？')) {
+    await authStore.logout()
+  }
+}
 
 const orderStore = useOrderStore()
 
@@ -126,6 +164,26 @@ const formatDate = (date: Date | string) => {
 }
 
 onMounted(async () => {
+  // 認証チェック
+  authStore.loadUserFromStorage()
+  if (!authStore.isAuthenticated) {
+    await navigateTo('/staff/login')
+    return
+  }
+  
+  // 店舗情報の読み込み
+  shopStore.loadShopFromStorage()
+  
+  // 店舗が選択されていない場合は店舗選択画面にリダイレクト
+  if (!shopStore.currentShop) {
+    if (authStore.user?.shop) {
+      shopStore.setCurrentShop(authStore.user.shop)
+    } else {
+      await navigateTo('/staff/shop-select')
+      return
+    }
+  }
+  
   await orderStore.fetchOrders()
 })
 </script>

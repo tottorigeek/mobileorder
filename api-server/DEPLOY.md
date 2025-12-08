@@ -10,7 +10,7 @@
 - `api/index.php`
 - `api/menus.php`
 - `api/orders.php`
-- `database.sql`
+- `database/schema-multi-shop.sql`（SQLファイルは`database/`フォルダに集約されています）
 
 ## 2. FTP接続
 
@@ -49,7 +49,7 @@ public_html/
 1. サーバーパネルから **phpMyAdmin** を開く
 2. 作成したデータベースを選択
 3. **インポート**タブをクリック
-4. `database.sql`ファイルを選択
+4. `database/schema-multi-shop.sql`ファイルを選択
 5. **実行**をクリック
 
 ## 6. 設定ファイルの編集

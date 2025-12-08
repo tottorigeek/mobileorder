@@ -161,8 +161,15 @@ onMounted(async () => {
   
   // 店舗情報の読み込み
   shopStore.loadShopFromStorage()
-  if (authStore.user?.shop) {
-    shopStore.setCurrentShop(authStore.user.shop)
+  
+  // 店舗が選択されていない場合は店舗選択画面にリダイレクト
+  if (!shopStore.currentShop) {
+    if (authStore.user?.shop) {
+      shopStore.setCurrentShop(authStore.user.shop)
+    } else {
+      await navigateTo('/staff/shop-select')
+      return
+    }
   }
   
   await orderStore.fetchOrders()

@@ -40,7 +40,7 @@ define('DB_PASS', 'your_database_password'); // ← 実際のパスワードに�
    - `orders`
    - `order_items`
 
-テーブルが存在しない場合は、`database.sql`をインポートしてください。
+テーブルが存在しない場合は、`database/schema-multi-shop.sql`をインポートしてください。
 
 ### 4. エックスサーバーのデータベースホスト名確認
 
@@ -113,14 +113,14 @@ try {
 **解決方法:**
 1. サーバーパネル → **MySQL設定** → **MySQLデータベース作成**
 2. データベース名、ユーザー名、パスワードを設定
-3. `database.sql`をインポート
+3. `database/schema-multi-shop.sql`をインポート
 
 ### 問題3: テーブルが存在しない
 
 **解決方法:**
 1. phpMyAdminでデータベースを選択
 2. **インポート**タブを開く
-3. `database.sql`ファイルを選択してインポート
+3. `database/schema-multi-shop.sql`ファイルを選択してインポート
 
 ### 問題4: ホスト名が間違っている
 

@@ -17,8 +17,12 @@ export interface User {
   shopId: string
   username: string
   name: string
+  email?: string
   role: UserRole
   isActive: boolean
+  lastLoginAt?: string
+  createdAt: string
+  updatedAt: string
   shop?: Shop
 }
 
