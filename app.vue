@@ -4,7 +4,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 // アプリケーションのルートコンポーネント
 // 強制的にlightテーマを適用
 
