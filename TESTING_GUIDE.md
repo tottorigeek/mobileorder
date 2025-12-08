@@ -7,7 +7,7 @@
 ## 前提条件
 
 1. APIサーバーが起動していること
-   - URL: `http://mameq.xsrv.jp/radish/api`
+   - URL: `https://api.towndx.com/radish/v1`
 2. データベースにテスト用データが存在すること
    - テストユーザー: `seki` / `password123`
    - テスト店舗: `shop001`
@@ -20,7 +20,7 @@
 #### 1. ログインしてトークンを取得
 
 ```bash
-curl -X POST http://mameq.xsrv.jp/radish/api/auth/login \
+curl -X POST https://api.towndx.com/radish/v1/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username":"seki","password":"password123"}' \
   | jq '.token'
@@ -32,7 +32,7 @@ curl -X POST http://mameq.xsrv.jp/radish/api/auth/login \
 
 ```bash
 TOKEN="<上記で取得したトークン>"
-curl -X GET http://mameq.xsrv.jp/radish/api/auth/me \
+curl -X GET https://api.towndx.com/radish/v1/api/auth/me \
   -H "Authorization: Bearer $TOKEN" \
   | jq '.'
 ```
@@ -42,7 +42,7 @@ curl -X GET http://mameq.xsrv.jp/radish/api/auth/me \
 #### 3. 注文作成（認証済みユーザー）
 
 ```bash
-curl -X POST http://mameq.xsrv.jp/radish/api/orders \
+curl -X POST https://api.towndx.com/radish/v1/api/orders \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
   -d '{
@@ -65,7 +65,7 @@ curl -X POST http://mameq.xsrv.jp/radish/api/orders \
 #### 4. 注文作成（一般顧客 - QRコード経由）
 
 ```bash
-curl -X POST http://mameq.xsrv.jp/radish/api/orders \
+curl -X POST https://api.towndx.com/radish/v1/api/orders \
   -H "Content-Type: application/json" \
   -d '{
     "shopCode": "shop001",
@@ -88,7 +88,7 @@ curl -X POST http://mameq.xsrv.jp/radish/api/orders \
 #### 5. 注文一覧取得（認証済みユーザー）
 
 ```bash
-curl -X GET http://mameq.xsrv.jp/radish/api/orders \
+curl -X GET https://api.towndx.com/radish/v1/api/orders \
   -H "Authorization: Bearer $TOKEN" \
   | jq '.'
 ```
@@ -98,7 +98,7 @@ curl -X GET http://mameq.xsrv.jp/radish/api/orders \
 #### 6. 注文一覧取得（一般顧客）
 
 ```bash
-curl -X GET "http://mameq.xsrv.jp/radish/api/orders?shop=shop001&tableNumber=6" \
+curl -X GET "https://api.towndx.com/radish/v1/api/orders?shop=shop001&tableNumber=6" \
   | jq '.'
 ```
 
@@ -108,7 +108,7 @@ curl -X GET "http://mameq.xsrv.jp/radish/api/orders?shop=shop001&tableNumber=6" 
 
 ```bash
 ORDER_ID="<作成した注文のID>"
-curl -X PUT http://mameq.xsrv.jp/radish/api/orders/$ORDER_ID \
+curl -X PUT https://api.towndx.com/radish/v1/api/orders/$ORDER_ID \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
   -d '{"status": "accepted"}' \
@@ -121,14 +121,14 @@ curl -X PUT http://mameq.xsrv.jp/radish/api/orders/$ORDER_ID \
 
 ```bash
 # 無効なトークンでのアクセス
-curl -X GET http://mameq.xsrv.jp/radish/api/auth/me \
+curl -X GET https://api.towndx.com/radish/v1/api/auth/me \
   -H "Authorization: Bearer invalid_token" \
   -w "\nHTTP_STATUS:%{http_code}"
 
 # 期待結果: 401 Unauthorized
 
 # 認証なしでの注文ステータス更新
-curl -X PUT http://mameq.xsrv.jp/radish/api/orders/1 \
+curl -X PUT https://api.towndx.com/radish/v1/api/orders/1 \
   -H "Content-Type: application/json" \
   -d '{"status": "accepted"}' \
   -w "\nHTTP_STATUS:%{http_code}"
@@ -213,7 +213,7 @@ chmod +x test-api.sh
 **解決方法:**
 ```bash
 # パスワードをリセット
-curl "http://mameq.xsrv.jp/radish/tools/fix-admin-password.php?username=seki"
+curl "https://api.towndx.com/radish/v1/tools/fix-admin-password.php?username=seki"
 ```
 
 ### 問題2: 401 Unauthorizedエラー
@@ -245,8 +245,8 @@ curl "http://mameq.xsrv.jp/radish/tools/fix-admin-password.php?username=seki"
 2. `.htaccess`の設定が正しいか
 
 **解決方法:**
-- `api-server/config.php`の`setJsonHeader()`関数を確認
-- `api-server/.htaccess`の設定を確認
+- `api-server/radish/v1/config.php`の`setJsonHeader()`関数を確認
+- `api-server/radish/v1/.htaccess`の設定を確認
 
 ## テスト結果の記録
 

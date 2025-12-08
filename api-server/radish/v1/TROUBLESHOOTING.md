@@ -14,7 +14,7 @@ APIサーバーにアクセスした際に以下のエラーが発生してい�
 
 ### 1. config.phpの設定確認
 
-エックスサーバーのFTPまたはファイルマネージャーで `config.php` を開き、以下の設定が正しいか確認してください：
+サーバーのFTPまたはファイルマネージャーで `radish/config.php` を開き、以下の設定が正しいか確認してください：
 
 ```php
 define('DB_HOST', 'localhost'); // 通常は 'localhost' のまま
@@ -23,9 +23,11 @@ define('DB_USER', 'your_database_user'); // ← 実際のユーザー名に変�
 define('DB_PASS', 'your_database_password'); // ← 実際のパスワードに変更
 ```
 
+**注意**: `config.php`は`radish/`直下に配置されています。`v1/`フォルダ内ではありません。
+
 ### 2. データベースの作成確認
 
-エックスサーバーのサーバーパネルで以下を確認：
+サーバーパネルで以下を確認：
 
 1. **MySQL設定** → **MySQLデータベース一覧** を開く
 2. データベースが作成されているか確認
@@ -42,9 +44,9 @@ define('DB_PASS', 'your_database_password'); // ← 実際のパスワードに�
 
 テーブルが存在しない場合は、`database/schema-multi-shop.sql`をインポートしてください。
 
-### 4. エックスサーバーのデータベースホスト名確認
+### 4. データベースホスト名確認
 
-エックスサーバーによっては、`localhost`ではなく、専用のホスト名が設定されている場合があります。
+サーバーによっては、`localhost`ではなく、専用のホスト名が設定されている場合があります。
 
 サーバーパネルの **MySQL設定** → **MySQLデータベース一覧** で、**ホスト名**を確認してください。
 
@@ -56,7 +58,7 @@ define('DB_PASS', 'your_database_password'); // ← 実際のパスワードに�
 
 ### 5. 接続テスト用のPHPファイル
 
-以下の内容で `test-db.php` を作成し、`radish`ディレクトリにアップロードして、ブラウザでアクセスしてください：
+以下の内容で `test-db.php` を作成し、`radish/tools/`ディレクトリにアップロードして、ブラウザでアクセスしてください：
 
 ```php
 <?php
@@ -98,7 +100,7 @@ try {
 ?>
 ```
 
-`http://mameq.xsrv.jp/radish/test-db.php` にアクセスして、接続状況を確認してください。
+`https://api.towndx.com/radish/v1/tools/test-db.php` にアクセスして、接続状況を確認してください。
 
 ## よくある問題と解決方法
 
@@ -134,19 +136,19 @@ try {
 
 1. **データベース接続テスト**
    ```
-   http://mameq.xsrv.jp/radish/test-db.php
+   https://api.towndx.com/radish/tools/test-db.php
    ```
    接続成功とテーブル一覧が表示されることを確認
 
 2. **メニューAPIテスト**
    ```
-   http://mameq.xsrv.jp/radish/api/menus
+   https://api.towndx.com/radish/v1/api/menus
    ```
    JSON形式でメニュー一覧が返ることを確認
 
 3. **注文APIテスト**
    ```
-   http://mameq.xsrv.jp/radish/api/orders
+   https://api.towndx.com/radish/v1/api/orders
    ```
    JSON形式で注文一覧（空の配列でもOK）が返ることを確認
 

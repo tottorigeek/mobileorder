@@ -1,12 +1,12 @@
 # API接続設定ガイド
 
-NuxtアプリケーションとエックスサーバーのPHP APIサーバーを接続するための設定ガイドです。
+NuxtアプリケーションとAPIサーバーを接続するための設定ガイドです。
 
 ## APIサーバーのURL
 
-エックスサーバーのAPIサーバー:
+APIサーバー:
 ```
-http://mameq.xsrv.jp/radish/api
+https://api.towndx.com/radish/v1
 ```
 
 ## 設定方法
@@ -22,7 +22,7 @@ cp .env.example .env
 `.env`ファイルを編集:
 
 ```bash
-NUXT_PUBLIC_API_BASE=http://mameq.xsrv.jp/radish/api
+NUXT_PUBLIC_API_BASE=https://api.towndx.com/radish/v1
 ```
 
 ### 方法2: nuxt.config.tsで直接設定
@@ -32,7 +32,7 @@ NUXT_PUBLIC_API_BASE=http://mameq.xsrv.jp/radish/api
 ```typescript
 runtimeConfig: {
   public: {
-    apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://mameq.xsrv.jp/radish/api'
+    apiBase: process.env.NUXT_PUBLIC_API_BASE || 'https://api.towndx.com/radish/v1'
   }
 }
 ```
@@ -54,9 +54,9 @@ runtimeConfig: {
 
 ## 動作確認
 
-1. エックスサーバーのAPIサーバーが正常に動作しているか確認:
+1. APIサーバーが正常に動作しているか確認:
    ```
-   http://mameq.xsrv.jp/radish/api/menus
+   https://api.towndx.com/radish/v1/api/menus
    ```
    ブラウザでアクセスしてJSONが返ることを確認
 
@@ -71,17 +71,19 @@ runtimeConfig: {
 
 ### CORSエラーが発生する場合
 
-エックスサーバーの`.htaccess`ファイルでCORS設定が正しく設定されているか確認してください。
+APIサーバーの`.htaccess`ファイルでCORS設定が正しく設定されているか確認してください。
+`api-server/radish/v1/config.php`の許可オリジンリストにフロントエンドのドメインが含まれているか確認してください。
 
 ### API接続エラーが発生する場合
 
-1. エックスサーバーのAPIサーバーが正常に動作しているか確認
+1. APIサーバーが正常に動作しているか確認
 2. `NUXT_PUBLIC_API_BASE`のURLが正しいか確認
 3. ブラウザの開発者ツールのネットワークタブでエラーを確認
+4. Mixed Contentエラーが発生していないか確認（HTTPSページからHTTP APIへのリクエストはブロックされます）
 
 ### データが取得できない場合
 
-1. データベースにデータが存在するか確認（phpMyAdminで確認）
+1. データベースにデータが存在するか確認
 2. APIサーバーのエラーログを確認
-3. `config.php`のデータベース接続情報が正しいか確認
+3. `api-server/radish/v1/config.php`のデータベース接続情報が正しいか確認
 

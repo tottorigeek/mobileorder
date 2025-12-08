@@ -48,7 +48,7 @@ http://localhost:3000
 
 1. ブラウザで直接APIにアクセス：
    ```
-   http://mameq.xsrv.jp/radish/api/menus
+   https://api.towndx.com/radish/v1/api/menus
    ```
 2. JSONが返ることを確認
 3. ブラウザの開発者ツールでエラーを確認

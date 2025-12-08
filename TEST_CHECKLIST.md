@@ -119,8 +119,8 @@ http://localhost:3000
 2. **Network**タブを開く
 3. ページをリロード
 4. 以下のリクエストが成功しているか確認：
-   - `GET http://mameq.xsrv.jp/radish/api/menus` → ステータス200、6件のデータ
-   - `GET http://mameq.xsrv.jp/radish/api/orders` → ステータス200、空の配列または注文データ
+   - `GET https://api.towndx.com/radish/v1/api/menus` → ステータス200、6件のデータ
+   - `GET https://api.towndx.com/radish/v1/api/orders` → ステータス200、空の配列または注文データ
 
 ### Consoleタブで確認
 
@@ -137,7 +137,7 @@ http://localhost:3000
 3. **Network**タブで`/api/menus`へのリクエストを確認
 4. APIサーバーが正常に動作しているか確認：
    ```
-   http://mameq.xsrv.jp/radish/api/menus
+   https://api.towndx.com/radish/v1/api/menus
    ```
 
 ### 注文が作成できない

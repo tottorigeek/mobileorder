@@ -2,37 +2,49 @@
 
 ## 1. ファイルの準備
 
-`api-server`ディレクトリ内の以下のファイルを準備してください：
+`api-server/radish`ディレクトリ内の以下のファイルを準備してください：
 
-- `.htaccess`
-- `config.php`
-- `index.php`（オプション）
-- `api/index.php`
-- `api/menus.php`
-- `api/orders.php`
+- `radish/config.php` - データベース設定（**radish直下**）
+- `radish/index.php` - エントリーポイント（オプション）
+- `radish/v1/index.php` - APIルーティング
+- `radish/v1/auth.php` - 認証API
+- `radish/v1/menus.php` - メニューAPI
+- `radish/v1/orders.php` - 注文API
+- `radish/v1/shops.php` - 店舗API
+- `radish/v1/users.php` - ユーザーAPI
+- その他のAPIファイル（`radish/v1/`内）
+- `radish/tools/` - ユーティリティツール
 - `database/schema-multi-shop.sql`（SQLファイルは`database/`フォルダに集約されています）
 
 ## 2. FTP接続
 
-1. エックスサーバーのサーバーパネルからFTP情報を取得
+1. サーバーのFTP情報を取得
 2. FTPクライアント（FileZillaなど）で接続
-3. `/home/your_account/public_html/radish/` ディレクトリに移動
+3. `/radish/` ディレクトリに移動
 
 ## 3. ファイルのアップロード
 
 以下のディレクトリ構造でアップロード：
 
 ```
-public_html/
-  radish/
-    .htaccess
-    config.php
-    index.php
-    api/
-      index.php
-      menus.php
-      orders.php
+radish/
+  config.php          # ← radish直下に配置
+  index.php
+  v1/
+    index.php         # APIルーティング
+    auth.php
+    menus.php
+    orders.php
+    shops.php
+    users.php
+    ...
+  tools/
+    test-db.php
+    cors-test.php
+    ...
 ```
+
+**重要**: `config.php`は`radish/`直下に配置してください。`v1/`フォルダ内のAPIファイルは`require_once __DIR__ . '/../config.php';`で親ディレクトリの`config.php`を読み込みます。
 
 ## 4. データベースの作成
 
@@ -54,7 +66,7 @@ public_html/
 
 ## 6. 設定ファイルの編集
 
-FTPまたはファイルマネージャーで`config.php`を編集：
+FTPまたはファイルマネージャーで`radish/config.php`を編集：
 
 ```php
 define('DB_NAME', 'mobileorder_db');      // 作成したデータベース名
@@ -62,12 +74,14 @@ define('DB_USER', 'mobileorder_user');    // 作成したユーザー名
 define('DB_PASS', 'your_password');        // 作成したパスワード
 ```
 
+**注意**: `config.php`は`radish/`直下に配置してください。`v1/`フォルダ内ではありません。
+
 ## 7. 動作確認
 
 ブラウザで以下にアクセス：
 
-- `http://mameq.xsrv.jp/radish/` - トップページ（設定確認）
-- `http://mameq.xsrv.jp/radish/api/menus` - メニューAPI（JSONが返ることを確認）
+- `https://api.towndx.com/radish/v1/` - トップページ（設定確認）
+- `https://api.towndx.com/radish/v1/api/menus` - メニューAPI（JSONが返ることを確認）
 
 ## 8. Nuxtアプリの設定
 
@@ -76,7 +90,7 @@ define('DB_PASS', 'your_password');        // 作成したパスワード
 ```typescript
 runtimeConfig: {
   public: {
-    apiBase: 'http://mameq.xsrv.jp/radish/api'
+    apiBase: 'https://api.towndx.com/radish/v1'
   }
 }
 ```
@@ -84,7 +98,7 @@ runtimeConfig: {
 または、環境変数で設定：
 
 ```bash
-NUXT_PUBLIC_API_BASE=http://mameq.xsrv.jp/radish/api
+NUXT_PUBLIC_API_BASE=https://api.towndx.com/radish/v1
 ```
 
 ## トラブルシューティング
