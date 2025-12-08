@@ -23,6 +23,34 @@
             </h1>
           </div>
           <div class="flex items-center gap-4">
+            <!-- デバッグ用：店舗名とテーブル番号表示（/customerページのみ） -->
+            <div v-if="isCustomerPage" class="flex items-center gap-3 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg">
+              <div v-if="shopStore.currentShop" class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+                <span class="text-sm font-medium text-blue-700">{{ shopStore.currentShop.name }}</span>
+              </div>
+              <div v-else class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+                <span class="text-sm font-medium text-orange-700">店舗未設定</span>
+              </div>
+              <div v-if="shopStore.currentShop || !cartStore.tableNumber" class="h-4 w-px bg-blue-300"></div>
+              <div v-if="cartStore.tableNumber" class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                </svg>
+                <span class="text-sm font-medium text-blue-700">テーブル {{ cartStore.tableNumber }}</span>
+              </div>
+              <div v-else class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                </svg>
+                <span class="text-sm font-medium text-orange-700">テーブル未設定</span>
+              </div>
+            </div>
             <!-- ログインユーザー情報 -->
             <div v-if="authStore.isAuthenticated && authStore.user" class="flex items-center gap-2">
               <div class="text-right">
@@ -53,6 +81,8 @@
 
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth'
+import { useShopStore } from '~/stores/shop'
+import { useCartStore } from '~/stores/cart'
 
 interface Props {
   title?: string
@@ -67,10 +97,19 @@ withDefaults(defineProps<Props>(), {
 })
 
 const authStore = useAuthStore()
+const shopStore = useShopStore()
+const cartStore = useCartStore()
+const route = useRoute()
 
-// ページ読み込み時にユーザー情報を読み込む
+// /customerページかどうかを判定
+const isCustomerPage = computed(() => {
+  return route.path.startsWith('/customer')
+})
+
+// ページ読み込み時にユーザー情報と店舗情報を読み込む
 onMounted(() => {
   authStore.loadUserFromStorage()
+  shopStore.loadShopFromStorage()
 })
 
 const getRoleLabel = (role: string) => {

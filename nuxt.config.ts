@@ -11,13 +11,29 @@ export default defineNuxtConfig({
 
   css: ['~/assets/css/main.css'],
 
+  // カラーモードを強制的にlightに固定
+  colorMode: {
+    preference: 'light',
+    fallback: 'light',
+    classSuffix: '',
+    storageKey: 'nuxt-color-mode'
+  },
+  
+  // Nuxt UIのカラーモード設定
+  ui: {
+    global: true,
+    icons: ['heroicons'],
+    safelistColors: ['primary', 'red', 'orange', 'amber', 'yellow', 'lime', 'green', 'emerald', 'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose']
+  },
+
   app: {
     head: {
       title: 'Radish - ラディッシュ',
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-        { name: 'description', content: 'Radish（ラディッシュ）- 番号入力式モバイルオーダーシステム' }
+        { name: 'description', content: 'Radish（ラディッシュ）- 番号入力式モバイルオーダーシステム' },
+        { name: 'color-scheme', content: 'light' }
       ],
       link: [
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }

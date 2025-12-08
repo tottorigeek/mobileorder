@@ -11,6 +11,9 @@
       >
         メニューに戻る
       </NuxtLink>
+
+      <!-- bottom-nav用のスペーサー -->
+      <div class="h-20"></div>
     </div>
 
     <div v-else class="space-y-6">
@@ -80,13 +83,20 @@
       >
         {{ isSubmitting ? '注文中...' : '注文を確定する' }}
       </button>
+
+      <!-- bottom-nav用のスペーサー -->
+      <div class="h-20"></div>
     </div>
+
+    <!-- Bottom Navigation -->
+    <CustomerBottomNav />
   </NuxtLayout>
 </template>
 
 <script setup lang="ts">
 import { useCartStore } from '~/stores/cart'
 import { useOrder } from '~/composables/useOrder'
+import CustomerBottomNav from '~/components/CustomerBottomNav.vue'
 
 const cartStore = useCartStore()
 const { submitOrder } = useOrder()

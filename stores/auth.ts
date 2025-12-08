@@ -25,10 +25,9 @@ export const useAuthStore = defineStore('auth', {
     async login(username: string, password: string) {
       this.isLoading = true
       try {
-        const config = useRuntimeConfig()
-        const apiBase = config.public.apiBase
+        const { buildUrl } = useApiBase()
         
-        const response = await $fetch<{ success: boolean; token: string; user: User }>(`${apiBase}/auth/login`, {
+        const response = await $fetch<{ success: boolean; token: string; user: User }>(buildUrl('auth/login'), {
           method: 'POST',
           body: { username, password },
           credentials: 'include' // クッキーを含める（後方互換性のため）
@@ -54,10 +53,9 @@ export const useAuthStore = defineStore('auth', {
 
     async logout() {
       try {
-        const config = useRuntimeConfig()
-        const apiBase = config.public.apiBase
+        const { buildUrl } = useApiBase()
         
-        await $fetch(`${apiBase}/auth/logout`, {
+        await $fetch(buildUrl('auth/logout'), {
           method: 'POST',
           credentials: 'include' // クッキーを含める
         })
@@ -76,8 +74,7 @@ export const useAuthStore = defineStore('auth', {
 
     async checkAuth() {
       try {
-        const config = useRuntimeConfig()
-        const apiBase = config.public.apiBase
+        const { buildUrl } = useApiBase()
         
         // トークンを取得
         const token = this.token || localStorage.getItem('auth_token')
@@ -86,7 +83,7 @@ export const useAuthStore = defineStore('auth', {
         }
         
         // 直接fetchを使用して、確実にAuthorizationヘッダーを送信
-        const response = await fetch(`${apiBase}/auth/me`, {
+        const response = await fetch(buildUrl('auth/me'), {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,

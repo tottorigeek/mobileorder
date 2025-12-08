@@ -127,21 +127,12 @@
         />
       </div>
 
-      <!-- カートボタン -->
-      <div v-if="!cartStore.isEmpty" class="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 shadow-2xl p-4 backdrop-blur-sm bg-white/95">
-        <NuxtLink
-          to="/customer/cart"
-          class="block w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-xl text-center text-lg font-bold hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 touch-target"
-        >
-          <div class="flex items-center justify-center gap-3">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            <span>カートを見る ({{ cartStore.totalItems }}点 / ¥{{ cartStore.totalAmount.toLocaleString() }})</span>
-          </div>
-        </NuxtLink>
-      </div>
+      <!-- bottom-nav用のスペーサー -->
+      <div class="h-20"></div>
     </div>
+
+    <!-- Bottom Navigation -->
+    <CustomerBottomNav />
   </NuxtLayout>
 </template>
 
@@ -155,6 +146,7 @@ import { useVisitorStore } from '~/stores/visitor'
 import type { ShopTable, ShopCategory } from '~/types'
 import MenuCard from '~/components/MenuCard.vue'
 import NumberInput from '~/components/NumberInput.vue'
+import CustomerBottomNav from '~/components/CustomerBottomNav.vue'
 
 const menuStore = useMenuStore()
 const cartStore = useCartStore()

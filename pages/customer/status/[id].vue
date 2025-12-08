@@ -160,6 +160,9 @@
       >
         メニューに戻る
       </NuxtLink>
+
+      <!-- bottom-nav用のスペーサー -->
+      <div class="h-20"></div>
     </div>
 
     <div v-else class="text-center py-12">
@@ -170,7 +173,13 @@
       >
         メニューに戻る
       </NuxtLink>
+
+      <!-- bottom-nav用のスペーサー -->
+      <div class="h-20"></div>
     </div>
+
+    <!-- Bottom Navigation -->
+    <CustomerBottomNav />
   </NuxtLayout>
 </template>
 
@@ -179,6 +188,7 @@ import { useOrderStore } from '~/stores/order'
 import { useVisitorStore } from '~/stores/visitor'
 import { useCartStore } from '~/stores/cart'
 import type { OrderStatus, Order, PaymentMethod } from '~/types'
+import CustomerBottomNav from '~/components/CustomerBottomNav.vue'
 
 const route = useRoute()
 const orderStore = useOrderStore()

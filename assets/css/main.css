@@ -10,8 +10,89 @@
   --color-warning: #f59e0b;
 }
 
+/* 強制的にlightテーマを適用 */
+html {
+  color-scheme: light !important;
+}
+
+html.dark {
+  color-scheme: light !important;
+}
+
 body {
   @apply bg-gray-50 text-gray-900;
+}
+
+/* input要素の背景色を明示的に指定（darkモードの影響を受けないように） */
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="number"],
+input[type="tel"],
+input[type="url"],
+input[type="search"],
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+textarea,
+select {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+input[type="number"]:focus,
+input[type="tel"]:focus,
+input[type="url"]:focus,
+input[type="search"]:focus,
+input[type="date"]:focus,
+input[type="time"]:focus,
+input[type="datetime-local"]:focus,
+textarea:focus,
+select:focus {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+}
+
+input[type="text"]:disabled,
+input[type="password"]:disabled,
+input[type="email"]:disabled,
+input[type="number"]:disabled,
+input[type="tel"]:disabled,
+input[type="url"]:disabled,
+input[type="search"]:disabled,
+input[type="date"]:disabled,
+input[type="time"]:disabled,
+input[type="datetime-local"]:disabled,
+textarea:disabled,
+select:disabled {
+  background-color: #f3f4f6 !important;
+  color: #6b7280 !important;
+}
+
+/* ブラウザの自動補完時の背景色を制御 */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0px 1000px #ffffff inset !important;
+  -webkit-text-fill-color: #111827 !important;
+  box-shadow: 0 0 0px 1000px #ffffff inset !important;
+  background-color: #ffffff !important;
+  color: #111827 !important;
+}
+
+/* prefers-color-schemeメディアクエリを無視 */
+@media (prefers-color-scheme: dark) {
+  html,
+  body,
+  input,
+  textarea,
+  select {
+    color-scheme: light !important;
+  }
 }
 
 /* モバイル向けの大きなタッチターゲット */
