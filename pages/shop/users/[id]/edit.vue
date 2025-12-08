@@ -1,5 +1,5 @@
 <template>
-  <NuxtLayout name="default" title="スタッフ情報編集">
+  <NuxtLayout name="default" :title="pageTitle">
     <div class="max-w-md mx-auto space-y-6">
       <div class="bg-white p-6 rounded-lg shadow">
         <h2 class="text-xl font-bold mb-4">スタッフ情報を編集</h2>
@@ -92,6 +92,7 @@ const route = useRoute()
 const userStore = useUserStore()
 const authStore = useAuthStore()
 const shopStore = useShopStore()
+const { pageTitle } = useShopPageTitle('スタッフ情報編集')
 
 const userId = route.params.id as string
 const user = ref<User | null>(null)

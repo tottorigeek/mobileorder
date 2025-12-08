@@ -1,5 +1,5 @@
 <template>
-  <NuxtLayout name="default" title="ダッシュボード">
+  <NuxtLayout name="default" :title="pageTitle">
     <div class="space-y-6">
       <!-- ナビゲーション -->
       <AdminNavigation
@@ -70,6 +70,7 @@ const { handleLogout, checkAuth } = useAuthCheck()
 const { getStatusLabel, getStatusClass, formatDate } = useAdminUtils()
 
 const { navigationItems } = useShopNavigation()
+const { pageTitle } = useShopPageTitle('ダッシュボード')
 
 const orderStore = useOrderStore()
 

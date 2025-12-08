@@ -1,5 +1,5 @@
 <template>
-  <NuxtLayout name="default" title="スタッフ管理">
+  <NuxtLayout name="default" :title="pageTitle">
     <div class="space-y-6">
       <!-- ナビゲーション -->
       <AdminNavigation
@@ -243,6 +243,7 @@ const shopStore = useShopStore()
 const { handleLogout, checkAuth } = useAuthCheck()
 
 const { navigationItems } = useShopNavigation()
+const { pageTitle } = useShopPageTitle('スタッフ管理')
 
 const showAddModal = ref(false)
 const showEditModal = ref(false)

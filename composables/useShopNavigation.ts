@@ -8,7 +8,7 @@ export const useShopNavigation = () => {
     const items = [
       { to: '/shop/dashboard', label: 'ダッシュボード' },
       { to: '/shop/users', label: 'スタッフ管理' },
-      { to: '/staff/tables', label: 'テーブル設定' },
+      { to: '/shop/tables', label: 'テーブル設定' },
       { to: '/staff/orders', label: '注文管理' }
     ]
     

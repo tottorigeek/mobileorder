@@ -1,5 +1,5 @@
 <template>
-  <NuxtLayout name="default" title="パスワード変更">
+  <NuxtLayout name="default" :title="pageTitle">
     <div class="max-w-md mx-auto space-y-6">
       <div class="bg-white p-6 rounded-lg shadow">
         <h2 class="text-xl font-bold mb-4">パスワード変更</h2>
@@ -88,6 +88,7 @@ const route = useRoute()
 const userStore = useUserStore()
 const authStore = useAuthStore()
 const shopStore = useShopStore()
+const { pageTitle } = useShopPageTitle('パスワード変更')
 
 const userId = route.params.id as string
 const user = ref<User | null>(null)
