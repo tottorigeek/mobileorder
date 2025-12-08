@@ -6,9 +6,9 @@
 
 // データベース接続情報
 define('DB_HOST', 'localhost'); // エックスサーバーの場合は通常 'localhost'
-define('DB_NAME', 'your_database_name'); // データベース名
-define('DB_USER', 'your_database_user'); // データベースユーザー名
-define('DB_PASS', 'your_database_password'); // データベースパスワード
+define('DB_NAME', 'mameq_radish'); // データベース名
+define('DB_USER', 'mameq_radish'); // データベースユーザー名
+define('DB_PASS', 'iloveradish1208'); // データベースパスワード
 define('DB_CHARSET', 'utf8mb4');
 
 // タイムゾーン設定
@@ -41,7 +41,29 @@ function getDbConnection() {
 function setJsonHeader() {
     // CORSヘッダーを確実に設定
     if (!headers_sent()) {
-        header('Access-Control-Allow-Origin: *');
+        // 許可するオリジンのリスト
+        $allowedOrigins = [
+            'http://localhost:3000',
+            'http://localhost:3001',
+            'http://127.0.0.1:3000',
+            'http://127.0.0.1:3001',
+            'https://mameq.xsrv.jp',
+            'http://mameq.xsrv.jp',
+        ];
+        
+        // リクエスト元のオリジンを取得
+        $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+        
+        // 許可されたオリジンの場合のみ設定（セッション使用のため）
+        if (in_array($origin, $allowedOrigins)) {
+            header('Access-Control-Allow-Origin: ' . $origin);
+            header('Access-Control-Allow-Credentials: true');
+        } elseif (!empty($origin)) {
+            // 開発環境でのデバッグ用（オリジンが指定されている場合）
+            header('Access-Control-Allow-Origin: ' . $origin);
+            header('Access-Control-Allow-Credentials: true');
+        }
+        
         header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
         header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Accept');
         header('Access-Control-Max-Age: 86400');
@@ -49,15 +71,54 @@ function setJsonHeader() {
     }
 }
 
-// OPTIONSリクエストの処理
+// OPTIONSリクエストの処理（プリフライトリクエスト）
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    setJsonHeader();
+    // CORSヘッダーを確実に設定
+    if (!headers_sent()) {
+        // 許可するオリジンのリスト
+        $allowedOrigins = [
+            'http://localhost:3000',
+            'http://localhost:3001',
+            'http://127.0.0.1:3000',
+            'http://127.0.0.1:3001',
+            'https://mameq.xsrv.jp',
+            'http://mameq.xsrv.jp',
+        ];
+        
+        // リクエスト元のオリジンを取得
+        $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+        
+        // 許可されたオリジンの場合のみ設定
+        if (in_array($origin, $allowedOrigins)) {
+            header('Access-Control-Allow-Origin: ' . $origin);
+            header('Access-Control-Allow-Credentials: true');
+        } elseif (!empty($origin)) {
+            // 開発環境でのデバッグ用（オリジンが指定されている場合）
+            header('Access-Control-Allow-Origin: ' . $origin);
+            header('Access-Control-Allow-Credentials: true');
+        }
+        
+        header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+        header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Accept');
+        header('Access-Control-Max-Age: 86400');
+    }
     http_response_code(200);
     exit;
 }
 
 // セッション開始
 if (session_status() === PHP_SESSION_NONE) {
+    // セッションクッキーの設定
+    // SameSite=None は HTTPS が必要ですが、開発環境では Lax を使用
+    $sameSite = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'None' : 'Lax';
+    session_set_cookie_params([
+        'lifetime' => 86400 * 7, // 7日間
+        'path' => '/',
+        'domain' => '',
+        'secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on',
+        'httponly' => true,
+        'samesite' => $sameSite
+    ]);
     session_start();
 }
 
