@@ -70,14 +70,11 @@ GitHub Pagesへのデプロイが可能です。
 ├── assets/          # 静的アセット（CSS、画像など）
 ├── components/      # Vueコンポーネント
 ├── composables/     # コンポーザブル関数
-├── database/        # データベーススキーマとマイグレーション
-│   ├── schema.sql              # 単一店舗対応スキーマ
+├── database/        # データベーススキーマとサンプルデータ
 │   ├── schema-multi-shop.sql   # 複数店舗対応スキーマ（推奨）
-│   └── schema-multi-shop-owner.sql  # 複数店舗オーナー対応スキーマ（新規）
-│   ├── migration-simple.sql    # 簡易マイグレーション
-│   ├── migration-add-shop-id.sql # 完全マイグレーション
-│   ├── migration-add-email.sql  # emailカラム追加マイグレーション
-│   └── schema-multi-shop-owner.sql  # 複数店舗オーナー対応スキーマ（新規）
+│   ├── schema-multi-shop-owner.sql  # 複数店舗オーナー対応スキーマ
+│   ├── sample-data.sql         # サンプルデータ
+│   └── create-shop-tables.sql  # 店舗テーブル作成
 ├── layouts/         # レイアウトコンポーネント
 ├── pages/           # ページコンポーネント（自動ルーティング）
 │   ├── multi-shop/  # 複数店舗オーナー向け管理画面（新規）
@@ -113,13 +110,11 @@ GitHub Pagesへのデプロイが可能です。
 
 詳細な動作確認チェックリストは [TEST_CHECKLIST.md](./TEST_CHECKLIST.md) を参照してください。
 
-セットアップの完了サマリーは [SETUP_SUMMARY.md](./SETUP_SUMMARY.md) を参照してください。
 
 ## ドキュメント
 
 - [クイックスタートガイド](./QUICK_START.md)
 - [動作確認チェックリスト](./TEST_CHECKLIST.md)
-- [セットアップ完了ガイド](./SETUP_COMPLETE.md)
 - [API接続設定](./API_SETUP.md)
 - [APIサーバー README](./api-server/README.md)
 - [データベース README](./database/README.md)

@@ -19,7 +19,8 @@ error_reporting(E_ALL);
 ini_set('display_errors', 0); // 本番環境では0に設定
 
 // デバッグモード設定（本番環境ではfalseに設定）
-define('DEBUG_MODE', false); // 本番環境ではfalseに設定
+// 一時的にtrueに設定してエラー詳細を確認
+define('DEBUG_MODE', true); // 本番環境ではfalseに設定
 
 // JWT設定
 // 注意: 本番環境では必ず強力な秘密鍵に変更してください

@@ -60,15 +60,47 @@ function getShops() {
     try {
         $pdo = getDbConnection();
         
-        $sql = "SELECT id, code, name, description, address, phone, email, max_tables, is_active 
-                FROM shops 
-                WHERE is_active = 1 
-                ORDER BY name ASC";
+        // shopsテーブルの存在確認
+        $tableExists = false;
+        try {
+            $checkTable = $pdo->query("SHOW TABLES LIKE 'shops'");
+            $tableExists = $checkTable->rowCount() > 0;
+        } catch (Exception $e) {
+            // テーブル確認に失敗した場合は続行
+        }
+        
+        if (!$tableExists) {
+            // テーブルが存在しない場合は空配列を返す
+            echo json_encode([], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+        
+        // max_tablesカラムが存在するか確認（後方互換性のため）
+        $hasMaxTables = false;
+        try {
+            $checkColumn = $pdo->query("SHOW COLUMNS FROM shops LIKE 'max_tables'");
+            $hasMaxTables = $checkColumn->rowCount() > 0;
+        } catch (Exception $e) {
+            // カラム確認に失敗した場合は続行
+        }
+        
+        if ($hasMaxTables) {
+            $sql = "SELECT id, code, name, description, address, phone, email, max_tables, is_active 
+                    FROM shops 
+                    WHERE is_active = 1 
+                    ORDER BY name ASC";
+        } else {
+            // max_tablesカラムが存在しない場合はデフォルト値を使用
+            $sql = "SELECT id, code, name, description, address, phone, email, is_active 
+                    FROM shops 
+                    WHERE is_active = 1 
+                    ORDER BY name ASC";
+        }
         
         $stmt = $pdo->query($sql);
         $shops = $stmt->fetchAll();
         
-        $result = array_map(function($shop) {
+        $result = array_map(function($shop) use ($hasMaxTables) {
             return [
                 'id' => (string)$shop['id'],
                 'code' => $shop['code'],
@@ -77,7 +109,7 @@ function getShops() {
                 'address' => $shop['address'],
                 'phone' => $shop['phone'],
                 'email' => $shop['email'],
-                'maxTables' => (int)$shop['max_tables'],
+                'maxTables' => $hasMaxTables ? (int)$shop['max_tables'] : 20, // デフォルト値
                 'isActive' => (bool)$shop['is_active']
             ];
         }, $shops);
@@ -85,7 +117,35 @@ function getShops() {
         echo json_encode($result, JSON_UNESCAPED_UNICODE);
         
     } catch (PDOException $e) {
-        handleDatabaseError($e, 'fetching shops');
+        // エラーログに記録（無限ループを防ぐため、try-catchで囲む）
+        try {
+            error_log("Error in getShops(): " . $e->getMessage() . " | Code: " . $e->getCode());
+        } catch (Exception $logError) {
+            // ログ記録に失敗しても続行
+        }
+        
+        // エラーメッセージを返す（デバッグ用）
+        http_response_code(500);
+        echo json_encode([
+            'error' => 'Failed to fetch shops',
+            'message' => DEBUG_MODE ? $e->getMessage() : 'Internal server error',
+            'code' => DEBUG_MODE ? $e->getCode() : null
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    } catch (Exception $e) {
+        // その他のエラー
+        try {
+            error_log("Unexpected error in getShops(): " . $e->getMessage());
+        } catch (Exception $logError) {
+            // ログ記録に失敗しても続行
+        }
+        
+        http_response_code(500);
+        echo json_encode([
+            'error' => 'Failed to fetch shops',
+            'message' => DEBUG_MODE ? $e->getMessage() : 'Internal server error'
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
     }
 }
 

@@ -9,7 +9,6 @@
 - `generate-password-hash.php` - パスワードハッシュ生成スクリプト
 - `cors-test.php` - CORS設定テスト用ファイル
 - `debug-menus.php` - メニューAPIデバッグ用ファイル
-- `orders-fixed.php` - 注文APIの古いバージョン（参考用）
 - `test-db.php` - データベース接続テスト用ファイル
 
 ## 注意事項

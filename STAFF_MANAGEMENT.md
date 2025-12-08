@@ -38,7 +38,7 @@
 ALTER TABLE `users` ADD COLUMN `email` VARCHAR(255) COMMENT 'メールアドレス' AFTER `name`;
 ```
 
-または、`database/migration-add-email.sql`を実行してください。
+詳細は `database/README.md` を参照してください。
 
 ## APIエンドポイント
 

@@ -6,15 +6,8 @@
 
 ### スキーマファイル
 
-- **`schema.sql`** - 単一店舗対応の基本スキーマ
 - **`schema-multi-shop.sql`** - 複数店舗対応スキーマ（推奨）
 - **`schema-multi-shop-owner.sql`** - 複数店舗オーナー対応の追加スキーマ（`shop_users`テーブル追加）
-
-### マイグレーションファイル
-
-- **`migration-simple.sql`** - 簡易マイグレーション（既存データベースに`shop_id`を追加）
-- **`migration-add-shop-id.sql`** - 完全マイグレーション（店舗・ユーザーテーブル作成と`shop_id`追加）
-- **`migration-add-email.sql`** - `users`テーブルに`email`カラムを追加
 
 ### サンプルデータ
 
@@ -40,19 +33,7 @@ SOURCE sample-data.sql;
 
 ### 2. 既存データベースからの移行
 
-```sql
--- 1. 完全マイグレーションを実行
-SOURCE migration-add-shop-id.sql;
-
--- 2. emailカラムを追加（必要に応じて）
-SOURCE migration-add-email.sql;
-
--- 3. 複数店舗オーナー対応（オプション）
-SOURCE schema-multi-shop-owner.sql;
-
--- 4. サンプルデータを挿入
-SOURCE sample-data.sql;
-```
+既存のデータベースがある場合は、`schema-multi-shop.sql`を実行してから、必要に応じて`schema-multi-shop-owner.sql`と`sample-data.sql`を実行してください。
 
 ## サンプルデータの内容
 

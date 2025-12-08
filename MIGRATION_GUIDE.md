@@ -37,9 +37,8 @@
 
 ### Phase 2: APIファイルの更新
 
-1. **config.phpの更新**
-   - `api-server/config-multi-shop.php`の内容で`config.php`を置き換え
-   - データベース接続情報を設定
+1. **config.phpの確認**
+   - `api-server/config.php`のデータベース接続情報を設定
 
 2. **APIファイルの更新**
    - `api-server/api/menus.php` - 店舗IDフィルタリング追加済み
