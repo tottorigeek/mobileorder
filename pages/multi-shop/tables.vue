@@ -278,20 +278,12 @@ const fetchAllTables = async () => {
   isLoading.value = true
   try {
     const shopIds = myShops.value.map(s => s.id)
-    const tablePromises = shopIds.map(async (shopId) => {
-      try {
-        return await tableStore.fetchTables(shopId)
-      } catch (error) {
-        console.error(`店舗 ${shopId} のテーブル取得に失敗:`, error)
-        return []
-      }
-    })
-    
-    const tableArrays = await Promise.all(tablePromises)
-    allTables.value = tableArrays.flat()
+    // 複数店舗のテーブルを一度に取得
+    allTables.value = await tableStore.fetchTablesMultiShop(shopIds)
     filterTables()
   } catch (error) {
     console.error('テーブル一覧の取得に失敗しました:', error)
+    allTables.value = []
   } finally {
     isLoading.value = false
   }

@@ -87,31 +87,67 @@ function getTables($shopId = null) {
     try {
         // 認証チェック
         $auth = checkAuth();
-        $userShopId = $auth['shop_id'] ?? null;
+        $userId = $auth['user_id'];
+        $defaultShopId = $auth['shop_id'] ?? null;
         
         $pdo = getDbConnection();
         
-        // shop_idが指定されていない場合は認証ユーザーのshop_idを使用
-        if (!$shopId) {
-            $shopId = $userShopId;
+        // ユーザーが所属する店舗IDのリストを取得
+        $userShopIds = [];
+        
+        // shop_usersテーブルが存在するか確認
+        $tableExists = false;
+        try {
+            $checkStmt = $pdo->query("SHOW TABLES LIKE 'shop_users'");
+            $tableExists = $checkStmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            // テーブルが存在しない場合は既存の方法を使用
         }
         
-        // 権限チェック：自分の店舗のテーブルのみ取得可能
-        if ($userShopId && $shopId != $userShopId) {
-            // オーナー・マネージャーの場合は他の店舗も見れる可能性があるが、今回は自分の店舗のみ
-            sendForbiddenError('You can only access tables from your own shop');
+        if ($tableExists) {
+            // 複数店舗対応: shop_usersテーブルから取得
+            $shopUsersSql = "SELECT shop_id FROM shop_users WHERE user_id = :user_id";
+            $shopUsersStmt = $pdo->prepare($shopUsersSql);
+            $shopUsersStmt->execute([':user_id' => $userId]);
+            $shopUsers = $shopUsersStmt->fetchAll(PDO::FETCH_COLUMN);
+            $userShopIds = array_map('intval', $shopUsers);
+        } else {
+            // 既存の方法: usersテーブルのshop_idから取得
+            if ($defaultShopId) {
+                $userShopIds = [intval($defaultShopId)];
+            }
         }
         
-        if (!$shopId) {
-            sendValidationError(['shop_id' => 'Shop ID is required']);
+        // shop_idが指定されている場合、その店舗がユーザーの所属店舗に含まれているかチェック
+        if ($shopId) {
+            if (!in_array(intval($shopId), $userShopIds)) {
+                sendForbiddenError('You can only access tables from your own shops');
+            }
+            // 指定された店舗のテーブルのみ取得
+            $userShopIds = [intval($shopId)];
+        }
+        
+        if (empty($userShopIds)) {
+            echo json_encode([], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+        
+        // IN句用のプレースホルダーとパラメータを準備
+        $placeholders = [];
+        $params = [];
+        foreach ($userShopIds as $index => $shopIdValue) {
+            $paramName = ':shop_id_' . $index;
+            $placeholders[] = $paramName;
+            $params[$paramName] = $shopIdValue;
         }
         
         $stmt = $pdo->prepare("
             SELECT st.*, s.code as shop_code, s.name as shop_name
             FROM shop_tables st
             INNER JOIN shops s ON st.shop_id = s.id
-            WHERE st.shop_id = :shop_id
+            WHERE st.shop_id IN (" . implode(',', $placeholders) . ")
             ORDER BY 
+                s.name ASC,
                 CASE st.status
                     WHEN 'set_pending' THEN 1
                     WHEN 'checkout_pending' THEN 2
@@ -121,7 +157,7 @@ function getTables($shopId = null) {
                 CAST(st.table_number AS UNSIGNED) ASC,
                 st.table_number ASC
         ");
-        $stmt->execute([':shop_id' => $shopId]);
+        $stmt->execute($params);
         $tables = $stmt->fetchAll();
         
         $result = array_map(function($table) {

@@ -187,6 +187,59 @@ export const useTableStore = defineStore('table', {
       }
     },
 
+    async fetchTablesMultiShop(shopIds?: string[]) {
+      this.isLoading = true
+      try {
+        const config = useRuntimeConfig()
+        const apiBase = config.public.apiBase
+        
+        // 認証トークンを取得
+        const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+        if (!token) {
+          throw new Error('認証トークンが見つかりません')
+        }
+        
+        const headers: Record<string, string> = {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+        
+        // shopIdsが指定されている場合は各店舗のテーブルを個別に取得
+        // 指定されていない場合はAPI側で全店舗のテーブルを取得
+        if (shopIds && shopIds.length > 0) {
+          const tablePromises = shopIds.map(async (shopId) => {
+            try {
+              const data = await $fetch<ShopTable[]>(`${apiBase}/tables?shop_id=${shopId}`, {
+                headers: headers
+              })
+              return data || []
+            } catch (error) {
+              console.error(`店舗 ${shopId} のテーブル取得に失敗:`, error)
+              return []
+            }
+          })
+          
+          const tableArrays = await Promise.all(tablePromises)
+          const allTables = tableArrays.flat()
+          this.tables = allTables
+          return allTables
+        } else {
+          // shopIdを指定しない場合、API側で全店舗のテーブルを取得
+          const data = await $fetch<ShopTable[]>(`${apiBase}/tables`, {
+            headers: headers
+          })
+          this.tables = data || []
+          return data || []
+        }
+      } catch (error) {
+        console.error('複数店舗のテーブル取得に失敗しました:', error)
+        this.tables = []
+        throw error
+      } finally {
+        this.isLoading = false
+      }
+    },
+
     generateQRCodeUrl(shopCode: string, tableNumber: string): string {
       // フロントエンドのベースURLを取得
       // QRコードは直接顧客ページへのリンクとして使用

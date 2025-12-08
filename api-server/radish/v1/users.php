@@ -67,22 +67,61 @@ switch ($method) {
 
 /**
  * ユーザー一覧取得（店舗内のスタッフ一覧）
+ * 複数店舗対応: ユーザーが所属するすべての店舗のユーザーを取得可能
  */
 function getUsers() {
     try {
         // 認証チェック（オーナー・管理者のみ）
         $auth = checkPermission('manager');
-        $shopId = $auth['shop_id'];
+        $userId = $auth['user_id'];
+        $defaultShopId = $auth['shop_id'];
         
         $pdo = getDbConnection();
         
+        // ユーザーが所属する店舗IDのリストを取得
+        $userShopIds = [];
+        
+        // shop_usersテーブルが存在するか確認
+        $tableExists = false;
+        try {
+            $checkStmt = $pdo->query("SHOW TABLES LIKE 'shop_users'");
+            $tableExists = $checkStmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            // テーブルが存在しない場合は既存の方法を使用
+        }
+        
+        if ($tableExists) {
+            // 複数店舗対応: shop_usersテーブルから取得
+            $shopUsersSql = "SELECT shop_id FROM shop_users WHERE user_id = :user_id";
+            $shopUsersStmt = $pdo->prepare($shopUsersSql);
+            $shopUsersStmt->execute([':user_id' => $userId]);
+            $shopUsers = $shopUsersStmt->fetchAll(PDO::FETCH_COLUMN);
+            $userShopIds = array_map('intval', $shopUsers);
+        } else {
+            // 既存の方法: usersテーブルのshop_idから取得
+            $userShopIds = [intval($defaultShopId)];
+        }
+        
+        if (empty($userShopIds)) {
+            echo json_encode([], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+        
+        $placeholders = [];
+        $params = [];
+        foreach ($userShopIds as $index => $shopId) {
+            $paramName = ':shop_id_' . $index;
+            $placeholders[] = $paramName;
+            $params[$paramName] = $shopId;
+        }
+        
         $sql = "SELECT id, shop_id, username, name, role, email, is_active, last_login_at, created_at, updated_at
                 FROM users 
-                WHERE shop_id = :shop_id 
-                ORDER BY created_at DESC";
+                WHERE shop_id IN (" . implode(',', $placeholders) . ")
+                ORDER BY shop_id ASC, created_at DESC";
         
         $stmt = $pdo->prepare($sql);
-        $stmt->execute([':shop_id' => $shopId]);
+        $stmt->execute($params);
         $users = $stmt->fetchAll();
         
         $result = array_map(function($user) {
@@ -109,33 +148,69 @@ function getUsers() {
 
 /**
  * ユーザー情報取得（単一）
+ * 複数店舗対応: ユーザーが所属するすべての店舗のユーザーを取得可能
  */
 function getUser($userId) {
     try {
         // 認証チェック
         $auth = checkAuth();
-        $shopId = $auth['shop_id'];
+        $currentUserId = $auth['user_id'];
+        $defaultShopId = $auth['shop_id'];
         
-        // 自分の情報、または同じ店舗のユーザー情報のみ取得可能
-        if ($userId != $auth['user_id']) {
+        // 自分の情報、または管理者権限が必要
+        if ($userId != $currentUserId) {
             checkPermission('manager');
         }
         
         $pdo = getDbConnection();
         
+        // まずユーザー情報を取得
         $sql = "SELECT id, shop_id, username, name, role, email, is_active, last_login_at, created_at, updated_at
                 FROM users 
-                WHERE id = :id AND shop_id = :shop_id";
+                WHERE id = :id";
         
         $stmt = $pdo->prepare($sql);
-        $stmt->execute([
-            ':id' => $userId,
-            ':shop_id' => $shopId
-        ]);
+        $stmt->execute([':id' => $userId]);
         $user = $stmt->fetch();
         
         if (!$user) {
             sendNotFoundError('User');
+        }
+        
+        // 自分の情報を取得する場合は権限チェック不要
+        if ($userId != $currentUserId) {
+            $targetShopId = intval($user['shop_id']);
+            
+            // ユーザーが所属する店舗IDのリストを取得
+            $userShopIds = [];
+            
+            // shop_usersテーブルが存在するか確認
+            $tableExists = false;
+            try {
+                $checkStmt = $pdo->query("SHOW TABLES LIKE 'shop_users'");
+                $tableExists = $checkStmt->rowCount() > 0;
+            } catch (PDOException $e) {
+                // テーブルが存在しない場合は既存の方法を使用
+            }
+            
+            if ($tableExists) {
+                // 複数店舗対応: shop_usersテーブルから取得
+                $shopUsersSql = "SELECT shop_id FROM shop_users WHERE user_id = :user_id";
+                $shopUsersStmt = $pdo->prepare($shopUsersSql);
+                $shopUsersStmt->execute([':user_id' => $currentUserId]);
+                $shopUsers = $shopUsersStmt->fetchAll(PDO::FETCH_COLUMN);
+                $userShopIds = array_map('intval', $shopUsers);
+            } else {
+                // 既存の方法: usersテーブルのshop_idから取得
+                $userShopIds = [intval($defaultShopId)];
+            }
+            
+            // 取得対象のユーザーが所属する店舗が、現在のユーザーが管理できる店舗のいずれかであることを確認
+            if (!in_array($targetShopId, $userShopIds)) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Forbidden: You do not have permission to access this user']);
+                exit;
+            }
         }
         
         echo json_encode([
@@ -158,12 +233,14 @@ function getUser($userId) {
 
 /**
  * ユーザー作成（スタッフ追加）
+ * 複数店舗対応: リクエストボディにshopIdを指定可能
  */
 function createUser() {
     try {
         // 認証チェック（オーナー・管理者のみ）
         $auth = checkPermission('manager');
-        $shopId = $auth['shop_id'];
+        $userId = $auth['user_id'];
+        $defaultShopId = $auth['shop_id'];
         
         $pdo = getDbConnection();
         
@@ -175,6 +252,40 @@ function createUser() {
                 'password' => 'Password is required',
                 'name' => 'Name is required'
             ]);
+        }
+        
+        // 店舗IDの取得（リクエストボディから指定可能、指定がない場合は認証ユーザーのshop_idを使用）
+        $shopId = isset($input['shopId']) ? intval($input['shopId']) : $defaultShopId;
+        
+        // ユーザーが所属する店舗IDのリストを取得
+        $userShopIds = [];
+        
+        // shop_usersテーブルが存在するか確認
+        $tableExists = false;
+        try {
+            $checkStmt = $pdo->query("SHOW TABLES LIKE 'shop_users'");
+            $tableExists = $checkStmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            // テーブルが存在しない場合は既存の方法を使用
+        }
+        
+        if ($tableExists) {
+            // 複数店舗対応: shop_usersテーブルから取得
+            $shopUsersSql = "SELECT shop_id FROM shop_users WHERE user_id = :user_id";
+            $shopUsersStmt = $pdo->prepare($shopUsersSql);
+            $shopUsersStmt->execute([':user_id' => $userId]);
+            $shopUsers = $shopUsersStmt->fetchAll(PDO::FETCH_COLUMN);
+            $userShopIds = array_map('intval', $shopUsers);
+        } else {
+            // 既存の方法: usersテーブルのshop_idから取得
+            $userShopIds = [intval($defaultShopId)];
+        }
+        
+        // 指定された店舗IDがユーザーが所属する店舗のいずれかであることを確認
+        if (!in_array($shopId, $userShopIds)) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Forbidden: You do not have permission to create users for this shop']);
+            exit;
         }
         
         // ユーザー名の重複チェック
@@ -218,15 +329,17 @@ function createUser() {
 
 /**
  * ユーザー情報更新（メールアドレス変更など）
+ * 複数店舗対応: ユーザーが所属するすべての店舗のユーザーを更新可能
  */
 function updateUser($userId) {
     try {
         // 認証チェック
         $auth = checkAuth();
-        $shopId = $auth['shop_id'];
+        $currentUserId = $auth['user_id'];
+        $defaultShopId = $auth['shop_id'];
         
         // 自分の情報、または管理者権限が必要
-        if ($userId != $auth['user_id']) {
+        if ($userId != $currentUserId) {
             checkPermission('manager');
         }
         
@@ -240,9 +353,54 @@ function updateUser($userId) {
             return;
         }
         
+        // 更新対象のユーザー情報を取得
+        $userStmt = $pdo->prepare("SELECT shop_id FROM users WHERE id = :id");
+        $userStmt->execute([':id' => $userId]);
+        $targetUser = $userStmt->fetch();
+        
+        if (!$targetUser) {
+            sendNotFoundError('User');
+        }
+        
+        $targetShopId = intval($targetUser['shop_id']);
+        
+        // 自分の情報を更新する場合は権限チェック不要
+        if ($userId != $currentUserId) {
+            // ユーザーが所属する店舗IDのリストを取得
+            $userShopIds = [];
+            
+            // shop_usersテーブルが存在するか確認
+            $tableExists = false;
+            try {
+                $checkStmt = $pdo->query("SHOW TABLES LIKE 'shop_users'");
+                $tableExists = $checkStmt->rowCount() > 0;
+            } catch (PDOException $e) {
+                // テーブルが存在しない場合は既存の方法を使用
+            }
+            
+            if ($tableExists) {
+                // 複数店舗対応: shop_usersテーブルから取得
+                $shopUsersSql = "SELECT shop_id FROM shop_users WHERE user_id = :user_id";
+                $shopUsersStmt = $pdo->prepare($shopUsersSql);
+                $shopUsersStmt->execute([':user_id' => $currentUserId]);
+                $shopUsers = $shopUsersStmt->fetchAll(PDO::FETCH_COLUMN);
+                $userShopIds = array_map('intval', $shopUsers);
+            } else {
+                // 既存の方法: usersテーブルのshop_idから取得
+                $userShopIds = [intval($defaultShopId)];
+            }
+            
+            // 更新対象のユーザーが所属する店舗が、現在のユーザーが管理できる店舗のいずれかであることを確認
+            if (!in_array($targetShopId, $userShopIds)) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Forbidden: You do not have permission to update this user']);
+                exit;
+            }
+        }
+        
         // 更新可能なフィールド
         $updates = [];
-        $params = [':id' => $userId, ':shop_id' => $shopId];
+        $params = [':id' => $userId];
         
         if (isset($input['name'])) {
             $updates[] = "name = :name";
@@ -273,7 +431,7 @@ function updateUser($userId) {
         $updates[] = "updated_at = NOW()";
         
         $sql = "UPDATE users SET " . implode(', ', $updates) . " 
-                WHERE id = :id AND shop_id = :shop_id";
+                WHERE id = :id";
         
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
@@ -357,24 +515,70 @@ function changePassword($userId) {
 /**
  * ユーザー削除
  */
+/**
+ * ユーザー削除
+ * 複数店舗対応: ユーザーが所属するすべての店舗のユーザーを削除可能
+ */
 function deleteUser($userId) {
     try {
         // 認証チェック（オーナーのみ）
         $auth = checkPermission('owner');
-        $shopId = $auth['shop_id'];
+        $currentUserId = $auth['user_id'];
+        $defaultShopId = $auth['shop_id'];
         
         // 自分自身は削除できない
-        if ($userId == $auth['user_id']) {
+        if ($userId == $currentUserId) {
             sendErrorResponse(400, 'Cannot delete yourself');
         }
         
         $pdo = getDbConnection();
         
-        $sql = "DELETE FROM users WHERE id = :id AND shop_id = :shop_id";
+        // 削除対象のユーザー情報を取得
+        $userStmt = $pdo->prepare("SELECT shop_id FROM users WHERE id = :id");
+        $userStmt->execute([':id' => $userId]);
+        $targetUser = $userStmt->fetch();
+        
+        if (!$targetUser) {
+            sendNotFoundError('User');
+        }
+        
+        $targetShopId = intval($targetUser['shop_id']);
+        
+        // ユーザーが所属する店舗IDのリストを取得
+        $userShopIds = [];
+        
+        // shop_usersテーブルが存在するか確認
+        $tableExists = false;
+        try {
+            $checkStmt = $pdo->query("SHOW TABLES LIKE 'shop_users'");
+            $tableExists = $checkStmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            // テーブルが存在しない場合は既存の方法を使用
+        }
+        
+        if ($tableExists) {
+            // 複数店舗対応: shop_usersテーブルから取得
+            $shopUsersSql = "SELECT shop_id FROM shop_users WHERE user_id = :user_id";
+            $shopUsersStmt = $pdo->prepare($shopUsersSql);
+            $shopUsersStmt->execute([':user_id' => $currentUserId]);
+            $shopUsers = $shopUsersStmt->fetchAll(PDO::FETCH_COLUMN);
+            $userShopIds = array_map('intval', $shopUsers);
+        } else {
+            // 既存の方法: usersテーブルのshop_idから取得
+            $userShopIds = [intval($defaultShopId)];
+        }
+        
+        // 削除対象のユーザーが所属する店舗が、現在のユーザーが管理できる店舗のいずれかであることを確認
+        if (!in_array($targetShopId, $userShopIds)) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Forbidden: You do not have permission to delete this user']);
+            exit;
+        }
+        
+        $sql = "DELETE FROM users WHERE id = :id";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
-            ':id' => $userId,
-            ':shop_id' => $shopId
+            ':id' => $userId
         ]);
         
         if ($stmt->rowCount() === 0) {

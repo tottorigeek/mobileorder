@@ -21,6 +21,7 @@ export interface CreateUserInput {
   name: string
   email?: string
   role?: 'owner' | 'manager' | 'staff'
+  shopId?: string // 複数店舗対応: 店舗IDを指定可能
 }
 
 export interface UpdateUserInput {
