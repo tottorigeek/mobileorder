@@ -9,6 +9,7 @@ export const useMultiShopNavigation = () => {
       { to: '/multi-shop/dashboard', label: 'ダッシュボード' },
       { to: '/multi-shop/orders', label: '注文一覧' },
       { to: '/multi-shop/menus', label: 'メニュー管理' },
+      { to: '/multi-shop/tables', label: 'テーブル管理' },
       { to: '/multi-shop/staff', label: 'スタッフ管理' }
     ]
     
