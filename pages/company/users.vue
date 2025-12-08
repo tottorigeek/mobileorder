@@ -42,14 +42,18 @@
       </div>
 
       <!-- ヘッダー -->
-      <div class="flex justify-between items-center">
-        <h2 class="text-2xl font-bold">ユーザー管理</h2>
+      <div class="mb-6">
+        <h2 class="text-3xl font-bold text-gray-900 mb-1">ユーザー管理</h2>
+        <p class="text-gray-600">システム全体のユーザーを管理します</p>
       </div>
 
       <!-- 説明 -->
-      <div class="bg-white p-6 rounded-lg shadow">
-        <p class="text-gray-600">
-          システム全体のユーザーを管理します。各店舗のユーザー情報を一覧で確認できます。
+      <div class="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-xl shadow-lg border-l-4 border-green-500">
+        <p class="text-gray-700 font-medium flex items-center gap-2">
+          <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          各店舗のユーザー情報を一覧で確認できます
         </p>
       </div>
 

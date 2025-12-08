@@ -172,6 +172,7 @@ function setJsonHeader() {
             'http://127.0.0.1:3001',
             'https://mameq.xsrv.jp',
             'http://mameq.xsrv.jp',
+            'https://mobileorder-eight.vercel.app',
         ];
         
         // リクエスト元のオリジンを取得
@@ -211,6 +212,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
             'http://127.0.0.1:3001',
             'https://mameq.xsrv.jp',
             'http://mameq.xsrv.jp',
+            'https://mobileorder-eight.vercel.app',
         ];
         
         // リクエスト元のオリジンを取得

@@ -7,51 +7,70 @@
         active-color="blue"
       />
       <!-- ヘッダー -->
-      <div class="flex justify-between items-center">
-        <h1 class="text-2xl font-bold text-gray-900">テーブル管理</h1>
+      <div class="flex justify-between items-center mb-6">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900 mb-1">テーブル管理</h1>
+          <p class="text-gray-600">店舗のテーブルを管理します</p>
+        </div>
         <button
           @click="showCreateModal = true"
-          class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"
+          class="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-semibold flex items-center gap-2"
         >
-          + テーブルを追加
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          テーブルを追加
         </button>
       </div>
 
       <!-- ローディング -->
-      <div v-if="tableStore.isLoading" class="text-center py-12">
-        <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        <p class="mt-4 text-gray-500">読み込み中...</p>
+      <div v-if="tableStore.isLoading" class="text-center py-16">
+        <div class="inline-block animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-blue-600"></div>
+        <p class="mt-4 text-gray-500 font-medium">読み込み中...</p>
       </div>
 
       <!-- テーブル一覧 -->
-      <div v-else-if="tableStore.tables.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div v-else-if="tableStore.tables.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div
           v-for="table in tableStore.tables"
           :key="table.id"
-          class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow"
+          class="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-transparent hover:border-blue-300"
         >
           <div class="flex justify-between items-start mb-4">
-            <div>
-              <h3 class="text-xl font-semibold text-gray-900">
-                テーブル {{ table.tableNumber }}
-              </h3>
-              <p v-if="table.name" class="text-sm text-gray-600 mt-1">{{ table.name }}</p>
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-xl font-bold text-gray-900">
+                  テーブル {{ table.tableNumber }}
+                </h3>
+                <p v-if="table.name" class="text-sm text-gray-600 mt-1">{{ table.name }}</p>
+              </div>
             </div>
             <span
               :class="[
-                'px-2 py-1 rounded text-xs font-semibold',
-                table.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                'px-3 py-1 rounded-full text-xs font-semibold',
+                table.isActive ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-md' : 'bg-gray-200 text-gray-700'
               ]"
             >
               {{ table.isActive ? '有効' : '無効' }}
             </span>
           </div>
 
-          <div class="space-y-2 mb-4">
-            <p class="text-sm text-gray-600">
+          <div class="space-y-2 mb-4 p-4 bg-gray-50 rounded-xl">
+            <p class="text-sm text-gray-700 flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
               <span class="font-medium">定員:</span> {{ table.capacity }}名
             </p>
-            <p class="text-sm text-gray-600">
+            <p class="text-sm text-gray-700 flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
               <span class="font-medium">店舗:</span> {{ table.shopName }}
             </p>
           </div>
@@ -59,13 +78,13 @@
           <div class="flex gap-2">
             <button
               @click="editTable(table)"
-              class="flex-1 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm font-medium"
+              class="flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 shadow-md hover:shadow-lg text-sm font-semibold"
             >
               編集
             </button>
             <button
               @click="deleteTable(table)"
-              class="flex-1 px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm font-medium"
+              class="flex-1 px-4 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-300 shadow-md hover:shadow-lg text-sm font-semibold"
             >
               削除
             </button>
@@ -82,11 +101,14 @@
       </div>
 
       <!-- テーブルが存在しない場合 -->
-      <div v-else class="text-center py-12 text-gray-500">
-        <p class="mb-4">テーブルが登録されていません</p>
+      <div v-else class="text-center py-16 bg-white rounded-2xl shadow-lg">
+        <svg class="w-20 h-20 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+        </svg>
+        <p class="text-gray-500 font-medium text-lg mb-6">テーブルが登録されていません</p>
         <button
           @click="showCreateModal = true"
-          class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          class="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-semibold"
         >
           テーブルを追加
         </button>

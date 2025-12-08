@@ -8,13 +8,19 @@
       />
 
       <!-- ヘッダー -->
-      <div class="flex justify-between items-center">
-        <h2 class="text-2xl font-bold">スタッフ管理</h2>
+      <div class="flex justify-between items-center mb-6">
+        <div>
+          <h2 class="text-3xl font-bold text-gray-900 mb-1">スタッフ管理</h2>
+          <p class="text-gray-600">店舗スタッフの管理を行います</p>
+        </div>
         <button
           v-if="authStore.isManager"
           @click="showAddModal = true"
-          class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors touch-target"
+          class="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 touch-target font-semibold flex items-center gap-2"
         >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
           スタッフを追加
         </button>
       </div>
@@ -47,29 +53,36 @@
     <!-- 追加モーダル -->
     <div
       v-if="showAddModal"
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       @click.self="showAddModal = false"
     >
-      <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-        <div class="p-6">
-          <h3 class="text-lg font-semibold mb-4">スタッフを追加</h3>
+      <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div class="p-8">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-900">スタッフを追加</h3>
+          </div>
 
-          <form @submit.prevent="handleAddUser" class="space-y-4">
+          <form @submit.prevent="handleAddUser" class="space-y-5">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">
+            <label class="block text-sm font-semibold text-gray-700 mb-2">
               ユーザー名 <span class="text-red-500">*</span>
             </label>
             <input
               v-model="newUser.username"
               type="text"
               required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               placeholder="ユーザー名を入力"
             />
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">
+            <label class="block text-sm font-semibold text-gray-700 mb-2">
               パスワード <span class="text-red-500">*</span>
             </label>
             <input
@@ -77,65 +90,70 @@
               type="password"
               required
               minlength="6"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               placeholder="パスワードを入力（6文字以上）"
             />
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">
+            <label class="block text-sm font-semibold text-gray-700 mb-2">
               表示名 <span class="text-red-500">*</span>
             </label>
             <input
               v-model="newUser.name"
               type="text"
               required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               placeholder="表示名を入力"
             />
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">
+            <label class="block text-sm font-semibold text-gray-700 mb-2">
               メールアドレス
             </label>
             <input
               v-model="newUser.email"
               type="email"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               placeholder="メールアドレスを入力（任意）"
             />
           </div>
 
           <div v-if="authStore.isOwner">
-            <label class="block text-sm font-medium text-gray-700 mb-1">
+            <label class="block text-sm font-semibold text-gray-700 mb-2">
               役割
             </label>
             <select
               v-model="newUser.role"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
             >
               <option value="staff">スタッフ</option>
               <option value="manager">管理者</option>
             </select>
           </div>
 
-          <div v-if="addError" class="p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
-            {{ addError }}
+          <div v-if="addError" class="p-4 bg-red-50 border-l-4 border-red-500 rounded-lg">
+            <div class="flex items-center gap-2">
+              <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p class="text-sm text-red-700 font-medium">{{ addError }}</p>
+            </div>
           </div>
 
-          <div class="flex gap-3 justify-end">
+          <div class="flex gap-3 justify-end pt-4">
             <button
               type="button"
               @click="showAddModal = false"
-              class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+              class="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all duration-300 font-semibold"
             >
               キャンセル
             </button>
             <button
               type="submit"
               :disabled="isSubmitting"
-              class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              class="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl font-semibold"
             >
               {{ isSubmitting ? '追加中...' : '追加' }}
             </button>

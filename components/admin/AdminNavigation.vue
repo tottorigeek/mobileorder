@@ -1,16 +1,16 @@
 <template>
-  <div class="flex gap-3 overflow-x-auto pb-2">
+  <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
       <NuxtLink
         v-for="item in navigationItems"
         :key="item.to"
         :to="item.to"
         :class="[
-          'px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors',
+          'px-5 py-2.5 rounded-xl font-semibold whitespace-nowrap transition-all duration-300',
           item.isActive
             ? activeColor === 'green'
-              ? 'bg-green-600 text-white'
-              : 'bg-blue-600 text-white'
-            : 'bg-white text-gray-700 hover:bg-gray-100'
+              ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg shadow-green-500/30'
+              : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30'
+            : 'bg-white text-gray-700 hover:bg-gray-50 hover:shadow-md border border-gray-200'
         ]"
       >
         {{ item.label }}
@@ -18,17 +18,14 @@
     <NuxtLink
       v-if="showPasswordChange"
       :to="passwordChangePath"
-      :class="[
-        'px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors',
-        'bg-white text-gray-700 hover:bg-gray-100'
-      ]"
+      class="px-5 py-2.5 rounded-xl font-semibold whitespace-nowrap transition-all duration-300 bg-white text-gray-700 hover:bg-gray-50 hover:shadow-md border border-gray-200"
     >
       パスワード変更
     </NuxtLink>
     <button
       v-if="showLogout"
       @click="handleLogout"
-      class="px-4 py-2 bg-red-100 text-red-700 rounded-lg font-medium whitespace-nowrap hover:bg-red-200 ml-auto"
+      class="px-5 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl font-semibold whitespace-nowrap hover:from-red-600 hover:to-red-700 transition-all duration-300 shadow-lg shadow-red-500/30 hover:shadow-xl ml-auto"
     >
       ログアウト
     </button>

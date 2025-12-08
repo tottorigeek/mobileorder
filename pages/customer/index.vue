@@ -2,25 +2,33 @@
   <NuxtLayout name="default" title="メニュー一覧">
     <div class="space-y-6">
       <!-- 席情報表示 -->
-      <div v-if="cartStore.tableNumber" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div v-if="cartStore.tableNumber" class="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-5 shadow-lg text-white">
         <div class="flex items-center justify-between">
           <div>
-            <div class="text-sm text-blue-600 font-medium mb-1">ご利用中の席</div>
-            <div class="flex items-center gap-3">
-              <div class="text-xl font-bold text-gray-900">
+            <div class="text-sm text-blue-100 font-medium mb-2 flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+              ご利用中の席
+            </div>
+            <div class="flex items-center gap-3 flex-wrap">
+              <div class="text-2xl font-bold">
                 テーブル {{ cartStore.tableNumber }}
               </div>
-              <div v-if="currentTableInfo?.name" class="text-sm text-gray-600">
+              <div v-if="currentTableInfo?.name" class="text-sm text-blue-100 bg-white/20 px-3 py-1 rounded-full">
                 {{ currentTableInfo.name }}
               </div>
-              <div v-if="currentTableInfo?.capacity" class="text-sm text-gray-500">
-                （定員: {{ currentTableInfo.capacity }}名）
+              <div v-if="currentTableInfo?.capacity" class="text-sm text-blue-100 flex items-center gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                定員: {{ currentTableInfo.capacity }}名
               </div>
             </div>
           </div>
           <NuxtLink
             to="/shop-select"
-            class="text-sm text-blue-600 hover:text-blue-700 underline"
+            class="text-sm text-white hover:text-blue-100 font-medium transition-colors bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg"
           >
             変更
           </NuxtLink>
@@ -32,15 +40,15 @@
 
       <!-- カテゴリフィルター -->
       <div v-if="isLoadingCategories" class="flex gap-2 overflow-x-auto pb-2">
-        <div class="px-4 py-2 rounded-lg bg-gray-100 animate-pulse">読み込み中...</div>
+        <div class="px-5 py-2.5 rounded-xl bg-gray-100 animate-pulse">読み込み中...</div>
       </div>
-      <div v-else class="flex gap-2 overflow-x-auto pb-2">
+      <div v-else class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
         <button
           :class="[
-            'px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors touch-target',
+            'px-5 py-2.5 rounded-xl font-semibold whitespace-nowrap transition-all duration-300 touch-target',
             menuStore.selectedCategory === null
-              ? 'bg-blue-600 text-white'
-              : 'bg-white text-gray-700 hover:bg-gray-100'
+              ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30'
+              : 'bg-white text-gray-700 hover:bg-gray-50 hover:shadow-md border border-gray-200'
           ]"
           @click="menuStore.setCategory(null)"
         >
@@ -50,10 +58,10 @@
           v-for="category in shopCategories"
           :key="category.code"
           :class="[
-            'px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors touch-target',
+            'px-5 py-2.5 rounded-xl font-semibold whitespace-nowrap transition-all duration-300 touch-target',
             menuStore.selectedCategory === category.code
-              ? 'bg-blue-600 text-white'
-              : 'bg-white text-gray-700 hover:bg-gray-100'
+              ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30'
+              : 'bg-white text-gray-700 hover:bg-gray-50 hover:shadow-md border border-gray-200'
           ]"
           @click="menuStore.setCategory(category.code)"
         >
@@ -75,12 +83,17 @@
       </div>
 
       <!-- カートボタン -->
-      <div v-if="!cartStore.isEmpty" class="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4">
+      <div v-if="!cartStore.isEmpty" class="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 shadow-2xl p-4 backdrop-blur-sm bg-white/95">
         <NuxtLink
           to="/customer/cart"
-          class="block w-full bg-blue-600 text-white py-4 rounded-lg text-center text-lg font-semibold hover:bg-blue-700 transition-colors touch-target"
+          class="block w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-xl text-center text-lg font-bold hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 touch-target"
         >
-          カートを見る ({{ cartStore.totalItems }}点 / ¥{{ cartStore.totalAmount.toLocaleString() }})
+          <div class="flex items-center justify-center gap-3">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            <span>カートを見る ({{ cartStore.totalItems }}点 / ¥{{ cartStore.totalAmount.toLocaleString() }})</span>
+          </div>
         </NuxtLink>
       </div>
     </div>
