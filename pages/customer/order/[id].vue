@@ -47,13 +47,26 @@
 
 <script setup lang="ts">
 import { useOrderStore } from '~/stores/order'
+import { useCartStore } from '~/stores/cart'
 import type { OrderStatus } from '~/types'
 
 const route = useRoute()
 const orderStore = useOrderStore()
+const cartStore = useCartStore()
 
 const order = computed(() => {
   return orderStore.orders.find(o => o.id === route.params.id as string)
+})
+
+// 注文完了時にセッション情報を保存（精算完了まで/shop-selectから/customerにリダイレクトするため）
+onMounted(() => {
+  if (order.value && cartStore.visitorId) {
+    // ローカルストレージにアクティブな注文IDとvisitorIdを保存
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('activeOrderId', order.value.id)
+      localStorage.setItem('activeVisitorId', cartStore.visitorId)
+    }
+  }
 })
 
 const statusLabel = computed(() => {

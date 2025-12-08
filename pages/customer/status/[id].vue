@@ -268,17 +268,26 @@ const processPayment = async (method: PaymentMethod) => {
     return
   }
   
+  // 'electronic'は'paypay'に変換（APIが対応している支払い方法のみ）
+  const paymentMethodForApi: 'cash' | 'credit' | 'paypay' = method === 'electronic' ? 'paypay' : method as 'cash' | 'credit' | 'paypay'
+  
   isProcessingPayment.value = true
   try {
     // ダミー処理（2秒待機）
     await new Promise(resolve => setTimeout(resolve, 2000))
     
     // 支払い処理を実行
-    await visitorStore.processPayment(cartStore.visitorId, method)
+    await visitorStore.processPayment(cartStore.visitorId, paymentMethodForApi)
     
     isPaymentCompleted.value = true
     paymentMethod.value = method
     showPaymentMethod.value = false
+    
+    // 支払い完了時にセッション情報をクリア（精算完了したので/shop-selectに戻れるようにする）
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('activeOrderId')
+      localStorage.removeItem('activeVisitorId')
+    }
   } catch (error: any) {
     alert('支払い処理に失敗しました: ' + (error.message || 'エラーが発生しました'))
   } finally {

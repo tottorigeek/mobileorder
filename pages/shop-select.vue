@@ -151,6 +151,7 @@
 import { useShopStore } from '~/stores/shop'
 import { useCartStore } from '~/stores/cart'
 import { useTableStore } from '~/stores/table'
+import { useVisitorStore } from '~/stores/visitor'
 import type { Shop, ShopTable } from '~/types'
 
 const shopStore = useShopStore()
@@ -168,6 +169,35 @@ const availableTables = ref<ShopTable[]>([])
 const isLoadingTables = ref(false)
 
 onMounted(async () => {
+  // 精算完了前の注文がある場合は/customerにリダイレクト
+  if (typeof window !== 'undefined') {
+    const activeOrderId = localStorage.getItem('activeOrderId')
+    const activeVisitorId = localStorage.getItem('activeVisitorId')
+    
+    if (activeOrderId && activeVisitorId) {
+      // visitorの支払いステータスを確認
+      try {
+        const visitorStore = useVisitorStore()
+        const visitor = await visitorStore.fetchVisitor(activeVisitorId)
+        
+        // 支払いが完了していない場合は/customerにリダイレクト
+        if (visitor.paymentStatus !== 'completed') {
+          await router.push('/customer')
+          return
+        } else {
+          // 支払いが完了している場合はセッション情報をクリア
+          localStorage.removeItem('activeOrderId')
+          localStorage.removeItem('activeVisitorId')
+        }
+      } catch (error) {
+        console.error('visitor情報の取得に失敗しました:', error)
+        // エラーが発生した場合は/customerにリダイレクト（安全のため）
+        await router.push('/customer')
+        return
+      }
+    }
+  }
+  
   await shopStore.fetchShops()
   
   // QRコードから来た場合の処理（GETパラメータから店舗コードとテーブル番号を取得）
