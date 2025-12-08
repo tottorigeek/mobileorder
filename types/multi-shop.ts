@@ -7,6 +7,26 @@ export interface ShopOwner {
   email?: string | null
 }
 
+export interface BusinessHours {
+  open: string // HH:mm形式（例: "10:00"）
+  close: string // HH:mm形式（例: "22:00"）
+  isClosed?: boolean // 休業日の場合true
+}
+
+export interface ShopSettings {
+  regularHolidays?: string[] // 定休日の曜日配列（例: ["monday", "tuesday"]）
+  temporaryHolidays?: string[] // 臨時休業日の日付配列（例: ["2024-12-25", "2024-12-31"]）
+  businessHours?: {
+    monday?: BusinessHours
+    tuesday?: BusinessHours
+    wednesday?: BusinessHours
+    thursday?: BusinessHours
+    friday?: BusinessHours
+    saturday?: BusinessHours
+    sunday?: BusinessHours
+  }
+}
+
 export interface Shop {
   id: string
   code: string // 店舗コード（URL用）
@@ -21,6 +41,7 @@ export interface Shop {
   isPrimary?: boolean // 主店舗フラグ
   owner?: ShopOwner | null // オーナー情報（後方互換性のため）
   owners?: ShopOwner[] // 複数のオーナー情報
+  settings?: ShopSettings // 店舗設定（営業時間・定休日など）
   createdAt?: string
   updatedAt?: string
 }

@@ -24,9 +24,13 @@ $pathParts = explode('/', $path);
 if ($pathParts[0] === 'shops') {
     // shopsエンドポイントの場合、次の部分を取得
     $identifier = isset($pathParts[1]) ? $pathParts[1] : null;
+    $action = isset($pathParts[2]) ? $pathParts[2] : null;
+    $subId = isset($pathParts[3]) ? $pathParts[3] : null;
 } else {
     // 直接呼び出された場合（通常は発生しない）
     $identifier = isset($pathParts[0]) ? $pathParts[0] : null;
+    $action = isset($pathParts[1]) ? $pathParts[1] : null;
+    $subId = isset($pathParts[2]) ? $pathParts[2] : null;
 }
 
 // IDかコードかを判定（数値ならID、そうでなければコード）
@@ -51,6 +55,15 @@ switch ($method) {
         }
         break;
     
+    case 'POST':
+        // オーナー追加: POST /api/shops/{id}/owners
+        if ($shopId && $action === 'owners') {
+            addShopOwner($shopId);
+        } else {
+            sendErrorResponse(400, 'Invalid endpoint');
+        }
+        break;
+    
     case 'PUT':
         if ($shopId) {
             updateShop($shopId);
@@ -60,7 +73,10 @@ switch ($method) {
         break;
     
     case 'DELETE':
-        if ($shopId) {
+        // オーナー削除: DELETE /api/shops/{id}/owners/{userId}
+        if ($shopId && $action === 'owners' && $subId) {
+            removeShopOwner($shopId, (int)$subId);
+        } elseif ($shopId) {
             deleteShop($shopId);
         } else {
             sendErrorResponse(400, 'Shop ID is required');
@@ -300,7 +316,7 @@ function getShopById($shopId) {
         $pdo = getDbConnection();
         
         $stmt = $pdo->prepare("
-            SELECT id, code, name, description, address, phone, email, max_tables, is_active, created_at, updated_at
+            SELECT id, code, name, description, address, phone, email, max_tables, is_active, settings, created_at, updated_at
             FROM shops 
             WHERE id = :id
         ");
@@ -311,7 +327,65 @@ function getShopById($shopId) {
             sendNotFoundError('Shop');
         }
         
-        echo json_encode([
+        // shop_usersテーブルが存在するか確認
+        $hasShopUsers = false;
+        try {
+            $checkShopUsers = $pdo->query("SHOW TABLES LIKE 'shop_users'");
+            $hasShopUsers = $checkShopUsers->rowCount() > 0;
+        } catch (Exception $e) {
+            // テーブル確認に失敗した場合は続行
+        }
+        
+        // オーナー情報を取得
+        $owners = [];
+        if ($hasShopUsers) {
+            $ownerStmt = $pdo->prepare("
+                SELECT u.id, u.name, u.username, u.email
+                FROM shop_users su
+                INNER JOIN users u ON su.user_id = u.id
+                WHERE su.shop_id = :shop_id AND su.role = 'owner'
+                ORDER BY u.name ASC
+            ");
+            $ownerStmt->execute([':shop_id' => $shopId]);
+            $ownerRows = $ownerStmt->fetchAll();
+            foreach ($ownerRows as $ownerRow) {
+                $owners[] = [
+                    'id' => (string)$ownerRow['id'],
+                    'name' => $ownerRow['name'],
+                    'username' => $ownerRow['username'],
+                    'email' => $ownerRow['email'] ?? null
+                ];
+            }
+        } else {
+            // 従来の方法：usersテーブルから取得
+            $ownerStmt = $pdo->prepare("
+                SELECT id, name, username, email
+                FROM users
+                WHERE shop_id = :shop_id AND role = 'owner'
+                ORDER BY name ASC
+            ");
+            $ownerStmt->execute([':shop_id' => $shopId]);
+            $ownerRows = $ownerStmt->fetchAll();
+            foreach ($ownerRows as $ownerRow) {
+                $owners[] = [
+                    'id' => (string)$ownerRow['id'],
+                    'name' => $ownerRow['name'],
+                    'username' => $ownerRow['username'],
+                    'email' => $ownerRow['email'] ?? null
+                ];
+            }
+        }
+        
+        // settings JSONをパース
+        $settings = null;
+        if (!empty($shop['settings'])) {
+            $decodedSettings = json_decode($shop['settings'], true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $settings = $decodedSettings;
+            }
+        }
+        
+        $result = [
             'id' => (string)$shop['id'],
             'code' => $shop['code'],
             'name' => $shop['name'],
@@ -322,8 +396,13 @@ function getShopById($shopId) {
             'maxTables' => (int)$shop['max_tables'],
             'isActive' => (bool)$shop['is_active'],
             'createdAt' => $shop['created_at'],
-            'updatedAt' => $shop['updated_at']
-        ], JSON_UNESCAPED_UNICODE);
+            'updatedAt' => $shop['updated_at'],
+            'owner' => count($owners) > 0 ? $owners[0] : null, // 後方互換性のため
+            'owners' => $owners,
+            'settings' => $settings
+        ];
+        
+        echo json_encode($result, JSON_UNESCAPED_UNICODE);
         
     } catch (PDOException $e) {
         handleDatabaseError($e, 'fetching shop');
@@ -394,6 +473,16 @@ function updateShop($shopId) {
         if (isset($input['isActive'])) {
             $updates[] = "is_active = :is_active";
             $params[':is_active'] = $input['isActive'] ? 1 : 0;
+        }
+        
+        if (isset($input['settings'])) {
+            // settings JSONをエンコード
+            $settingsJson = json_encode($input['settings'], JSON_UNESCAPED_UNICODE);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                sendValidationError(['settings' => 'Invalid settings JSON format']);
+            }
+            $updates[] = "settings = :settings";
+            $params[':settings'] = $settingsJson;
         }
         
         if (empty($updates)) {
@@ -520,6 +609,165 @@ function deleteShop($shopId) {
         
     } catch (PDOException $e) {
         handleDatabaseError($e, 'deleting shop');
+    }
+}
+
+/**
+ * 店舗にオーナーを追加（認証必須、companyロールのみ）
+ */
+function addShopOwner($shopId) {
+    try {
+        // 認証チェック（companyロールのみ）
+        $auth = checkPermission(['company']);
+        
+        $pdo = getDbConnection();
+        
+        $input = json_decode(file_get_contents('php://input'), true);
+        
+        if (!$input || !isset($input['userId'])) {
+            sendValidationError(['userId' => 'User ID is required']);
+        }
+        
+        $userId = (int)$input['userId'];
+        
+        // 店舗の存在確認
+        $shopStmt = $pdo->prepare("SELECT id, name FROM shops WHERE id = :id");
+        $shopStmt->execute([':id' => $shopId]);
+        $shop = $shopStmt->fetch();
+        
+        if (!$shop) {
+            sendNotFoundError('Shop');
+        }
+        
+        // ユーザーの存在確認
+        $userStmt = $pdo->prepare("SELECT id, name, username FROM users WHERE id = :id");
+        $userStmt->execute([':id' => $userId]);
+        $user = $userStmt->fetch();
+        
+        if (!$user) {
+            sendNotFoundError('User');
+        }
+        
+        // shop_usersテーブルが存在するか確認
+        $hasShopUsers = false;
+        try {
+            $checkShopUsers = $pdo->query("SHOW TABLES LIKE 'shop_users'");
+            $hasShopUsers = $checkShopUsers->rowCount() > 0;
+        } catch (Exception $e) {
+            // テーブル確認に失敗した場合は続行
+        }
+        
+        if ($hasShopUsers) {
+            // shop_usersテーブルを使用
+            // 既にオーナーとして登録されているかチェック
+            $checkStmt = $pdo->prepare("
+                SELECT id FROM shop_users 
+                WHERE shop_id = :shop_id AND user_id = :user_id AND role = 'owner'
+            ");
+            $checkStmt->execute([':shop_id' => $shopId, ':user_id' => $userId]);
+            if ($checkStmt->fetch()) {
+                sendErrorResponse(400, 'User is already an owner of this shop');
+            }
+            
+            // shop_usersテーブルに追加
+            $insertStmt = $pdo->prepare("
+                INSERT INTO shop_users (shop_id, user_id, role, created_at, updated_at)
+                VALUES (:shop_id, :user_id, 'owner', NOW(), NOW())
+            ");
+            $insertStmt->execute([':shop_id' => $shopId, ':user_id' => $userId]);
+        } else {
+            // 従来の方法：usersテーブルのshop_idとroleを更新
+            // 既に他の店舗のオーナーになっているかチェック
+            $checkStmt = $pdo->prepare("
+                SELECT id FROM users 
+                WHERE id = :user_id AND shop_id IS NOT NULL AND shop_id != :shop_id AND role = 'owner'
+            ");
+            $checkStmt->execute([':user_id' => $userId, ':shop_id' => $shopId]);
+            if ($checkStmt->fetch()) {
+                sendErrorResponse(400, 'User is already an owner of another shop');
+            }
+            
+            // usersテーブルを更新
+            $updateStmt = $pdo->prepare("
+                UPDATE users 
+                SET shop_id = :shop_id, role = 'owner', updated_at = NOW()
+                WHERE id = :user_id
+            ");
+            $updateStmt->execute([':shop_id' => $shopId, ':user_id' => $userId]);
+        }
+        
+        // 追加したオーナー情報を返す
+        echo json_encode([
+            'success' => true,
+            'owner' => [
+                'id' => (string)$user['id'],
+                'name' => $user['name'],
+                'username' => $user['username']
+            ]
+        ], JSON_UNESCAPED_UNICODE);
+        
+    } catch (PDOException $e) {
+        handleDatabaseError($e, 'adding shop owner');
+    }
+}
+
+/**
+ * 店舗からオーナーを削除（認証必須、companyロールのみ）
+ */
+function removeShopOwner($shopId, $userId) {
+    try {
+        // 認証チェック（companyロールのみ）
+        $auth = checkPermission(['company']);
+        
+        $pdo = getDbConnection();
+        
+        // 店舗の存在確認
+        $shopStmt = $pdo->prepare("SELECT id, name FROM shops WHERE id = :id");
+        $shopStmt->execute([':id' => $shopId]);
+        $shop = $shopStmt->fetch();
+        
+        if (!$shop) {
+            sendNotFoundError('Shop');
+        }
+        
+        // shop_usersテーブルが存在するか確認
+        $hasShopUsers = false;
+        try {
+            $checkShopUsers = $pdo->query("SHOW TABLES LIKE 'shop_users'");
+            $hasShopUsers = $checkShopUsers->rowCount() > 0;
+        } catch (Exception $e) {
+            // テーブル確認に失敗した場合は続行
+        }
+        
+        if ($hasShopUsers) {
+            // shop_usersテーブルから削除
+            $deleteStmt = $pdo->prepare("
+                DELETE FROM shop_users 
+                WHERE shop_id = :shop_id AND user_id = :user_id AND role = 'owner'
+            ");
+            $deleteStmt->execute([':shop_id' => $shopId, ':user_id' => $userId]);
+            
+            if ($deleteStmt->rowCount() === 0) {
+                sendNotFoundError('Shop owner relationship');
+            }
+        } else {
+            // 従来の方法：usersテーブルから削除（shop_idをNULLに設定）
+            $updateStmt = $pdo->prepare("
+                UPDATE users 
+                SET shop_id = NULL, role = 'staff', updated_at = NOW()
+                WHERE id = :user_id AND shop_id = :shop_id AND role = 'owner'
+            ");
+            $updateStmt->execute([':user_id' => $userId, ':shop_id' => $shopId]);
+            
+            if ($updateStmt->rowCount() === 0) {
+                sendNotFoundError('Shop owner relationship');
+            }
+        }
+        
+        echo json_encode(['success' => true], JSON_UNESCAPED_UNICODE);
+        
+    } catch (PDOException $e) {
+        handleDatabaseError($e, 'removing shop owner');
     }
 }
 
