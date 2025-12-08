@@ -1,9 +1,9 @@
 <?php
 /**
  * 会社ユーザー管理API（全店舗のユーザー管理）
- * GET /api/company-users - 全店舗のユーザー一覧取得（認証必要、オーナーのみ）
- * GET /api/company-users/{id} - ユーザー情報取得（認証必要、オーナーのみ）
- * PUT /api/company-users/{id} - ユーザー情報更新（認証必要、オーナーのみ）
+ * GET /api/company-users - 全店舗のユーザー一覧取得（認証必要、オーナー・マネージャーのみ）
+ * GET /api/company-users/{id} - ユーザー情報取得（認証必要、オーナー・マネージャーのみ）
+ * PUT /api/company-users/{id} - ユーザー情報更新（認証必要、オーナー・マネージャーのみ）
  * DELETE /api/company-users/{id} - ユーザー削除（認証必要、オーナーのみ）
  */
 
@@ -53,8 +53,8 @@ switch ($method) {
  */
 function getUsers() {
     try {
-        // 認証チェック（オーナーのみ）
-        $auth = checkPermission('owner');
+        // 認証チェック（オーナー・マネージャーのみ）
+        $auth = checkPermission(['owner', 'manager']);
         
         $pdo = getDbConnection();
         
@@ -101,8 +101,8 @@ function getUsers() {
  */
 function getUser($userId) {
     try {
-        // 認証チェック（オーナーのみ）
-        $auth = checkPermission('owner');
+        // 認証チェック（オーナー・マネージャーのみ）
+        $auth = checkPermission(['owner', 'manager']);
         
         $pdo = getDbConnection();
         
@@ -148,8 +148,8 @@ function getUser($userId) {
  */
 function updateUser($userId) {
     try {
-        // 認証チェック（オーナーのみ）
-        $auth = checkPermission('owner');
+        // 認証チェック（オーナー・マネージャーのみ）
+        $auth = checkPermission(['owner', 'manager']);
         
         $pdo = getDbConnection();
         

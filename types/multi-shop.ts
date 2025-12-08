@@ -1,5 +1,12 @@
 // 複数店舗対応 型定義
 
+export interface ShopOwner {
+  id: string
+  name: string
+  username: string
+  email?: string | null
+}
+
 export interface Shop {
   id: string
   code: string // 店舗コード（URL用）
@@ -12,6 +19,7 @@ export interface Shop {
   isActive: boolean
   shopRole?: 'owner' | 'manager' | 'staff' // この店舗での役割
   isPrimary?: boolean // 主店舗フラグ
+  owner?: ShopOwner | null // オーナー情報
   createdAt?: string
   updatedAt?: string
 }

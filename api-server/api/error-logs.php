@@ -1,8 +1,8 @@
 <?php
 /**
  * エラーログ管理API
- * GET /api/error-logs - エラーログ一覧取得（認証必要、オーナーのみ）
- * GET /api/error-logs/{id} - エラーログ詳細取得（認証必要、オーナーのみ）
+ * GET /api/error-logs - エラーログ一覧取得（認証必要、オーナー・マネージャーのみ）
+ * GET /api/error-logs/{id} - エラーログ詳細取得（認証必要、オーナー・マネージャーのみ）
  * DELETE /api/error-logs/{id} - エラーログ削除（認証必要、オーナーのみ）
  * DELETE /api/error-logs - エラーログ一括削除（認証必要、オーナーのみ）
  */
@@ -45,8 +45,8 @@ switch ($method) {
  */
 function getErrorLogs() {
     try {
-        // 認証チェック（オーナーのみ）
-        $auth = checkPermission('owner');
+        // 認証チェック（オーナー・マネージャーのみ）
+        $auth = checkPermission(['owner', 'manager']);
         
         $pdo = getDbConnection();
         
@@ -168,8 +168,8 @@ function getErrorLogs() {
  */
 function getErrorLog($logId) {
     try {
-        // 認証チェック（オーナーのみ）
-        $auth = checkPermission('owner');
+        // 認証チェック（オーナー・マネージャーのみ）
+        $auth = checkPermission(['owner', 'manager']);
         
         $pdo = getDbConnection();
         

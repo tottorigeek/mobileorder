@@ -52,6 +52,7 @@
             フィルター
           </button>
           <button
+            v-if="authStore.isOwner"
             @click="confirmDeleteAll"
             class="px-4 py-2 bg-red-100 text-red-700 rounded-lg font-medium hover:bg-red-200"
           >
@@ -116,13 +117,18 @@
         </p>
       </div>
 
+      <!-- エラーメッセージ -->
+      <div v-if="errorMessage" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4">
+        {{ errorMessage }}
+      </div>
+
       <!-- ローディング -->
       <div v-if="isLoading" class="text-center py-12">
         <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
       </div>
 
       <!-- エラーログ一覧 -->
-      <div v-else-if="logs.length === 0" class="text-center py-12 text-gray-500">
+      <div v-else-if="logs.length === 0 && !errorMessage" class="text-center py-12 text-gray-500">
         エラーログがありません
       </div>
 
@@ -156,6 +162,7 @@
               </div>
             </div>
             <button
+              v-if="authStore.isOwner"
               @click.stop="confirmDelete(log)"
               class="px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors touch-target text-sm"
             >
@@ -331,6 +338,7 @@ const pagination = ref<Pagination>({
 const isLoading = ref(false)
 const showFilters = ref(false)
 const selectedLog = ref<ErrorLog | null>(null)
+const errorMessage = ref('')
 
 const filters = ref({
   level: '',
@@ -378,6 +386,7 @@ const formatDate = (dateString: string) => {
 
 const fetchLogs = async () => {
   isLoading.value = true
+  errorMessage.value = ''
   try {
     const config = useRuntimeConfig()
     const apiBase = config.public.apiBase
@@ -408,7 +417,12 @@ const fetchLogs = async () => {
     pagination.value = response.pagination || pagination.value
   } catch (error: any) {
     console.error('エラーログの取得に失敗しました:', error)
-    alert(error?.data?.error || 'エラーログの取得に失敗しました')
+    // 権限エラーの場合はエラーメッセージを表示
+    if (error?.statusCode === 403 || error?.data?.status === 403 || error?.status === 403) {
+      errorMessage.value = 'オーナーまたはマネージャー権限が必要です。このページにアクセスするには、オーナーまたはマネージャーロールが必要です。'
+    } else {
+      errorMessage.value = error?.data?.error || 'エラーログの取得に失敗しました'
+    }
   } finally {
     isLoading.value = false
   }
@@ -484,13 +498,22 @@ const confirmDeleteAll = async () => {
 }
 
 onMounted(async () => {
+  console.log('[company/error-logs] onMounted called')
+  
   // 認証チェック
   authStore.loadUserFromStorage()
-  if (!authStore.isAuthenticated || !authStore.isOwner) {
+  console.log('[company/error-logs] isAuthenticated:', authStore.isAuthenticated)
+  console.log('[company/error-logs] user:', authStore.user)
+  console.log('[company/error-logs] isOwner:', authStore.isOwner)
+  console.log('[company/error-logs] isManager:', authStore.isManager)
+  
+  if (!authStore.isAuthenticated) {
+    console.log('[company/error-logs] Not authenticated, redirecting to login')
     await navigateTo('/company/login')
     return
   }
   
+  // API側で権限チェックを行うため、フロントエンドでは認証のみ確認
   await fetchLogs()
 })
 </script>

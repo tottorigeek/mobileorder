@@ -53,13 +53,18 @@
         </p>
       </div>
 
+      <!-- エラーメッセージ -->
+      <div v-if="errorMessage" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4">
+        {{ errorMessage }}
+      </div>
+
       <!-- ローディング -->
       <div v-if="userStore.isLoading" class="text-center py-12">
         <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
       </div>
 
       <!-- ユーザー一覧 -->
-      <div v-else-if="userStore.users.length === 0" class="text-center py-12 text-gray-500">
+      <div v-else-if="userStore.users.length === 0 && !errorMessage" class="text-center py-12 text-gray-500">
         ユーザーが登録されていません
       </div>
 
@@ -98,7 +103,7 @@
                 編集
               </button>
               <button
-                v-if="user.id !== authStore.user?.id"
+                v-if="user.id !== authStore.user?.id && authStore.isOwner"
                 @click="confirmDelete(user)"
                 class="px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors touch-target text-sm"
               >
@@ -145,7 +150,7 @@
               />
             </div>
 
-            <div v-if="editingUser && editingUser.id !== authStore.user?.id">
+            <div v-if="editingUser && editingUser.id !== authStore.user?.id && authStore.isOwner">
               <label class="block text-sm font-medium text-gray-700 mb-1">
                 役割
               </label>
@@ -159,7 +164,7 @@
               </select>
             </div>
 
-            <div v-if="editingUser && editingUser.id !== authStore.user?.id">
+            <div v-if="editingUser && editingUser.id !== authStore.user?.id && authStore.isOwner">
               <label class="flex items-center gap-2">
                 <input
                   v-model="editUserData.isActive"
@@ -215,6 +220,7 @@ const showEditModal = ref(false)
 const isSubmitting = ref(false)
 const editError = ref('')
 const editingUser = ref<User | null>(null)
+const errorMessage = ref('')
 
 const editUserData = ref<UpdateUserInput>({
   name: '',
@@ -266,6 +272,16 @@ const editUser = (user: User) => {
 const handleUpdateUser = async () => {
   if (!editingUser.value) return
   
+  // オーナーでない場合、役割と有効フラグの変更は不可
+  if (!authStore.isOwner) {
+    // managerは名前とメールアドレスのみ変更可能
+    const updateData: any = {
+      name: editUserData.value.name,
+      email: editUserData.value.email
+    }
+    editUserData.value = updateData
+  }
+  
   isSubmitting.value = true
   editError.value = ''
   
@@ -291,14 +307,38 @@ const confirmDelete = async (user: User) => {
 }
 
 onMounted(async () => {
+  console.log('[company/users] onMounted called')
+  
   // 認証チェック
   authStore.loadUserFromStorage()
-  if (!authStore.isAuthenticated || !authStore.isOwner) {
+  console.log('[company/users] isAuthenticated:', authStore.isAuthenticated)
+  console.log('[company/users] user:', authStore.user)
+  console.log('[company/users] isOwner:', authStore.isOwner)
+  console.log('[company/users] isManager:', authStore.isManager)
+  
+  if (!authStore.isAuthenticated) {
+    console.log('[company/users] Not authenticated, redirecting to login')
     await navigateTo('/company/login')
     return
   }
   
-  await userStore.fetchAllUsers()
+  // API側で権限チェックを行うため、フロントエンドでは認証のみ確認
+  try {
+    console.log('[company/users] Fetching all users...')
+    await userStore.fetchAllUsers()
+    console.log('[company/users] Users fetched successfully')
+    errorMessage.value = ''
+  } catch (error: any) {
+    console.error('[company/users] Error fetching users:', error)
+    // 権限エラーの場合はエラーメッセージを表示（リダイレクトしない）
+    if (error?.statusCode === 403 || error?.data?.status === 403 || error?.status === 403) {
+      errorMessage.value = 'オーナーまたはマネージャー権限が必要です。このページにアクセスするには、オーナーまたはマネージャーロールが必要です。'
+      console.warn('[company/users] Owner or Manager permission required')
+    } else {
+      errorMessage.value = error?.data?.error || 'ユーザー一覧の取得に失敗しました'
+      console.error('ユーザー一覧の取得に失敗しました:', error)
+    }
+  }
 })
 </script>
 

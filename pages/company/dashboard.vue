@@ -76,12 +76,17 @@
             class="border-b pb-3 last:border-0"
           >
             <div class="flex justify-between items-start">
-              <div>
+              <div class="flex-1">
                 <p class="font-semibold">{{ shop.name }}</p>
                 <p class="text-sm text-gray-600">コード: {{ shop.code }}</p>
                 <p v-if="shop.address" class="text-sm text-gray-500">{{ shop.address }}</p>
+                <p v-if="shop.owner" class="text-sm text-gray-600 mt-1">
+                  <span class="font-medium">オーナー:</span> {{ shop.owner.name }}
+                  <span v-if="shop.owner.email" class="text-gray-500">({{ shop.owner.email }})</span>
+                </p>
+                <p v-else class="text-sm text-gray-400 mt-1">オーナー未設定</p>
               </div>
-              <div class="text-right">
+              <div class="text-right ml-4">
                 <span :class="shop.isActive ? 'px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm' : 'px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm'">
                   {{ shop.isActive ? 'アクティブ' : '無効' }}
                 </span>

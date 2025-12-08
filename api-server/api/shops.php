@@ -14,9 +14,20 @@ setJsonHeader();
 $method = $_SERVER['REQUEST_METHOD'];
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
-// パスの解析
-$pathParts = explode('/', trim(str_replace('/radish/api/shops/', '', $path), '/'));
-$identifier = $pathParts[0] ?? null;
+// パスの解析（index.php経由で呼び出される場合を考慮）
+// /radish/api/shops または /radish/api/shops/123 の形式から、shops以降の部分を取得
+$path = str_replace('/radish/api/', '', $path);
+$path = trim($path, '/');
+$pathParts = explode('/', $path);
+
+// shops以降の部分を取得（shops.phpが直接呼び出される場合とindex.php経由の場合の両方に対応）
+if ($pathParts[0] === 'shops') {
+    // shopsエンドポイントの場合、次の部分を取得
+    $identifier = isset($pathParts[1]) ? $pathParts[1] : null;
+} else {
+    // 直接呼び出された場合（通常は発生しない）
+    $identifier = isset($pathParts[0]) ? $pathParts[0] : null;
+}
 
 // IDかコードかを判定（数値ならID、そうでなければコード）
 $shopId = null;
@@ -84,23 +95,69 @@ function getShops() {
             // カラム確認に失敗した場合は続行
         }
         
+        // shop_usersテーブルが存在するか確認
+        $hasShopUsers = false;
+        try {
+            $checkShopUsers = $pdo->query("SHOW TABLES LIKE 'shop_users'");
+            $hasShopUsers = $checkShopUsers->rowCount() > 0;
+        } catch (Exception $e) {
+            // テーブル確認に失敗した場合は続行
+        }
+        
         if ($hasMaxTables) {
-            $sql = "SELECT id, code, name, description, address, phone, email, max_tables, is_active 
-                    FROM shops 
-                    WHERE is_active = 1 
-                    ORDER BY name ASC";
+            if ($hasShopUsers) {
+                // shop_usersテーブルが存在する場合：複数店舗オーナー対応
+                $sql = "SELECT s.id, s.code, s.name, s.description, s.address, s.phone, s.email, s.max_tables, s.is_active,
+                               u.id as owner_id, u.name as owner_name, u.username as owner_username, u.email as owner_email
+                        FROM shops s
+                        LEFT JOIN shop_users su ON s.id = su.shop_id AND su.role = 'owner'
+                        LEFT JOIN users u ON su.user_id = u.id
+                        WHERE s.is_active = 1 
+                        ORDER BY s.name ASC";
+            } else {
+                // shop_usersテーブルが存在しない場合：従来の方法
+                $sql = "SELECT s.id, s.code, s.name, s.description, s.address, s.phone, s.email, s.max_tables, s.is_active,
+                               u.id as owner_id, u.name as owner_name, u.username as owner_username, u.email as owner_email
+                        FROM shops s
+                        LEFT JOIN users u ON s.id = u.shop_id AND u.role = 'owner'
+                        WHERE s.is_active = 1 
+                        ORDER BY s.name ASC";
+            }
         } else {
-            // max_tablesカラムが存在しない場合はデフォルト値を使用
-            $sql = "SELECT id, code, name, description, address, phone, email, is_active 
-                    FROM shops 
-                    WHERE is_active = 1 
-                    ORDER BY name ASC";
+            if ($hasShopUsers) {
+                // shop_usersテーブルが存在する場合：複数店舗オーナー対応
+                $sql = "SELECT s.id, s.code, s.name, s.description, s.address, s.phone, s.email, s.is_active,
+                               u.id as owner_id, u.name as owner_name, u.username as owner_username, u.email as owner_email
+                        FROM shops s
+                        LEFT JOIN shop_users su ON s.id = su.shop_id AND su.role = 'owner'
+                        LEFT JOIN users u ON su.user_id = u.id
+                        WHERE s.is_active = 1 
+                        ORDER BY s.name ASC";
+            } else {
+                // shop_usersテーブルが存在しない場合：従来の方法
+                $sql = "SELECT s.id, s.code, s.name, s.description, s.address, s.phone, s.email, s.is_active,
+                               u.id as owner_id, u.name as owner_name, u.username as owner_username, u.email as owner_email
+                        FROM shops s
+                        LEFT JOIN users u ON s.id = u.shop_id AND u.role = 'owner'
+                        WHERE s.is_active = 1 
+                        ORDER BY s.name ASC";
+            }
         }
         
         $stmt = $pdo->query($sql);
         $shops = $stmt->fetchAll();
         
         $result = array_map(function($shop) use ($hasMaxTables) {
+            $owner = null;
+            if ($shop['owner_id']) {
+                $owner = [
+                    'id' => (string)$shop['owner_id'],
+                    'name' => $shop['owner_name'],
+                    'username' => $shop['owner_username'],
+                    'email' => $shop['owner_email'] ?? null
+                ];
+            }
+            
             return [
                 'id' => (string)$shop['id'],
                 'code' => $shop['code'],
@@ -110,7 +167,8 @@ function getShops() {
                 'phone' => $shop['phone'],
                 'email' => $shop['email'],
                 'maxTables' => $hasMaxTables ? (int)$shop['max_tables'] : 20, // デフォルト値
-                'isActive' => (bool)$shop['is_active']
+                'isActive' => (bool)$shop['is_active'],
+                'owner' => $owner
             ];
         }, $shops);
         
@@ -189,8 +247,8 @@ function getShop($shopCode) {
  */
 function getShopById($shopId) {
     try {
-        // 認証チェック（オーナーのみ）
-        $auth = checkPermission('owner');
+        // 認証チェック（オーナー・マネージャーのみ）
+        $auth = checkPermission(['owner', 'manager']);
         
         $pdo = getDbConnection();
         
@@ -230,8 +288,8 @@ function getShopById($shopId) {
  */
 function updateShop($shopId) {
     try {
-        // 認証チェック（オーナーのみ）
-        $auth = checkPermission('owner');
+        // 認証チェック（オーナー・マネージャーのみ）
+        $auth = checkPermission(['owner', 'manager']);
         
         $pdo = getDbConnection();
         
