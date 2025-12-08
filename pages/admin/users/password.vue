@@ -132,7 +132,27 @@ const handleChangePassword = async () => {
       navigateTo('/admin/users')
     }, 3000)
   } catch (err: any) {
-    error.value = err?.data?.error || 'パスワードの変更に失敗しました'
+    // エラーメッセージの取得
+    let errorMessage = 'パスワードの変更に失敗しました'
+    
+    if (err?.message) {
+      errorMessage = err.message
+    } else if (err?.data?.error) {
+      errorMessage = err.data.error
+    } else if (err?.error) {
+      errorMessage = err.error
+    }
+    
+    // 401エラーの場合は、ログイン画面にリダイレクト
+    if (err?.status === 401) {
+      error.value = 'セッションが無効です。再度ログインしてください。'
+      setTimeout(() => {
+        navigateTo('/staff/login')
+      }, 2000)
+      return
+    }
+    
+    error.value = errorMessage
   } finally {
     isSubmitting.value = false
   }

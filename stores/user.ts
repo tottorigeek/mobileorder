@@ -1,6 +1,20 @@
 import { defineStore } from 'pinia'
 import type { User } from '~/types'
 
+// 認証トークンを取得するヘルパー関数
+function getAuthHeaders(): Record<string, string> {
+  // ローカルストレージから直接トークンを取得（循環参照を避けるため）
+  const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  }
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+  return headers
+}
+
 export interface CreateUserInput {
   username: string
   password: string
@@ -47,7 +61,9 @@ export const useUserStore = defineStore('user', {
         const config = useRuntimeConfig()
         const apiBase = config.public.apiBase
         
-        const data = await $fetch<User[]>(`${apiBase}/users`)
+        const data = await $fetch<User[]>(`${apiBase}/users`, {
+          headers: getAuthHeaders()
+        })
         this.users = data || []
       } catch (error) {
         console.error('ユーザー一覧の取得に失敗しました:', error)
@@ -64,7 +80,9 @@ export const useUserStore = defineStore('user', {
         const config = useRuntimeConfig()
         const apiBase = config.public.apiBase
         
-        const user = await $fetch<User>(`${apiBase}/users/${userId}`)
+        const user = await $fetch<User>(`${apiBase}/users/${userId}`, {
+          headers: getAuthHeaders()
+        })
         this.currentUser = user
         return user
       } catch (error) {
@@ -83,7 +101,8 @@ export const useUserStore = defineStore('user', {
         
         const user = await $fetch<User>(`${apiBase}/users`, {
           method: 'POST',
-          body: input
+          body: input,
+          headers: getAuthHeaders()
         })
         
         this.users.push(user)
@@ -104,7 +123,8 @@ export const useUserStore = defineStore('user', {
         
         const user = await $fetch<User>(`${apiBase}/users/${userId}`, {
           method: 'PUT',
-          body: input
+          body: input,
+          headers: getAuthHeaders()
         })
         
         const index = this.users.findIndex(u => u.id === userId)
@@ -131,12 +151,48 @@ export const useUserStore = defineStore('user', {
         const config = useRuntimeConfig()
         const apiBase = config.public.apiBase
         
-        await $fetch(`${apiBase}/users/${userId}/password`, {
+        // サービスワーカーをバイパスするため、直接fetchを使用
+        const headers = getAuthHeaders()
+        const response = await fetch(`${apiBase}/users/${userId}/password`, {
           method: 'PUT',
-          body: input
+          headers: headers,
+          body: JSON.stringify(input),
+          cache: 'no-store', // サービスワーカーのキャッシュをバイパス
+          mode: 'cors' // CORSモードを明示的に指定
         })
-      } catch (error) {
+        
+        if (!response.ok) {
+          let errorMessage = `HTTP error! status: ${response.status}`
+          try {
+            const errorData = await response.json()
+            errorMessage = errorData.error || errorMessage
+          } catch (e) {
+            // JSON解析に失敗した場合は、ステータステキストを使用
+            errorMessage = response.statusText || errorMessage
+          }
+          
+          // 401エラーの場合は、より詳細なメッセージを提供
+          if (response.status === 401) {
+            errorMessage = '認証に失敗しました。再度ログインしてください。'
+          }
+          
+          const error = new Error(errorMessage) as any
+          error.status = response.status
+          error.statusText = response.statusText
+          throw error
+        }
+        
+        const result = await response.json()
+        return result
+      } catch (error: any) {
         console.error('パスワードの変更に失敗しました:', error)
+        // エラーオブジェクトにstatus情報を追加
+        if (!error.status && error.message) {
+          const statusMatch = error.message.match(/status: (\d+)/)
+          if (statusMatch) {
+            error.status = parseInt(statusMatch[1])
+          }
+        }
         throw error
       } finally {
         this.isLoading = false
@@ -150,7 +206,8 @@ export const useUserStore = defineStore('user', {
         const apiBase = config.public.apiBase
         
         await $fetch(`${apiBase}/users/${userId}`, {
-          method: 'DELETE'
+          method: 'DELETE',
+          headers: getAuthHeaders()
         })
         
         this.users = this.users.filter(u => u.id !== userId)

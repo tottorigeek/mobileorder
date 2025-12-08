@@ -50,10 +50,21 @@ export const useOrderStore = defineStore('order', {
         const config = useRuntimeConfig()
         const apiBase = config.public.apiBase
         
+        // 認証トークンを取得（ローカルストレージから直接取得）
+        const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`
+        }
+        
         // API経由でステータスを更新
         const updatedOrder = await $fetch(`${apiBase}/orders/${orderId}`, {
           method: 'PUT',
-          body: { status }
+          body: { status },
+          headers: headers
         })
         
         // ローカルストアも更新

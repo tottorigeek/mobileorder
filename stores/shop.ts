@@ -35,7 +35,19 @@ export const useShopStore = defineStore('shop', {
       try {
         const config = useRuntimeConfig()
         const apiBase = config.public.apiBase
-        const data = await $fetch<Shop[]>(`${apiBase}/my-shops`)
+        
+        // 認証トークンを取得（ローカルストレージから直接取得）
+        const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+        const headers: Record<string, string> = {
+          'Accept': 'application/json'
+        }
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`
+        }
+        
+        const data = await $fetch<Shop[]>(`${apiBase}/my-shops`, {
+          headers: headers
+        })
         this.shops = data || []
         return data || []
       } catch (error) {

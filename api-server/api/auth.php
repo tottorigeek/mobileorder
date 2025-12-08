@@ -128,7 +128,16 @@ function login() {
         $stmt->execute([':username' => $input['username']]);
         $user = $stmt->fetch();
         
-        // セッションに保存
+        // JWTトークンを生成
+        $tokenPayload = [
+            'user_id' => $user['id'],
+            'shop_id' => $user['shop_id'],
+            'role' => $user['role'],
+            'username' => $user['username']
+        ];
+        $token = generateJWT($tokenPayload);
+        
+        // セッションにも保存（後方互換性のため）
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['shop_id'] = $user['shop_id'];
         $_SESSION['role'] = $user['role'];
@@ -140,6 +149,7 @@ function login() {
         
         echo json_encode([
             'success' => true,
+            'token' => $token,
             'user' => [
                 'id' => (string)$user['id'],
                 'username' => $user['username'],

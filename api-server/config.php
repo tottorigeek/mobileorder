@@ -18,6 +18,116 @@ date_default_timezone_set('Asia/Tokyo');
 error_reporting(E_ALL);
 ini_set('display_errors', 0); // 本番環境では0に設定
 
+// JWT設定
+define('JWT_SECRET', 'your-secret-key-change-this-in-production'); // 本番環境では強力な秘密鍵に変更してください
+define('JWT_ALGORITHM', 'HS256');
+define('JWT_EXPIRATION', 86400 * 7); // 7日間
+
+/**
+ * JWTトークンを生成
+ */
+function generateJWT($payload) {
+    $header = [
+        'typ' => 'JWT',
+        'alg' => JWT_ALGORITHM
+    ];
+    
+    $payload['iat'] = time();
+    $payload['exp'] = time() + JWT_EXPIRATION;
+    
+    $headerEncoded = base64UrlEncode(json_encode($header));
+    $payloadEncoded = base64UrlEncode(json_encode($payload));
+    
+    $signature = hash_hmac('sha256', $headerEncoded . '.' . $payloadEncoded, JWT_SECRET, true);
+    $signatureEncoded = base64UrlEncode($signature);
+    
+    return $headerEncoded . '.' . $payloadEncoded . '.' . $signatureEncoded;
+}
+
+/**
+ * JWTトークンを検証
+ */
+function verifyJWT($token) {
+    $parts = explode('.', $token);
+    if (count($parts) !== 3) {
+        return false;
+    }
+    
+    list($headerEncoded, $payloadEncoded, $signatureEncoded) = $parts;
+    
+    // 署名を検証
+    $signature = base64UrlDecode($signatureEncoded);
+    $expectedSignature = hash_hmac('sha256', $headerEncoded . '.' . $payloadEncoded, JWT_SECRET, true);
+    
+    if (!hash_equals($expectedSignature, $signature)) {
+        return false;
+    }
+    
+    // ペイロードをデコード
+    $payload = json_decode(base64UrlDecode($payloadEncoded), true);
+    
+    // 有効期限を確認
+    if (isset($payload['exp']) && $payload['exp'] < time()) {
+        return false;
+    }
+    
+    return $payload;
+}
+
+/**
+ * Base64URLエンコード
+ */
+function base64UrlEncode($data) {
+    return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+}
+
+/**
+ * Base64URLデコード
+ */
+function base64UrlDecode($data) {
+    return base64_decode(strtr($data, '-_', '+/'));
+}
+
+/**
+ * AuthorizationヘッダーからJWTトークンを取得
+ */
+function getJWTFromHeader() {
+    $headers = null;
+    
+    // 複数の方法でAuthorizationヘッダーを取得
+    if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+        $headers = trim($_SERVER['HTTP_AUTHORIZATION']);
+    } else if (isset($_SERVER['Authorization'])) {
+        $headers = trim($_SERVER['Authorization']);
+    } else if (function_exists('apache_request_headers')) {
+        $requestHeaders = apache_request_headers();
+        if ($requestHeaders) {
+            // キーを小文字に統一して検索
+            $requestHeadersLower = array_change_key_case($requestHeaders, CASE_LOWER);
+            if (isset($requestHeadersLower['authorization'])) {
+                $headers = trim($requestHeadersLower['authorization']);
+            }
+        }
+    } else if (function_exists('getallheaders')) {
+        $requestHeaders = getallheaders();
+        if ($requestHeaders) {
+            // キーを小文字に統一して検索
+            $requestHeadersLower = array_change_key_case($requestHeaders, CASE_LOWER);
+            if (isset($requestHeadersLower['authorization'])) {
+                $headers = trim($requestHeadersLower['authorization']);
+            }
+        }
+    }
+    
+    if (!empty($headers)) {
+        if (preg_match('/Bearer\s+(.*)$/i', $headers, $matches)) {
+            return $matches[1];
+        }
+    }
+    
+    return null;
+}
+
 // データベース接続関数
 function getDbConnection() {
     try {
@@ -66,8 +176,13 @@ function setJsonHeader() {
         
         header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
         header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Accept');
+        header('Access-Control-Expose-Headers: Authorization'); // クライアントがAuthorizationヘッダーを読み取れるように
         header('Access-Control-Max-Age: 86400');
         header('Content-Type: application/json; charset=utf-8');
+        // サービスワーカーのキャッシュを防ぐ
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+        header('Pragma: no-cache');
+        header('Expires: 0');
     }
 }
 
@@ -127,17 +242,51 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// 認証チェック関数
+// 認証チェック関数（JWTベース）
 function checkAuth() {
-    if (!isset($_SESSION['user_id']) || !isset($_SESSION['shop_id'])) {
+    // JWTトークンを取得
+    $token = getJWTFromHeader();
+    
+    if (!$token) {
+        // デバッグ情報（本番環境では削除推奨）
+        $debugInfo = [];
+        $debugInfo['has_http_authorization'] = isset($_SERVER['HTTP_AUTHORIZATION']);
+        $debugInfo['has_authorization'] = isset($_SERVER['Authorization']);
+        $debugInfo['has_apache_request_headers'] = function_exists('apache_request_headers');
+        $debugInfo['has_getallheaders'] = function_exists('getallheaders');
+        if (function_exists('apache_request_headers')) {
+            $debugInfo['apache_headers'] = apache_request_headers();
+        }
+        
         http_response_code(401);
-        echo json_encode(['error' => 'Unauthorized']);
+        echo json_encode([
+            'error' => 'Unauthorized: Token not provided',
+            'debug' => $debugInfo // 本番環境では削除推奨
+        ]);
         exit;
     }
+    
+    // JWTトークンを検証
+    $payload = verifyJWT($token);
+    
+    if (!$payload) {
+        http_response_code(401);
+        echo json_encode(['error' => 'Unauthorized: Invalid token']);
+        exit;
+    }
+    
+    // ペイロードから認証情報を取得
+    if (!isset($payload['user_id']) || !isset($payload['shop_id'])) {
+        http_response_code(401);
+        echo json_encode(['error' => 'Unauthorized: Invalid token payload']);
+        exit;
+    }
+    
     return [
-        'user_id' => $_SESSION['user_id'],
-        'shop_id' => $_SESSION['shop_id'],
-        'role' => $_SESSION['role'] ?? 'staff'
+        'user_id' => $payload['user_id'],
+        'shop_id' => $payload['shop_id'],
+        'role' => $payload['role'] ?? 'staff',
+        'username' => $payload['username'] ?? null
     ];
 }
 
