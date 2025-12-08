@@ -2,6 +2,8 @@
 
 番号入力式のモバイルオーダーシステムです。
 
+**GitHubリポジトリ**: [https://github.com/tottorigeek/mobileorder](https://github.com/tottorigeek/mobileorder)
+
 ## 技術スタック
 
 - Nuxt 3
@@ -42,7 +44,7 @@ npm run preview
 3. リポジトリをインポート
 4. 自動的にデプロイされます
 
-詳細は [VERCEL_DEPLOY.md](./VERCEL_DEPLOY.md) を参照してください。
+詳細は [VERCEL_DEPLOY.md](./VERCEL_DEPLOY.md) または [GITHUB_TO_VERCEL.md](./GITHUB_TO_VERCEL.md) を参照してください。
 
 ### GitHub Pagesへのデプロイ
 
