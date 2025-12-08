@@ -64,6 +64,59 @@ function login() {
             return;
         }
         
+        // まずユーザーの存在確認（店舗情報も含む）
+        $checkStmt = $pdo->prepare("
+            SELECT u.*, s.code as shop_code, s.name as shop_name, s.is_active as shop_active
+            FROM users u
+            LEFT JOIN shops s ON u.shop_id = s.id
+            WHERE u.username = :username
+        ");
+        $checkStmt->execute([':username' => $input['username']]);
+        $userCheck = $checkStmt->fetch();
+        
+        // ユーザーが存在しない場合
+        if (!$userCheck) {
+            http_response_code(401);
+            echo json_encode([
+                'error' => 'Invalid credentials',
+                'debug' => 'User not found'
+            ]);
+            return;
+        }
+        
+        // ユーザーが無効化されている場合
+        if (!$userCheck['is_active']) {
+            http_response_code(401);
+            echo json_encode([
+                'error' => 'Invalid credentials',
+                'debug' => 'User is inactive'
+            ]);
+            return;
+        }
+        
+        // 店舗が存在しない、または無効化されている場合
+        if (!$userCheck['shop_id'] || !$userCheck['shop_active']) {
+            http_response_code(401);
+            echo json_encode([
+                'error' => 'Invalid credentials',
+                'debug' => 'Shop not found or inactive',
+                'shop_id' => $userCheck['shop_id'],
+                'shop_active' => $userCheck['shop_active']
+            ]);
+            return;
+        }
+        
+        // パスワード検証
+        if (!password_verify($input['password'], $userCheck['password_hash'])) {
+            http_response_code(401);
+            echo json_encode([
+                'error' => 'Invalid credentials',
+                'debug' => 'Password mismatch'
+            ]);
+            return;
+        }
+        
+        // ログイン成功 - ユーザー情報を取得
         $stmt = $pdo->prepare("
             SELECT u.*, s.code as shop_code, s.name as shop_name 
             FROM users u
@@ -74,12 +127,6 @@ function login() {
         ");
         $stmt->execute([':username' => $input['username']]);
         $user = $stmt->fetch();
-        
-        if (!$user || !password_verify($input['password'], $user['password_hash'])) {
-            http_response_code(401);
-            echo json_encode(['error' => 'Invalid credentials']);
-            return;
-        }
         
         // セッションに保存
         $_SESSION['user_id'] = $user['id'];

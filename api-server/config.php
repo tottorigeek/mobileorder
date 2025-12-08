@@ -109,13 +109,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 // セッション開始
 if (session_status() === PHP_SESSION_NONE) {
     // セッションクッキーの設定
-    // SameSite=None は HTTPS が必要ですが、開発環境では Lax を使用
-    $sameSite = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'None' : 'Lax';
+    // CORSでクッキーを送信するため、SameSite=None と Secure が必要
+    // 開発環境（localhost）から本番環境へのリクエストでは、SameSite=None が必要
+    $isHttps = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on';
+    // 開発環境から本番環境へのリクエストでは、SameSite=Noneが必要
+    // ただし、SameSite=Noneの場合はSecureも必要（HTTPS必須）
+    $sameSite = $isHttps ? 'None' : 'Lax';
+    
     session_set_cookie_params([
         'lifetime' => 86400 * 7, // 7日間
-        'path' => '/',
-        'domain' => '',
-        'secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on',
+        'path' => '/', // ルートパスに設定（すべてのパスで有効）
+        'domain' => '', // 空文字列で現在のドメインを使用
+        'secure' => $isHttps, // HTTPSの場合のみSecureを設定
         'httponly' => true,
         'samesite' => $sameSite
     ]);
