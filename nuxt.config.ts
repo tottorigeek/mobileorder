@@ -13,11 +13,11 @@ export default defineNuxtConfig({
 
   app: {
     head: {
-      title: 'モバイルオーダーシステム',
+      title: 'Radish - ラディッシュ',
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-        { name: 'description', content: '番号入力式モバイルオーダーシステム' }
+        { name: 'description', content: 'Radish（ラディッシュ）- 番号入力式モバイルオーダーシステム' }
       ],
       link: [
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }

@@ -3,9 +3,9 @@
     <div class="w-full max-w-md">
       <div class="text-center mb-12">
         <h1 class="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-          モバイルオーダーシステム
+          Radish
         </h1>
-        <p class="text-gray-600 text-lg">簡単・スピーディーな注文体験</p>
+        <p class="text-gray-600 text-lg">ラディッシュ - 簡単・スピーディーな注文体験</p>
       </div>
 
       <div class="space-y-4">

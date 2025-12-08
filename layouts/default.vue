@@ -1,11 +1,27 @@
 <template>
   <div class="min-h-screen bg-gray-50">
-    <header v-if="showHeader" class="bg-white shadow-sm">
+    <header v-if="showHeader" class="bg-white shadow-sm border-b border-gray-200">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16">
-          <h1 class="text-xl font-bold text-gray-900">
-            {{ title }}
-          </h1>
+          <div class="flex items-center gap-4">
+            <!-- サービス名 -->
+            <NuxtLink to="/" class="flex items-center gap-2 group">
+              <div class="w-10 h-10 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all">
+                <span class="text-white font-bold text-lg">R</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-lg font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                  Radish
+                </span>
+                <span class="text-xs text-gray-500 -mt-1">ラディッシュ</span>
+              </div>
+            </NuxtLink>
+            <!-- ページタイトル -->
+            <div class="h-8 w-px bg-gray-300"></div>
+            <h1 class="text-xl font-semibold text-gray-700">
+              {{ title }}
+            </h1>
+          </div>
           <div class="flex items-center gap-4">
             <!-- ログインユーザー情報 -->
             <div v-if="authStore.isAuthenticated && authStore.user" class="flex items-center gap-2">
@@ -45,7 +61,7 @@ interface Props {
 }
 
 withDefaults(defineProps<Props>(), {
-  title: 'モバイルオーダーシステム',
+  title: 'Radish',
   showHeader: true,
   showFooter: false
 })
