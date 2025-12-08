@@ -18,8 +18,13 @@ date_default_timezone_set('Asia/Tokyo');
 error_reporting(E_ALL);
 ini_set('display_errors', 0); // 本番環境では0に設定
 
+// デバッグモード設定（本番環境ではfalseに設定）
+define('DEBUG_MODE', false); // 本番環境ではfalseに設定
+
 // JWT設定
-define('JWT_SECRET', 'your-secret-key-change-this-in-production'); // 本番環境では強力な秘密鍵に変更してください
+// 注意: 本番環境では必ず強力な秘密鍵に変更してください
+// この秘密鍵は以下のコマンドで生成できます: openssl rand -base64 32
+define('JWT_SECRET', 'mameq_radish_jwt_secret_2024_' . hash('sha256', 'mameq_radish_restaurant_order_system' . DB_PASS)); // 本番環境ではより強力な秘密鍵に変更してください
 define('JWT_ALGORITHM', 'HS256');
 define('JWT_EXPIRATION', 86400 * 7); // 7日間
 
@@ -251,38 +256,37 @@ function checkAuth() {
     $token = getJWTFromHeader();
     
     if (!$token) {
-        // デバッグ情報（本番環境では削除推奨）
-        $debugInfo = [];
-        $debugInfo['has_redirect_http_authorization'] = isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION']);
-        $debugInfo['has_http_authorization'] = isset($_SERVER['HTTP_AUTHORIZATION']);
-        $debugInfo['has_authorization'] = isset($_SERVER['Authorization']);
-        $debugInfo['has_apache_request_headers'] = function_exists('apache_request_headers');
-        $debugInfo['has_getallheaders'] = function_exists('getallheaders');
-        if (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
-            $debugInfo['redirect_http_authorization'] = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+        $response = ['error' => 'Unauthorized: Token not provided'];
+        
+        // デバッグ情報（開発環境のみ）
+        if (DEBUG_MODE) {
+            $debugInfo = [];
+            $debugInfo['has_redirect_http_authorization'] = isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION']);
+            $debugInfo['has_http_authorization'] = isset($_SERVER['HTTP_AUTHORIZATION']);
+            $debugInfo['has_authorization'] = isset($_SERVER['Authorization']);
+            $debugInfo['has_apache_request_headers'] = function_exists('apache_request_headers');
+            $debugInfo['has_getallheaders'] = function_exists('getallheaders');
+            if (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+                $debugInfo['redirect_http_authorization'] = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+            }
+            if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+                $debugInfo['http_authorization'] = $_SERVER['HTTP_AUTHORIZATION'];
+            }
+            if (function_exists('apache_request_headers')) {
+                $debugInfo['apache_headers'] = apache_request_headers();
+            }
+            if (function_exists('getallheaders')) {
+                $debugInfo['getallheaders_result'] = getallheaders();
+            }
+            // すべての$_SERVER変数からauthorizationを検索
+            $debugInfo['server_keys'] = array_keys(array_filter($_SERVER, function($key) {
+                return stripos($key, 'auth') !== false;
+            }, ARRAY_FILTER_USE_KEY));
+            $response['debug'] = $debugInfo;
         }
-        if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
-            $debugInfo['http_authorization'] = $_SERVER['HTTP_AUTHORIZATION'];
-        }
-        if (function_exists('apache_request_headers')) {
-            $debugInfo['apache_headers'] = apache_request_headers();
-        }
-        if (function_exists('getallheaders')) {
-            $debugInfo['getallheaders_result'] = getallheaders();
-        }
-        if (function_exists('getallheaders')) {
-            $debugInfo['getallheaders_result'] = getallheaders();
-        }
-        // すべての$_SERVER変数からauthorizationを検索
-        $debugInfo['server_keys'] = array_keys(array_filter($_SERVER, function($key) {
-            return stripos($key, 'auth') !== false;
-        }, ARRAY_FILTER_USE_KEY));
         
         http_response_code(401);
-        echo json_encode([
-            'error' => 'Unauthorized: Token not provided',
-            'debug' => $debugInfo // 本番環境では削除推奨
-        ]);
+        echo json_encode($response);
         exit;
     }
     
@@ -329,9 +333,13 @@ function checkPermission($requiredRole) {
 
 // 店舗IDの取得（リクエストから）
 function getShopId() {
-    // セッションから取得（認証済みの場合）
-    if (isset($_SESSION['shop_id'])) {
-        return $_SESSION['shop_id'];
+    // JWTトークンから取得（認証済みの場合）
+    $token = getJWTFromHeader();
+    if ($token) {
+        $payload = verifyJWT($token);
+        if ($payload && isset($payload['shop_id'])) {
+            return $payload['shop_id'];
+        }
     }
     
     // クエリパラメータから取得（顧客側）

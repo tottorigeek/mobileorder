@@ -56,13 +56,8 @@ function getOrders() {
     try {
         $pdo = getDbConnection();
         
-        // 店舗IDの取得（認証済みの場合はセッションから、顧客側の場合はクエリパラメータから）
-        $shopId = null;
-        if (isset($_SESSION['shop_id'])) {
-            $shopId = $_SESSION['shop_id'];
-        } else {
-            $shopId = getShopId();
-        }
+        // 店舗IDの取得（認証済みの場合はJWTから、顧客側の場合はクエリパラメータから）
+        $shopId = getShopId();
         
         if (!$shopId) {
             http_response_code(400);
