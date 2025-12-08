@@ -82,6 +82,78 @@
         </div>
       </div>
 
+      <!-- 清算ボタン（注文が完成している場合） -->
+      <div v-if="order.status === 'completed' && !isPaymentCompleted" class="space-y-4">
+        <div class="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-6">
+          <h3 class="text-xl font-bold text-gray-900 mb-4">お会計</h3>
+          <p class="text-gray-700 mb-4">合計金額: <span class="text-2xl font-bold text-blue-600">¥{{ order.totalAmount.toLocaleString() }}</span></p>
+          
+          <div v-if="!showPaymentMethod" class="space-y-3">
+            <button
+              @click="showPaymentMethod = true"
+              class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-xl text-lg font-bold hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl"
+            >
+              清算する
+            </button>
+          </div>
+          
+          <div v-else class="space-y-3">
+            <p class="text-sm text-gray-600 mb-4">お支払い方法を選択してください</p>
+            <button
+              @click="processPayment('credit')"
+              :disabled="isProcessingPayment"
+              class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-xl text-lg font-bold hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+            >
+              <svg v-if="!isProcessingPayment" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              </svg>
+              <span v-if="isProcessingPayment" class="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-white"></span>
+              {{ isProcessingPayment ? '処理中...' : 'クレジットカード' }}
+            </button>
+            <button
+              @click="processPayment('paypay')"
+              :disabled="isProcessingPayment"
+              class="w-full bg-gradient-to-r from-yellow-500 to-orange-500 text-white py-4 rounded-xl text-lg font-bold hover:from-yellow-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+            >
+              <span v-if="isProcessingPayment" class="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-white"></span>
+              {{ isProcessingPayment ? '処理中...' : 'PayPay' }}
+            </button>
+            <button
+              @click="processPayment('cash')"
+              :disabled="isProcessingPayment"
+              class="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 rounded-xl text-lg font-bold hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+            >
+              <svg v-if="!isProcessingPayment" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <span v-if="isProcessingPayment" class="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-white"></span>
+              {{ isProcessingPayment ? '処理中...' : '現金' }}
+            </button>
+            <button
+              @click="showPaymentMethod = false"
+              :disabled="isProcessingPayment"
+              class="w-full bg-gray-200 text-gray-700 py-3 rounded-xl text-base font-semibold hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              キャンセル
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 支払い完了メッセージ -->
+      <div v-if="isPaymentCompleted" class="bg-green-50 border-2 border-green-300 rounded-xl p-6 text-center">
+        <svg class="w-16 h-16 mx-auto text-green-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <h3 class="text-2xl font-bold text-gray-900 mb-2">お支払いが完了しました</h3>
+        <p v-if="paymentMethod === 'cash'" class="text-gray-700 mb-4">
+          レジまでお越しください。スタッフがお待ちしております。
+        </p>
+        <p v-else class="text-gray-700 mb-4">
+          ご利用ありがとうございました。
+        </p>
+      </div>
+
       <NuxtLink
         to="/customer"
         class="block w-full bg-blue-600 text-white py-4 rounded-lg text-center text-lg font-semibold hover:bg-blue-700 transition-colors touch-target"
@@ -104,15 +176,23 @@
 
 <script setup lang="ts">
 import { useOrderStore } from '~/stores/order'
-import type { OrderStatus, Order } from '~/types'
+import { useVisitorStore } from '~/stores/visitor'
+import { useCartStore } from '~/stores/cart'
+import type { OrderStatus, Order, PaymentMethod } from '~/types'
 
 const route = useRoute()
 const orderStore = useOrderStore()
+const visitorStore = useVisitorStore()
+const cartStore = useCartStore()
 const orderId = route.params.id as string
 
 // 注文を取得
 const order = ref<Order | null>(null)
 const isLoading = ref(true)
+const showPaymentMethod = ref(false)
+const isProcessingPayment = ref(false)
+const isPaymentCompleted = ref(false)
+const paymentMethod = ref<PaymentMethod | null>(null)
 
 onMounted(async () => {
   // まずローカルストアから取得を試みる
@@ -145,7 +225,8 @@ const statusLabel = computed(() => {
     accepted: '受付済み',
     cooking: '調理中',
     completed: '完成',
-    cancelled: 'キャンセル'
+    cancelled: 'キャンセル',
+    checkout_pending: '会計前'
   }
   return order.value ? labels[order.value.status] : ''
 })
@@ -156,7 +237,8 @@ const statusClass = computed(() => {
     accepted: 'text-blue-600',
     cooking: 'text-orange-600',
     completed: 'text-green-600',
-    cancelled: 'text-red-600'
+    cancelled: 'text-red-600',
+    checkout_pending: 'text-orange-600'
   }
   return order.value ? classes[order.value.status] : ''
 })
@@ -171,6 +253,40 @@ const isStepCompleted = (status: OrderStatus) => {
 }
 
 const getStepClass = (status: OrderStatus) => {
+  if (!order.value) return ''
+  const currentIndex = statusOrder.indexOf(order.value.status)
+  const stepIndex = statusOrder.indexOf(status)
+  if (currentIndex > stepIndex || order.value.status === status) {
+    return 'bg-blue-600 text-white'
+  }
+  return 'bg-gray-200 text-gray-500'
+}
+
+const processPayment = async (method: PaymentMethod) => {
+  if (!cartStore.visitorId) {
+    alert('来店情報が見つかりません')
+    return
+  }
+  
+  isProcessingPayment.value = true
+  try {
+    // ダミー処理（2秒待機）
+    await new Promise(resolve => setTimeout(resolve, 2000))
+    
+    // 支払い処理を実行
+    await visitorStore.processPayment(cartStore.visitorId, method)
+    
+    isPaymentCompleted.value = true
+    paymentMethod.value = method
+    showPaymentMethod.value = false
+  } catch (error: any) {
+    alert('支払い処理に失敗しました: ' + (error.message || 'エラーが発生しました'))
+  } finally {
+    isProcessingPayment.value = false
+  }
+}
+
+const getStatusClass = (status: OrderStatus) => {
   if (!order.value) return ''
   const isCompleted = isStepCompleted(status)
   const isCurrent = order.value.status === status

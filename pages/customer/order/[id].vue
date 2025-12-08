@@ -62,7 +62,8 @@ const statusLabel = computed(() => {
     accepted: '受付済み',
     cooking: '調理中',
     completed: '完成',
-    cancelled: 'キャンセル'
+    cancelled: 'キャンセル',
+    checkout_pending: '会計前'
   }
   return order.value ? labels[order.value.status] : ''
 })
@@ -73,7 +74,8 @@ const statusClass = computed(() => {
     accepted: 'text-blue-600',
     cooking: 'text-orange-600',
     completed: 'text-green-600',
-    cancelled: 'text-red-600'
+    cancelled: 'text-red-600',
+    checkout_pending: 'text-orange-600'
   }
   return order.value ? classes[order.value.status] : ''
 })

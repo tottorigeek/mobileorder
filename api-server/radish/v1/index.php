@@ -11,7 +11,8 @@ setJsonHeader();
 // リクエストメソッドとパスの取得
 $method = $_SERVER['REQUEST_METHOD'];
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-$path = str_replace('/radish/api/', '', $path);
+// /radish/v1/ または /radish/api/ を削除
+$path = preg_replace('#^/radish/(v1|api)/#', '', $path);
 $path = trim($path, '/');
 
 // パスの分割

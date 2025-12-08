@@ -22,7 +22,12 @@ ErrorDocument 404 /radish/index.php
     RewriteEngine On
     RewriteBase /radish/
     
-    # APIルーティング（OPTIONSリクエストも含む）
+    # v1 APIルーティング（OPTIONSリクエストも含む）
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^v1/(.*)$ v1/index.php [QSA,L]
+    
+    # 旧APIルーティング（後方互換性のため）
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule ^api/(.*)$ api/index.php [QSA,L]

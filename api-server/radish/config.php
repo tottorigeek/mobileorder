@@ -219,34 +219,35 @@ function setJsonHeader() {
 // OPTIONSリクエストの処理（プリフライトリクエスト）
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     // CORSヘッダーを確実に設定
-    if (!headers_sent()) {
-        // 許可するオリジンのリスト
-        $allowedOrigins = [
-            'http://localhost:3000',
-            'http://localhost:3001',
-            'http://127.0.0.1:3000',
-            'http://127.0.0.1:3001',
-            'https://mameq.xsrv.jp',
-            'http://mameq.xsrv.jp',
-            'https://mobileorder-eight.vercel.app',
-            'https://api.towndx.com',
-            'http://api.towndx.com',
-        ];
-        
-        // リクエスト元のオリジンを取得
-        $origin = $_SERVER['HTTP_ORIGIN'] ?? $_SERVER['HTTP_REFERER'] ?? '';
-        
-        // オリジンが空の場合は、Refererヘッダーから抽出を試みる
-        if (empty($origin) && isset($_SERVER['HTTP_REFERER'])) {
-            $parsedUrl = parse_url($_SERVER['HTTP_REFERER']);
-            if ($parsedUrl) {
-                $origin = $parsedUrl['scheme'] . '://' . $parsedUrl['host'];
-                if (isset($parsedUrl['port'])) {
-                    $origin .= ':' . $parsedUrl['port'];
-                }
+    // 許可するオリジンのリスト
+    $allowedOrigins = [
+        'http://localhost:3000',
+        'http://localhost:3001',
+        'http://127.0.0.1:3000',
+        'http://127.0.0.1:3001',
+        'https://mameq.xsrv.jp',
+        'http://mameq.xsrv.jp',
+        'https://mobileorder-eight.vercel.app',
+        'https://api.towndx.com',
+        'http://api.towndx.com',
+    ];
+    
+    // リクエスト元のオリジンを取得
+    $origin = $_SERVER['HTTP_ORIGIN'] ?? $_SERVER['HTTP_REFERER'] ?? '';
+    
+    // オリジンが空の場合は、Refererヘッダーから抽出を試みる
+    if (empty($origin) && isset($_SERVER['HTTP_REFERER'])) {
+        $parsedUrl = parse_url($_SERVER['HTTP_REFERER']);
+        if ($parsedUrl) {
+            $origin = $parsedUrl['scheme'] . '://' . $parsedUrl['host'];
+            if (isset($parsedUrl['port'])) {
+                $origin .= ':' . $parsedUrl['port'];
             }
         }
-        
+    }
+    
+    // ヘッダーを確実に送信
+    if (!headers_sent()) {
         // 許可されたオリジンの場合のみ設定
         if (in_array($origin, $allowedOrigins)) {
             header('Access-Control-Allow-Origin: ' . $origin);
@@ -257,13 +258,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
             if (preg_match('/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/', $origin)) {
                 header('Access-Control-Allow-Origin: ' . $origin);
                 header('Access-Control-Allow-Credentials: true');
+            } else {
+                // 開発環境では、すべてのオリジンを許可（デバッグ用）
+                if (ENVIRONMENT === 'development') {
+                    header('Access-Control-Allow-Origin: ' . $origin);
+                    header('Access-Control-Allow-Credentials: true');
+                }
             }
         }
         
         header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
         header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Accept');
         header('Access-Control-Max-Age: 86400');
+        header('Content-Length: 0');
     }
+    
     http_response_code(200);
     exit;
 }

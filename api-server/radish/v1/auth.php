@@ -12,7 +12,8 @@ setJsonHeader();
 
 $method = $_SERVER['REQUEST_METHOD'];
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-$path = str_replace('/radish/api/auth/', '', $path);
+// /radish/v1/auth/ または /radish/api/auth/ を削除
+$path = preg_replace('#^/radish/(v1|api)/auth/#', '', $path);
 $path = trim($path, '/');
 
 switch ($path) {

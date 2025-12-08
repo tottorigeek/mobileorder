@@ -54,6 +54,21 @@
             <p class="text-sm text-gray-600">
               <span class="font-medium">店舗:</span> {{ table.shopName }}
             </p>
+            <div v-if="table.status" class="mt-2">
+              <span
+                :class="[
+                  'px-3 py-1 rounded-full text-xs font-semibold',
+                  getStatusClass(table.status)
+                ]"
+              >
+                {{ getStatusLabel(table.status) }}
+              </span>
+            </div>
+            <div v-if="table.visitorId" class="mt-2">
+              <p class="text-xs text-gray-500">
+                来店ID: {{ table.visitorId }}
+              </p>
+            </div>
           </div>
 
           <!-- QRコード表示 -->
@@ -66,19 +81,39 @@
           </div>
 
           <!-- アクションボタン -->
-          <div class="flex gap-2">
+          <div class="space-y-2">
+            <!-- 会計ボタン（occupiedステータスの場合） -->
             <button
-              @click="editTable(table)"
-              class="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
+              v-if="table.status === 'occupied' && table.visitorId"
+              @click="processCheckout(table)"
+              class="w-full px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-semibold"
             >
-              編集
+              会計する
             </button>
+            
+            <!-- テーブルセット完了ボタン（set_pendingステータスの場合） -->
             <button
-              @click="deleteTable(table)"
-              class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
+              v-if="table.status === 'set_pending' && table.visitorId"
+              @click="completeTableSet(table)"
+              class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-semibold"
             >
-              削除
+              テーブルセット完了
             </button>
+            
+            <div class="flex gap-2">
+              <button
+                @click="editTable(table)"
+                class="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
+              >
+                編集
+              </button>
+              <button
+                @click="deleteTable(table)"
+                class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
+              >
+                削除
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -182,8 +217,9 @@
 import { useTableStore } from '~/stores/table'
 import { useAuthStore } from '~/stores/auth'
 import { useShopStore } from '~/stores/shop'
+import { useVisitorStore } from '~/stores/visitor'
 import QRCodeGenerator from '~/components/QRCodeGenerator.vue'
-import type { ShopTable } from '~/types'
+import type { ShopTable, TableStatus } from '~/types'
 
 const { navigationItems } = useShopNavigation()
 
@@ -194,6 +230,7 @@ definePageMeta({
 const tableStore = useTableStore()
 const authStore = useAuthStore()
 const shopStore = useShopStore()
+const visitorStore = useVisitorStore()
 
 const showCreateModal = ref(false)
 const editingTable = ref<ShopTable | null>(null)
@@ -280,6 +317,70 @@ const closeModal = () => {
     name: '',
     capacity: 4,
     isActive: true
+  }
+}
+
+const getStatusLabel = (status: TableStatus) => {
+  const labels: Record<TableStatus, string> = {
+    available: '空席',
+    occupied: '利用中',
+    checkout_pending: '会計前',
+    set_pending: 'セット待ち'
+  }
+  return labels[status] || status
+}
+
+const getStatusClass = (status: TableStatus) => {
+  const classes: Record<TableStatus, string> = {
+    available: 'bg-green-100 text-green-800',
+    occupied: 'bg-blue-100 text-blue-800',
+    checkout_pending: 'bg-orange-100 text-orange-800',
+    set_pending: 'bg-yellow-100 text-yellow-800'
+  }
+  return classes[status] || 'bg-gray-100 text-gray-800'
+}
+
+const processCheckout = async (table: ShopTable) => {
+  if (!table.visitorId) {
+    alert('来店情報が見つかりません')
+    return
+  }
+  
+  if (!confirm(`テーブル${table.tableNumber}の会計処理を実行しますか？`)) {
+    return
+  }
+  
+  try {
+    await visitorStore.processCheckout(table.visitorId)
+    // テーブル一覧を再取得
+    if (shopStore.currentShop) {
+      await tableStore.fetchTables(shopStore.currentShop.id)
+    }
+    alert('会計処理が完了しました')
+  } catch (error: any) {
+    alert('会計処理に失敗しました: ' + (error.message || 'エラーが発生しました'))
+  }
+}
+
+const completeTableSet = async (table: ShopTable) => {
+  if (!table.visitorId) {
+    alert('来店情報が見つかりません')
+    return
+  }
+  
+  if (!confirm(`テーブル${table.tableNumber}のセット完了処理を実行しますか？`)) {
+    return
+  }
+  
+  try {
+    await visitorStore.completeTableSet(table.visitorId)
+    // テーブル一覧を再取得
+    if (shopStore.currentShop) {
+      await tableStore.fetchTables(shopStore.currentShop.id)
+    }
+    alert('テーブルセット完了処理が完了しました')
+  } catch (error: any) {
+    alert('テーブルセット完了処理に失敗しました: ' + (error.message || 'エラーが発生しました'))
   }
 }
 </script>

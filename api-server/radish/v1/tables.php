@@ -224,7 +224,9 @@ function getTableByQRCode($shopCode, $tableNumber) {
             'shopName' => $table['shop_name'],
             'tableNumber' => $table['table_number'],
             'name' => $table['name'],
-            'capacity' => (int)$table['capacity']
+            'capacity' => (int)$table['capacity'],
+            'visitorId' => $table['visitor_id'] ? (string)$table['visitor_id'] : null,
+            'status' => $table['status'] ?? 'available'
         ], JSON_UNESCAPED_UNICODE);
         
     } catch (PDOException $e) {
@@ -261,7 +263,9 @@ function getTablesByShopCode($shopCode) {
                 'shopName' => $table['shop_name'],
                 'tableNumber' => $table['table_number'],
                 'name' => $table['name'],
-                'capacity' => (int)$table['capacity']
+                'capacity' => (int)$table['capacity'],
+                'visitorId' => $table['visitor_id'] ? (string)$table['visitor_id'] : null,
+                'status' => $table['status'] ?? 'available'
             ];
         }, $tables);
         
