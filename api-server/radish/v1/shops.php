@@ -15,8 +15,8 @@ $method = $_SERVER['REQUEST_METHOD'];
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
 // パスの解析（index.php経由で呼び出される場合を考慮）
-// /radish/api/shops または /radish/api/shops/123 の形式から、shops以降の部分を取得
-$path = str_replace('/radish/api/', '', $path);
+// /radish/v1/shops または /radish/api/shops の形式から、shops以降の部分を取得
+$path = preg_replace('#^/radish/(v1|api)/#', '', $path);
 $path = trim($path, '/');
 $pathParts = explode('/', $path);
 

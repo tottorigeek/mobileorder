@@ -46,6 +46,10 @@ switch ($endpoint) {
         break;
     
     case 'tables':
+        // 残りのパスを取得（tables以降の部分）
+        $remainingPath = isset($pathParts[1]) ? implode('/', array_slice($pathParts, 1)) : '';
+        // 環境変数として残りのパスを設定（tables.phpで使用）
+        $_ENV['TABLES_REMAINING_PATH'] = $remainingPath;
         require_once __DIR__ . '/tables.php';
         break;
     
