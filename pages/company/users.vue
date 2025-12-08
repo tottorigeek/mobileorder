@@ -176,9 +176,18 @@
                 </span>
               </div>
               <p class="text-sm text-gray-600 mb-1">ユーザー名: {{ user.username }}</p>
-              <p v-if="user.shop" class="text-sm text-gray-600 mb-1">
-                店舗: {{ user.shop.name }} ({{ user.shop.code }})
-              </p>
+              <div v-if="user.shop" class="flex items-center gap-2 mb-1">
+                <p class="text-sm text-gray-600">
+                  店舗: {{ user.shop.name }} ({{ user.shop.code }})
+                </p>
+                <NuxtLink
+                  :to="`/company/shops/${user.shop.id}/edit`"
+                  class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium hover:bg-green-200 transition-colors"
+                  @click.stop
+                >
+                  店舗設定
+                </NuxtLink>
+              </div>
               <p v-else class="text-sm text-gray-500 mb-1">店舗: 未設定</p>
               <p v-if="user.email" class="text-sm text-gray-600 mb-1">メール: {{ user.email }}</p>
               <p v-if="user.lastLoginAt" class="text-xs text-gray-500">
