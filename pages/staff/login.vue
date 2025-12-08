@@ -100,8 +100,16 @@ const handleLogin = async () => {
     const success = await authStore.login(username.value, password.value)
     
     if (success && authStore.user) {
-      // 店舗選択画面にリダイレクト
-      await navigateTo('/staff/shop-select')
+      // 所属店舗数を確認
+      const myShops = await shopStore.fetchMyShops()
+      
+      if (myShops.length > 1) {
+        // 複数店舗を持つ場合は複数店舗管理画面へ
+        await navigateTo('/multi-shop/dashboard')
+      } else {
+        // 単一店舗の場合は店舗選択画面へ
+        await navigateTo('/staff/shop-select')
+      }
     } else {
       errorMessage.value = 'ユーザー名またはパスワードが正しくありません'
     }

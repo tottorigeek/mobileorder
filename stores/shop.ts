@@ -30,6 +30,23 @@ export const useShopStore = defineStore('shop', {
       }
     },
 
+    async fetchMyShops() {
+      this.isLoading = true
+      try {
+        const config = useRuntimeConfig()
+        const apiBase = config.public.apiBase
+        const data = await $fetch<Shop[]>(`${apiBase}/my-shops`)
+        this.shops = data || []
+        return data || []
+      } catch (error) {
+        console.error('所属店舗一覧の取得に失敗しました:', error)
+        this.shops = []
+        return []
+      } finally {
+        this.isLoading = false
+      }
+    },
+
     async fetchShopByCode(shopCode: string) {
       this.isLoading = true
       try {

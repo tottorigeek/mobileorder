@@ -32,6 +32,10 @@ switch ($endpoint) {
         require_once __DIR__ . '/users.php';
         break;
     
+    case 'my-shops':
+        require_once __DIR__ . '/my-shops.php';
+        break;
+    
     case 'menus':
         require_once __DIR__ . '/menus.php';
         break;

@@ -10,6 +10,10 @@ export interface Shop {
   email?: string
   maxTables?: number
   isActive: boolean
+  shopRole?: 'owner' | 'manager' | 'staff' // この店舗での役割
+  isPrimary?: boolean // 主店舗フラグ
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface User {
