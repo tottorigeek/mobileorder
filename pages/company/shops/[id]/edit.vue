@@ -205,23 +205,73 @@
             <!-- 定休日設定 -->
             <div class="mb-6">
               <h4 class="text-md font-medium mb-3">定休日（規則的な休業日）</h4>
-              <div class="flex flex-wrap gap-2">
-                <label
-                  v-for="day in weekDays"
-                  :key="day.key"
-                  class="flex items-center gap-2 px-4 py-2 border rounded-lg cursor-pointer transition-colors"
-                  :class="editData.settings.regularHolidays.includes(day.key) 
-                    ? 'bg-red-100 border-red-300 text-red-700' 
-                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'"
-                >
-                  <input
-                    v-model="editData.settings.regularHolidays"
-                    type="checkbox"
-                    :value="day.key"
-                    class="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
-                  />
-                  <span class="text-sm font-medium">{{ day.label }}</span>
-                </label>
+              
+              <!-- 毎週の定休日 -->
+              <div class="mb-4">
+                <h5 class="text-sm font-medium text-gray-700 mb-2">毎週の定休日</h5>
+                <div class="flex flex-wrap gap-2">
+                  <label
+                    v-for="day in weekDays"
+                    :key="day.key"
+                    class="flex items-center gap-2 px-4 py-2 border rounded-lg cursor-pointer transition-colors"
+                    :class="isWeeklyHoliday(day.key) 
+                      ? 'bg-red-100 border-red-300 text-red-700' 
+                      : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'"
+                  >
+                    <input
+                      type="checkbox"
+                      :checked="isWeeklyHoliday(day.key)"
+                      @change="toggleWeeklyHoliday(day.key)"
+                      class="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                    />
+                    <span class="text-sm font-medium">{{ day.label }}</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- 毎月第〇曜日の定休日 -->
+              <div class="mb-4">
+                <h5 class="text-sm font-medium text-gray-700 mb-2">毎月第〇曜日の定休日</h5>
+                <div class="space-y-2">
+                  <div
+                    v-for="(holiday, index) in monthlyHolidays"
+                    :key="index"
+                    class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
+                  >
+                    <select
+                      v-model="holiday.week"
+                      class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+                    >
+                      <option :value="1">第1</option>
+                      <option :value="2">第2</option>
+                      <option :value="3">第3</option>
+                      <option :value="4">第4</option>
+                      <option :value="-1">最終</option>
+                    </select>
+                    <select
+                      v-model="holiday.day"
+                      class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+                    >
+                      <option v-for="day in weekDays" :key="day.key" :value="day.key">
+                        {{ day.label }}
+                      </option>
+                    </select>
+                    <button
+                      type="button"
+                      @click="removeMonthlyHoliday(index)"
+                      class="px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors text-sm"
+                    >
+                      削除
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    @click="addMonthlyHoliday"
+                    class="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm"
+                  >
+                    + 毎月第〇曜日を追加
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -319,27 +369,59 @@
         <!-- オーナー追加 -->
         <div>
           <h4 class="text-sm font-medium text-gray-700 mb-3">オーナーを追加</h4>
-          <div class="flex gap-3">
-            <select
-              v-model="selectedUserId"
-              class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-            >
-              <option value="">ユーザーを選択してください</option>
-              <option
-                v-for="user in availableUsers"
-                :key="user.id"
-                :value="user.id"
+          <div class="relative">
+            <div class="flex gap-3">
+              <div class="flex-1 relative">
+                <input
+                  v-model="ownerSearchQuery"
+                  type="text"
+                  placeholder="オーナーを検索（名前、ユーザー名、メールで検索）"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  @focus="showOwnerSuggestions = true"
+                  @blur="handleOwnerInputBlur"
+                  @input="handleOwnerSearch"
+                />
+                <!-- 候補リスト -->
+                <div
+                  v-if="showOwnerSuggestions && filteredOwnerUsers.length > 0"
+                  class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                >
+                  <div
+                    v-for="user in filteredOwnerUsers"
+                    :key="user.id"
+                    @mousedown="selectOwnerUser(user)"
+                    class="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+                  >
+                    <div class="font-medium text-gray-900">{{ user.name }}</div>
+                    <div class="text-sm text-gray-600">{{ user.username }}</div>
+                    <div v-if="user.email" class="text-xs text-gray-500">{{ user.email }}</div>
+                  </div>
+                </div>
+                <div
+                  v-if="showOwnerSuggestions && filteredOwnerUsers.length === 0 && ownerSearchQuery"
+                  class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-3 text-sm text-gray-500"
+                >
+                  該当するオーナーが見つかりません
+                </div>
+              </div>
+              <button
+                @click="handleAddOwner"
+                :disabled="!selectedOwnerUser || isAddingOwner"
+                class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
               >
-                {{ user.name }} ({{ user.username }}){{ user.email ? ` - ${user.email}` : '' }}
-              </option>
-            </select>
-            <button
-              @click="handleAddOwner"
-              :disabled="!selectedUserId || isAddingOwner"
-              class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-            >
-              {{ isAddingOwner ? '追加中...' : '追加' }}
-            </button>
+                {{ isAddingOwner ? '追加中...' : '追加' }}
+              </button>
+            </div>
+            <!-- 選択中のユーザー表示 -->
+            <div v-if="selectedOwnerUser" class="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm">
+              <span class="font-medium text-blue-900">選択中: {{ selectedOwnerUser.name }} ({{ selectedOwnerUser.username }})</span>
+              <button
+                @click="clearSelectedOwner"
+                class="ml-2 text-blue-600 hover:text-blue-800 underline"
+              >
+                クリア
+              </button>
+            </div>
           </div>
           <div v-if="ownerError" class="mt-2 p-2 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
             {{ ownerError }}
@@ -380,7 +462,9 @@ const success = ref(false)
 const debugInfo = ref('')
 
 // オーナー管理関連
-const selectedUserId = ref('')
+const ownerSearchQuery = ref('')
+const selectedOwnerUser = ref<User | null>(null)
+const showOwnerSuggestions = ref(false)
 const isAddingOwner = ref(false)
 const isRemovingOwner = ref(false)
 const ownerError = ref('')
@@ -410,7 +494,7 @@ const editData = ref({
   maxTables: 20,
   isActive: true,
   settings: {
-    regularHolidays: [] as string[],
+    regularHolidays: [] as (string | { type: string; day: string; week?: number })[],
     temporaryHolidays: [] as string[],
     businessHours: {
       monday: { open: '10:00', close: '22:00', isClosed: false },
@@ -424,16 +508,91 @@ const editData = ref({
   }
 })
 
+// 毎週の定休日を取得
+const weeklyHolidays = computed(() => {
+  return editData.value.settings.regularHolidays.filter(h => {
+    if (typeof h === 'string') return true
+    return h.type === 'weekly'
+  }).map(h => typeof h === 'string' ? h : h.day)
+})
+
+// 毎月第〇曜日の定休日を取得
+const monthlyHolidays = computed({
+  get() {
+    return editData.value.settings.regularHolidays
+      .filter(h => typeof h === 'object' && h.type === 'monthly')
+      .map(h => {
+        const obj = h as { type: string; day: string; week?: number }
+        return {
+          week: obj.week || 1,
+          day: obj.day
+        }
+      })
+  },
+  set(newValue: { week: number; day: string }[]) {
+    // 毎週の定休日を保持
+    const weekly = editData.value.settings.regularHolidays.filter(h => {
+      if (typeof h === 'string') return true
+      return h.type === 'weekly'
+    })
+    
+    // 毎月の定休日を更新
+    const monthly = newValue.map(h => ({
+      type: 'monthly' as const,
+      day: h.day,
+      week: h.week
+    }))
+    
+    editData.value.settings.regularHolidays = [...weekly, ...monthly]
+  }
+})
+
+const isWeeklyHoliday = (dayKey: string): boolean => {
+  return weeklyHolidays.value.includes(dayKey)
+}
+
+const toggleWeeklyHoliday = (dayKey: string) => {
+  const currentHolidays = editData.value.settings.regularHolidays
+  const isHoliday = weeklyHolidays.value.includes(dayKey)
+  
+  if (isHoliday) {
+    // 削除
+    editData.value.settings.regularHolidays = currentHolidays.filter(h => {
+      if (typeof h === 'string') return h !== dayKey
+      return h.type !== 'weekly' || h.day !== dayKey
+    })
+  } else {
+    // 追加（既存のmonthlyを保持）
+    const monthly = currentHolidays.filter(h => typeof h === 'object' && h.type === 'monthly')
+    editData.value.settings.regularHolidays = [
+      ...currentHolidays.filter(h => typeof h === 'string' && h !== dayKey),
+      { type: 'weekly', day: dayKey },
+      ...monthly
+    ]
+  }
+}
+
+const addMonthlyHoliday = () => {
+  const newHoliday = { week: 1, day: 'monday' }
+  monthlyHolidays.value = [...monthlyHolidays.value, newHoliday]
+}
+
+const removeMonthlyHoliday = (index: number) => {
+  monthlyHolidays.value = monthlyHolidays.value.filter((_, i) => i !== index)
+}
+
 const onDayClosedChange = (dayKey: string) => {
   const day = editData.value.settings.businessHours[dayKey as keyof typeof editData.value.settings.businessHours]
   if (day.isClosed) {
-    // 休業に設定した場合、定休日に追加
-    if (!editData.value.settings.regularHolidays.includes(dayKey)) {
-      editData.value.settings.regularHolidays.push(dayKey)
+    // 休業に設定した場合、毎週の定休日に追加
+    if (!isWeeklyHoliday(dayKey)) {
+      toggleWeeklyHoliday(dayKey)
     }
   } else {
-    // 営業に戻した場合、定休日から削除
-    editData.value.settings.regularHolidays = editData.value.settings.regularHolidays.filter(d => d !== dayKey)
+    // 営業に戻した場合、毎週の定休日から削除
+    if (isWeeklyHoliday(dayKey)) {
+      toggleWeeklyHoliday(dayKey)
+    }
   }
 }
 
@@ -447,13 +606,54 @@ const removeTemporaryHoliday = (index: number) => {
   editData.value.settings.temporaryHolidays.splice(index, 1)
 }
 
-// オーナーとして追加可能なユーザー一覧（既にオーナーになっているユーザーを除外）
-const availableUsers = computed(() => {
+// オーナー権限のユーザー一覧（既にこの店舗のオーナーになっているユーザーを除外）
+const ownerUsers = computed(() => {
   if (!shop.value) return []
   
   const ownerIds = (shop.value.owners || []).map(o => o.id)
-  return allUsers.value.filter(user => !ownerIds.includes(user.id))
+  // オーナー権限のユーザーのみをフィルタリング
+  return allUsers.value.filter(user => 
+    user.role === 'owner' && !ownerIds.includes(user.id)
+  )
 })
+
+// 検索クエリに基づいてオーナー候補をフィルタリング
+const filteredOwnerUsers = computed(() => {
+  if (!ownerSearchQuery.value.trim()) {
+    return ownerUsers.value.slice(0, 10) // 検索クエリがない場合は最大10件表示
+  }
+  
+  const query = ownerSearchQuery.value.toLowerCase().trim()
+  return ownerUsers.value.filter(user => {
+    const nameMatch = user.name.toLowerCase().includes(query)
+    const usernameMatch = user.username.toLowerCase().includes(query)
+    const emailMatch = user.email?.toLowerCase().includes(query) || false
+    return nameMatch || usernameMatch || emailMatch
+  }).slice(0, 10) // 最大10件まで表示
+})
+
+const handleOwnerSearch = () => {
+  showOwnerSuggestions.value = true
+}
+
+const selectOwnerUser = (user: User) => {
+  selectedOwnerUser.value = user
+  ownerSearchQuery.value = `${user.name} (${user.username})`
+  showOwnerSuggestions.value = false
+}
+
+const clearSelectedOwner = () => {
+  selectedOwnerUser.value = null
+  ownerSearchQuery.value = ''
+  showOwnerSuggestions.value = false
+}
+
+const handleOwnerInputBlur = () => {
+  // 少し遅延させて、クリックイベントが発火するようにする
+  setTimeout(() => {
+    showOwnerSuggestions.value = false
+  }, 200)
+}
 
 const handleLogout = async () => {
   if (confirm('ログアウトしますか？')) {
@@ -482,16 +682,16 @@ const handleUpdateShop = async () => {
 }
 
 const handleAddOwner = async () => {
-  if (!selectedUserId.value) return
+  if (!selectedOwnerUser.value) return
   
   isAddingOwner.value = true
   ownerError.value = ''
   ownerSuccess.value = ''
   
   try {
-    await shopStore.addShopOwner(shopId, selectedUserId.value)
+    await shopStore.addShopOwner(shopId, selectedOwnerUser.value.id)
     ownerSuccess.value = 'オーナーを追加しました'
-    selectedUserId.value = ''
+    clearSelectedOwner()
     
     // 店舗情報を再取得
     const fetchedShop = await shopStore.fetchShopById(shopId)
@@ -593,6 +793,20 @@ onMounted(async () => {
       }
     }
     
+    // 既存の定休日を正規化（後方互換性のため）
+    const normalizedRegularHolidays: (string | { type: string; day: string; week?: number })[] = []
+    if (existingSettings.regularHolidays) {
+      for (const holiday of existingSettings.regularHolidays) {
+        if (typeof holiday === 'string') {
+          // 既存の文字列形式（毎週）
+          normalizedRegularHolidays.push(holiday)
+        } else if (typeof holiday === 'object' && holiday !== null) {
+          // オブジェクト形式
+          normalizedRegularHolidays.push(holiday)
+        }
+      }
+    }
+    
     editData.value = {
       code: fetchedShop.code,
       name: fetchedShop.name,
@@ -603,7 +817,7 @@ onMounted(async () => {
       maxTables: fetchedShop.maxTables || 20,
       isActive: fetchedShop.isActive,
       settings: {
-        regularHolidays: existingSettings.regularHolidays || [],
+        regularHolidays: normalizedRegularHolidays,
         temporaryHolidays: existingSettings.temporaryHolidays || [],
         businessHours: mergedBusinessHours
       }

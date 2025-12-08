@@ -13,8 +13,15 @@ export interface BusinessHours {
   isClosed?: boolean // 休業日の場合true
 }
 
+// 定休日の設定タイプ
+export interface RegularHoliday {
+  type: 'weekly' | 'monthly' // 'weekly': 毎週, 'monthly': 毎月第〇曜日
+  day: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday'
+  week?: number // 毎月の場合: 1-4 (第1-4週), -1 (最終週)
+}
+
 export interface ShopSettings {
-  regularHolidays?: string[] // 定休日の曜日配列（例: ["monday", "tuesday"]）
+  regularHolidays?: (string | RegularHoliday)[] // 定休日の設定（後方互換性のため文字列も許可）
   temporaryHolidays?: string[] // 臨時休業日の日付配列（例: ["2024-12-25", "2024-12-31"]）
   businessHours?: {
     monday?: BusinessHours
