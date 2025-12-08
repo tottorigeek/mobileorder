@@ -11,6 +11,22 @@
     </div>
 
     <div v-else class="space-y-4">
+      <!-- テーブル番号入力 -->
+      <div class="bg-white p-4 rounded-lg shadow">
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          テーブル番号 <span class="text-red-500">*</span>
+        </label>
+        <input
+          v-model="tableNumber"
+          type="text"
+          placeholder="テーブル番号を入力"
+          class="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        />
+        <p v-if="!cartStore.tableNumber" class="mt-2 text-sm text-red-500">
+          テーブル番号を入力してください
+        </p>
+      </div>
+
       <!-- カートアイテム一覧 -->
       <div class="space-y-3">
         <div
@@ -72,6 +88,17 @@ import { useOrder } from '~/composables/useOrder'
 const cartStore = useCartStore()
 const { submitOrder } = useOrder()
 const isSubmitting = ref(false)
+const tableNumber = ref(cartStore.tableNumber || '')
+
+// テーブル番号が変更されたらストアに反映
+watch(tableNumber, (newValue) => {
+  cartStore.setTableNumber(newValue)
+})
+
+// ページ読み込み時にストアの値を反映
+onMounted(() => {
+  tableNumber.value = cartStore.tableNumber || ''
+})
 
 const handleOrder = async () => {
   if (!cartStore.tableNumber) {

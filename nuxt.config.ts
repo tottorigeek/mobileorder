@@ -33,7 +33,7 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      apiBase: process.env.API_BASE || process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:3000/api'
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://mameq.xsrv.jp/radish/api'
     }
   }
 })

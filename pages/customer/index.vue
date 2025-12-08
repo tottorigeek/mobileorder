@@ -89,8 +89,29 @@ const categories = [
   { value: 'dessert', label: 'デザート' }
 ]
 
-onMounted(() => {
-  menuStore.fetchMenus()
+const route = useRoute()
+const shopStore = useShopStore()
+
+onMounted(async () => {
+  // 店舗コードの取得（クエリパラメータまたはストレージから）
+  const shopCode = route.query.shop as string || null
+  
+  if (shopCode) {
+    // クエリパラメータから店舗を取得
+    await shopStore.fetchShopByCode(shopCode)
+  } else {
+    // ストレージから店舗を読み込み
+    shopStore.loadShopFromStorage()
+  }
+  
+  // 店舗が選択されていない場合は店舗選択ページにリダイレクト
+  if (!shopStore.currentShop) {
+    await navigateTo('/shop-select')
+    return
+  }
+  
+  // メニューを取得（店舗IDを含める）
+  await menuStore.fetchMenus(shopStore.currentShop.code)
   tableNumber.value = cartStore.tableNumber
 })
 </script>

@@ -34,6 +34,10 @@
               />
             </div>
 
+            <div v-if="errorMessage" class="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+              {{ errorMessage }}
+            </div>
+
             <button
               type="submit"
               :disabled="isLoading"
@@ -58,23 +62,57 @@
 </template>
 
 <script setup lang="ts">
+import { useAuthStore } from '~/stores/auth'
+import { useShopStore } from '~/stores/shop'
+
+const authStore = useAuthStore()
+const shopStore = useShopStore()
+const route = useRoute()
+
 const username = ref('')
 const password = ref('')
 const isLoading = ref(false)
+const errorMessage = ref('')
+
+// 店舗コードの取得（クエリパラメータから）
+const shopCode = computed(() => route.query.shop as string || '')
+
+onMounted(() => {
+  // ストレージからユーザー情報を読み込み
+  authStore.loadUserFromStorage()
+  shopStore.loadShopFromStorage()
+  
+  // 既に認証済みの場合はダッシュボードにリダイレクト
+  if (authStore.isAuthenticated) {
+    navigateTo('/admin/dashboard')
+  }
+})
 
 const handleLogin = async () => {
+  if (!username.value || !password.value) {
+    errorMessage.value = 'ユーザー名とパスワードを入力してください'
+    return
+  }
+
   isLoading.value = true
+  errorMessage.value = ''
+  
   try {
-    // TODO: 認証API呼び出しに置き換え
-    // モック: 簡単な認証
-    if (username.value && password.value) {
-      // 認証成功
-      await navigateTo('/staff/orders')
+    const success = await authStore.login(username.value, password.value)
+    
+    if (success && authStore.user) {
+      // 店舗情報を設定
+      if (authStore.user.shop) {
+        shopStore.setCurrentShop(authStore.user.shop)
+      }
+      
+      // ダッシュボードにリダイレクト
+      await navigateTo('/admin/dashboard')
     } else {
-      alert('ユーザー名とパスワードを入力してください')
+      errorMessage.value = 'ユーザー名またはパスワードが正しくありません'
     }
-  } catch (error) {
-    alert('ログインに失敗しました')
+  } catch (error: any) {
+    errorMessage.value = error?.data?.error || 'ログインに失敗しました'
   } finally {
     isLoading.value = false
   }

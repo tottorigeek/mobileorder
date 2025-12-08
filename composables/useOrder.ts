@@ -1,13 +1,19 @@
 import { useCartStore } from '~/stores/cart'
 import { useOrderStore } from '~/stores/order'
+import { useShopStore } from '~/stores/shop'
 
 export const useOrder = () => {
   const cartStore = useCartStore()
   const orderStore = useOrderStore()
+  const shopStore = useShopStore()
 
   const submitOrder = async () => {
     if (cartStore.isEmpty || !cartStore.tableNumber) {
       throw new Error('カートが空か、テーブル番号が設定されていません')
+    }
+
+    if (!shopStore.currentShop) {
+      throw new Error('店舗が選択されていません')
     }
 
     const orderItems = cartStore.items.map(item => ({
@@ -19,7 +25,10 @@ export const useOrder = () => {
     }))
 
     // API経由で注文を作成
-    const orderData = await $fetch('/api/orders', {
+    const config = useRuntimeConfig()
+    const apiBase = config.public.apiBase
+    
+    const orderData = await $fetch(`${apiBase}/orders?shop=${shopStore.currentShop.code}`, {
       method: 'POST',
       body: {
         tableNumber: cartStore.tableNumber,

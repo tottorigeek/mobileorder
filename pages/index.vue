@@ -7,14 +7,14 @@
 
       <div class="space-y-4">
         <NuxtLink
-          to="/customer"
+          to="/shop-select"
           class="block w-full p-6 bg-blue-600 text-white rounded-lg text-center text-xl font-semibold hover:bg-blue-700 transition-colors touch-target"
         >
           お客様用
         </NuxtLink>
 
         <NuxtLink
-          to="/staff/login"
+          to="/shop-select?mode=staff"
           class="block w-full p-6 bg-purple-600 text-white rounded-lg text-center text-xl font-semibold hover:bg-purple-700 transition-colors touch-target"
         >
           店舗スタッフ用

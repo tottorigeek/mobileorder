@@ -32,10 +32,19 @@ export const useMenuStore = defineStore('menu', {
   },
 
   actions: {
-    async fetchMenus() {
+    async fetchMenus(shopCode?: string) {
       this.isLoading = true
       try {
-        const data = await $fetch<Menu[]>('/api/menus')
+        const config = useRuntimeConfig()
+        const apiBase = config.public.apiBase
+        
+        // 店舗コードをクエリパラメータに追加
+        let url = `${apiBase}/menus`
+        if (shopCode) {
+          url += `?shop=${shopCode}`
+        }
+        
+        const data = await $fetch<Menu[]>(url)
         this.menus = data || []
       } catch (error) {
         console.error('メニューの取得に失敗しました:', error)

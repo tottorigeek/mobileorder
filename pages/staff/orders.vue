@@ -93,6 +93,8 @@
 
 <script setup lang="ts">
 import { useOrderStore } from '~/stores/order'
+import { useAuthStore } from '~/stores/auth'
+import { useShopStore } from '~/stores/shop'
 import type { OrderStatus } from '~/types'
 
 const orderStore = useOrderStore()
@@ -110,7 +112,12 @@ const filteredOrders = computed(() => {
   if (selectedStatus.value === 'all') {
     return orderStore.orders
   }
-  return orderStore.ordersByStatus(selectedStatus.value)
+  return orderStore.ordersByStatus(selectedStatus.value as OrderStatus)
+})
+
+// ステータス変更時に再取得
+watch(selectedStatus, async (newStatus) => {
+  await orderStore.fetchOrders(newStatus === 'all' ? undefined : newStatus as OrderStatus)
 })
 
 const getStatusLabel = (status: OrderStatus) => {
@@ -137,10 +144,28 @@ const getStatusClass = (status: OrderStatus) => {
 
 const updateStatus = async (orderId: string, status: OrderStatus) => {
   await orderStore.updateOrderStatus(orderId, status)
+  // 更新後に再取得
+  await orderStore.fetchOrders(selectedStatus.value === 'all' ? undefined : selectedStatus.value as OrderStatus)
 }
 
-onMounted(() => {
-  orderStore.fetchOrders()
+const authStore = useAuthStore()
+const shopStore = useShopStore()
+
+onMounted(async () => {
+  // 認証チェック
+  authStore.loadUserFromStorage()
+  if (!authStore.isAuthenticated) {
+    await navigateTo('/staff/login')
+    return
+  }
+  
+  // 店舗情報の読み込み
+  shopStore.loadShopFromStorage()
+  if (authStore.user?.shop) {
+    shopStore.setCurrentShop(authStore.user.shop)
+  }
+  
+  await orderStore.fetchOrders()
 })
 </script>
 

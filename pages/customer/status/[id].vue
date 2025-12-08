@@ -1,6 +1,11 @@
 <template>
   <NuxtLayout name="default" title="注文状況">
-    <div v-if="order" class="space-y-6">
+    <div v-if="isLoading" class="text-center py-12">
+      <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <p class="mt-4 text-gray-500">読み込み中...</p>
+    </div>
+    
+    <div v-else-if="order" class="space-y-6">
       <div class="bg-white p-6 rounded-lg shadow">
         <h2 class="text-2xl font-bold mb-4">注文状況</h2>
         <div class="space-y-3">
@@ -99,13 +104,39 @@
 
 <script setup lang="ts">
 import { useOrderStore } from '~/stores/order'
-import type { OrderStatus } from '~/types'
+import type { OrderStatus, Order } from '~/types'
 
 const route = useRoute()
 const orderStore = useOrderStore()
+const orderId = route.params.id as string
 
-const order = computed(() => {
-  return orderStore.orders.find(o => o.id === route.params.id as string)
+// 注文を取得
+const order = ref<Order | null>(null)
+const isLoading = ref(true)
+
+onMounted(async () => {
+  // まずローカルストアから取得を試みる
+  const localOrder = orderStore.orders.find(o => o.id === orderId)
+  if (localOrder) {
+    order.value = localOrder
+    isLoading.value = false
+  } else {
+    // ローカルにない場合はAPIから取得
+    try {
+      const config = useRuntimeConfig()
+      const apiBase = config.public.apiBase
+      const orderData = await $fetch<Order>(`${apiBase}/orders/${orderId}`)
+      order.value = {
+        ...orderData,
+        createdAt: new Date(orderData.createdAt),
+        updatedAt: new Date(orderData.updatedAt)
+      }
+    } catch (error) {
+      console.error('注文の取得に失敗しました:', error)
+    } finally {
+      isLoading.value = false
+    }
+  }
 })
 
 const statusLabel = computed(() => {
