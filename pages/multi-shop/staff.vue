@@ -86,6 +86,9 @@
             <div class="flex-1">
               <div class="flex items-center gap-2 mb-2">
                 <h3 class="text-lg font-semibold">{{ staff.name }}</h3>
+                <span v-if="isCurrentUser(staff.id)" class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">
+                  自分
+                </span>
                 <span :class="getRoleBadgeClass(staff.role)">
                   {{ getRoleLabel(staff.role) }}
                 </span>
@@ -159,6 +162,10 @@ const getRoleLabel = (role: string) => {
   return labels[role] || role
 }
 
+const isCurrentUser = (staffId: string) => {
+  return authStore.user?.id === staffId
+}
+
 const getRoleBadgeClass = (role: string) => {
   const classes: Record<string, string> = {
     owner: 'px-2 py-1 bg-purple-100 text-purple-800 rounded text-sm',
@@ -185,21 +192,26 @@ const fetchAllStaff = async () => {
   const apiBase = config.public.apiBase
   
   try {
-    // 各店舗のスタッフを取得
-    const staffPromises = myShops.value.map(async (shop) => {
-      try {
-        // 各店舗のユーザーを取得するAPIが必要
-        // 現在は店舗ごとのユーザー管理APIがないため、全ユーザーからフィルタリング
-        const users = await $fetch<User[]>(`${apiBase}/users`)
-        return users.filter(u => u.shopId === shop.id)
-      } catch (error) {
-        console.error(`店舗 ${shop.name} のスタッフ取得に失敗:`, error)
-        return []
-      }
+    // 認証トークンを取得
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    }
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+    
+    // 全店舗のユーザーを取得（company-users APIを使用）
+    const allUsers = await $fetch<User[]>(`${apiBase}/company-users`, {
+      headers: headers
     })
     
-    const staffArrays = await Promise.all(staffPromises)
-    allStaff.value = staffArrays.flat()
+    // 所属店舗のIDリストを作成
+    const shopIds = myShops.value.map(s => s.id)
+    
+    // 所属店舗のスタッフのみをフィルタリング
+    allStaff.value = allUsers.filter(u => shopIds.includes(u.shopId))
     filterStaff()
   } catch (error) {
     console.error('スタッフの取得に失敗しました:', error)
