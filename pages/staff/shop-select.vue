@@ -81,13 +81,9 @@ const shopStore = useShopStore()
 
 const currentShop = computed(() => shopStore.currentShop)
 
-// 利用可能な店舗（現在はログインユーザーの所属店舗のみ）
+// 利用可能な店舗（ユーザーが所属する全店舗）
 const availableShops = computed(() => {
-  if (!authStore.user?.shop) {
-    return []
-  }
-  // 現在は1店舗のみ所属だが、将来的に複数店舗対応可能
-  return [authStore.user.shop]
+  return shopStore.shops || []
 })
 
 onMounted(async () => {
@@ -101,13 +97,23 @@ onMounted(async () => {
   // 店舗情報の読み込み
   shopStore.loadShopFromStorage()
   
-  // ログインユーザーの所属店舗を自動設定
-  if (authStore.user?.shop && !shopStore.currentShop) {
-    shopStore.setCurrentShop(authStore.user.shop)
+  // ユーザーが所属する全店舗を取得
+  await shopStore.fetchMyShops()
+  
+  // 店舗が1つしかない場合は自動選択
+  if (shopStore.shops.length === 1 && !shopStore.currentShop) {
+    shopStore.setCurrentShop(shopStore.shops[0])
   }
-
-  // 店舗一覧を取得（将来的に複数店舗対応する場合）
-  await shopStore.fetchShops()
+  
+  // 既に選択されている店舗が利用可能な店舗リストに含まれているか確認
+  if (shopStore.currentShop && !shopStore.shops.find(s => s.id === shopStore.currentShop?.id)) {
+    // 選択されている店舗が利用可能でない場合は、最初の店舗を選択
+    if (shopStore.shops.length > 0) {
+      shopStore.setCurrentShop(shopStore.shops[0])
+    } else {
+      shopStore.setCurrentShop(null)
+    }
+  }
 })
 
 const selectShop = (shop: Shop) => {
