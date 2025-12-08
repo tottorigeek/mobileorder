@@ -44,6 +44,10 @@ switch ($endpoint) {
         require_once __DIR__ . '/menus.php';
         break;
     
+    case 'tables':
+        require_once __DIR__ . '/tables.php';
+        break;
+    
     case 'orders':
         // ordersエンドポイントの場合、残りのパスを取得
         $remainingPath = isset($pathParts[1]) ? $pathParts[1] : null;

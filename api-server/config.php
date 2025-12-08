@@ -320,12 +320,30 @@ function checkPermission($requiredRole) {
     $roleHierarchy = ['staff' => 1, 'manager' => 2, 'owner' => 3];
     
     $userLevel = $roleHierarchy[$auth['role']] ?? 0;
-    $requiredLevel = $roleHierarchy[$requiredRole] ?? 0;
     
-    if ($userLevel < $requiredLevel) {
-        http_response_code(403);
-        echo json_encode(['error' => 'Forbidden: Insufficient permissions']);
-        exit;
+    // 配列の場合は、いずれかのロールに該当すればOK
+    if (is_array($requiredRole)) {
+        $hasPermission = false;
+        foreach ($requiredRole as $role) {
+            $requiredLevel = $roleHierarchy[$role] ?? 0;
+            if ($userLevel >= $requiredLevel) {
+                $hasPermission = true;
+                break;
+            }
+        }
+        if (!$hasPermission) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Forbidden: Insufficient permissions']);
+            exit;
+        }
+    } else {
+        // 単一のロールの場合
+        $requiredLevel = $roleHierarchy[$requiredRole] ?? 0;
+        if ($userLevel < $requiredLevel) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Forbidden: Insufficient permissions']);
+            exit;
+        }
     }
     
     return $auth;

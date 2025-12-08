@@ -95,10 +95,29 @@ const shopStore = useShopStore()
 onMounted(async () => {
   // 店舗コードの取得（クエリパラメータまたはストレージから）
   const shopCode = route.query.shop as string || null
+  const tableParam = route.query.table as string || null
   
   if (shopCode) {
     // クエリパラメータから店舗を取得
     await shopStore.fetchShopByCode(shopCode)
+    
+    // QRコードからテーブル番号が指定されている場合
+    if (tableParam) {
+      try {
+        // QRコードからテーブル情報を取得して検証
+        const tableStore = useTableStore()
+        const tableInfo = await tableStore.fetchTableByQRCode(shopCode, tableParam)
+        
+        // テーブル番号を設定
+        tableNumber.value = tableInfo.tableNumber
+        cartStore.setTableNumber(tableInfo.tableNumber)
+      } catch (error) {
+        console.error('QRコードからのテーブル情報取得に失敗しました:', error)
+        // エラーが発生してもテーブル番号は設定する（QRコードが無効でも利用可能にする）
+        tableNumber.value = tableParam
+        cartStore.setTableNumber(tableParam)
+      }
+    }
   } else {
     // ストレージから店舗を読み込み
     shopStore.loadShopFromStorage()
@@ -112,7 +131,11 @@ onMounted(async () => {
   
   // メニューを取得（店舗IDを含める）
   await menuStore.fetchMenus(shopStore.currentShop.code)
-  tableNumber.value = cartStore.tableNumber
+  
+  // テーブル番号がまだ設定されていない場合はストレージから読み込む
+  if (!tableNumber.value) {
+    tableNumber.value = cartStore.tableNumber
+  }
 })
 </script>
 

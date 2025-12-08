@@ -47,6 +47,20 @@ export interface Table {
   currentOrderId?: string
 }
 
+export interface ShopTable {
+  id: string
+  shopId: string
+  shopCode: string
+  shopName: string
+  tableNumber: string
+  name?: string
+  capacity: number
+  isActive: boolean
+  qrCodeUrl?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
 export interface Payment {
   id: string
   orderId: string

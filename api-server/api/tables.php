@@ -1,0 +1,436 @@
+<?php
+/**
+ * 店舗テーブル（座席）管理API
+ * GET /api/tables?shop_id={shop_id} - 店舗のテーブル一覧取得（認証必須）
+ * GET /api/tables/{id} - テーブル情報取得（認証必須）
+ * POST /api/tables - テーブル作成（認証必須、オーナー・マネージャーのみ）
+ * PUT /api/tables/{id} - テーブル更新（認証必須、オーナー・マネージャーのみ）
+ * DELETE /api/tables/{id} - テーブル削除（認証必須、オーナー・マネージャーのみ）
+ * GET /api/tables/qr/{shop_code}/{table_number} - QRコード用テーブル情報取得（公開）
+ */
+
+require_once __DIR__ . '/../config.php';
+
+setJsonHeader();
+
+$method = $_SERVER['REQUEST_METHOD'];
+$path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+
+// パスの解析
+$pathParts = explode('/', trim(str_replace('/radish/api/tables/', '', $path), '/'));
+
+// QRコード用エンドポイントの判定
+if (isset($pathParts[0]) && $pathParts[0] === 'qr' && isset($pathParts[1]) && isset($pathParts[2])) {
+    $shopCode = $pathParts[1];
+    $tableNumber = $pathParts[2];
+    getTableByQRCode($shopCode, $tableNumber);
+    exit;
+}
+
+$tableId = isset($pathParts[0]) && is_numeric($pathParts[0]) ? (int)$pathParts[0] : null;
+$shopId = isset($_GET['shop_id']) ? (int)$_GET['shop_id'] : null;
+
+switch ($method) {
+    case 'GET':
+        if ($tableId) {
+            getTable($tableId);
+        } else {
+            getTables($shopId);
+        }
+        break;
+    
+    case 'POST':
+        createTable();
+        break;
+    
+    case 'PUT':
+        if ($tableId) {
+            updateTable($tableId);
+        } else {
+            sendErrorResponse(400, 'Table ID is required');
+        }
+        break;
+    
+    case 'DELETE':
+        if ($tableId) {
+            deleteTable($tableId);
+        } else {
+            sendErrorResponse(400, 'Table ID is required');
+        }
+        break;
+    
+    default:
+        sendErrorResponse(405, 'Method not allowed');
+        break;
+}
+
+/**
+ * テーブル一覧取得（認証必須）
+ */
+function getTables($shopId = null) {
+    try {
+        // 認証チェック
+        $auth = checkAuth();
+        $userShopId = $auth['shop_id'] ?? null;
+        
+        $pdo = getDbConnection();
+        
+        // shop_idが指定されていない場合は認証ユーザーのshop_idを使用
+        if (!$shopId) {
+            $shopId = $userShopId;
+        }
+        
+        // 権限チェック：自分の店舗のテーブルのみ取得可能
+        if ($userShopId && $shopId != $userShopId) {
+            // オーナー・マネージャーの場合は他の店舗も見れる可能性があるが、今回は自分の店舗のみ
+            sendForbiddenError('You can only access tables from your own shop');
+        }
+        
+        if (!$shopId) {
+            sendValidationError(['shop_id' => 'Shop ID is required']);
+        }
+        
+        $stmt = $pdo->prepare("
+            SELECT st.*, s.code as shop_code, s.name as shop_name
+            FROM shop_tables st
+            INNER JOIN shops s ON st.shop_id = s.id
+            WHERE st.shop_id = :shop_id
+            ORDER BY 
+                CAST(st.table_number AS UNSIGNED) ASC,
+                st.table_number ASC
+        ");
+        $stmt->execute([':shop_id' => $shopId]);
+        $tables = $stmt->fetchAll();
+        
+        $result = array_map(function($table) {
+            return [
+                'id' => (string)$table['id'],
+                'shopId' => (string)$table['shop_id'],
+                'shopCode' => $table['shop_code'],
+                'shopName' => $table['shop_name'],
+                'tableNumber' => $table['table_number'],
+                'name' => $table['name'],
+                'capacity' => (int)$table['capacity'],
+                'isActive' => (bool)$table['is_active'],
+                'qrCodeUrl' => $table['qr_code_url'],
+                'createdAt' => $table['created_at'],
+                'updatedAt' => $table['updated_at']
+            ];
+        }, $tables);
+        
+        echo json_encode($result, JSON_UNESCAPED_UNICODE);
+        
+    } catch (PDOException $e) {
+        handleDatabaseError($e, 'fetching tables');
+    }
+}
+
+/**
+ * テーブル情報取得（認証必須）
+ */
+function getTable($tableId) {
+    try {
+        // 認証チェック
+        $auth = checkAuth();
+        $userShopId = $auth['shop_id'] ?? null;
+        
+        $pdo = getDbConnection();
+        
+        $stmt = $pdo->prepare("
+            SELECT st.*, s.code as shop_code, s.name as shop_name
+            FROM shop_tables st
+            INNER JOIN shops s ON st.shop_id = s.id
+            WHERE st.id = :id
+        ");
+        $stmt->execute([':id' => $tableId]);
+        $table = $stmt->fetch();
+        
+        if (!$table) {
+            sendNotFoundError('Table');
+        }
+        
+        // 権限チェック：自分の店舗のテーブルのみ取得可能
+        if ($userShopId && $table['shop_id'] != $userShopId) {
+            sendForbiddenError('You can only access tables from your own shop');
+        }
+        
+        echo json_encode([
+            'id' => (string)$table['id'],
+            'shopId' => (string)$table['shop_id'],
+            'shopCode' => $table['shop_code'],
+            'shopName' => $table['shop_name'],
+            'tableNumber' => $table['table_number'],
+            'name' => $table['name'],
+            'capacity' => (int)$table['capacity'],
+            'isActive' => (bool)$table['is_active'],
+            'qrCodeUrl' => $table['qr_code_url'],
+            'createdAt' => $table['created_at'],
+            'updatedAt' => $table['updated_at']
+        ], JSON_UNESCAPED_UNICODE);
+        
+    } catch (PDOException $e) {
+        handleDatabaseError($e, 'fetching table');
+    }
+}
+
+/**
+ * QRコード用テーブル情報取得（公開）
+ */
+function getTableByQRCode($shopCode, $tableNumber) {
+    try {
+        $pdo = getDbConnection();
+        
+        $stmt = $pdo->prepare("
+            SELECT st.*, s.code as shop_code, s.name as shop_name
+            FROM shop_tables st
+            INNER JOIN shops s ON st.shop_id = s.id
+            WHERE s.code = :shop_code 
+            AND st.table_number = :table_number
+            AND st.is_active = 1
+            AND s.is_active = 1
+        ");
+        $stmt->execute([
+            ':shop_code' => $shopCode,
+            ':table_number' => $tableNumber
+        ]);
+        $table = $stmt->fetch();
+        
+        if (!$table) {
+            sendNotFoundError('Table not found or inactive');
+        }
+        
+        echo json_encode([
+            'id' => (string)$table['id'],
+            'shopId' => (string)$table['shop_id'],
+            'shopCode' => $table['shop_code'],
+            'shopName' => $table['shop_name'],
+            'tableNumber' => $table['table_number'],
+            'name' => $table['name'],
+            'capacity' => (int)$table['capacity']
+        ], JSON_UNESCAPED_UNICODE);
+        
+    } catch (PDOException $e) {
+        handleDatabaseError($e, 'fetching table by QR code');
+    }
+}
+
+/**
+ * テーブル作成（認証必須、オーナー・マネージャーのみ）
+ */
+function createTable() {
+    try {
+        // 認証チェック（オーナー・マネージャーのみ）
+        $auth = checkPermission(['owner', 'manager']);
+        $shopId = $auth['shop_id'] ?? null;
+        
+        if (!$shopId) {
+            sendValidationError(['shop_id' => 'Shop ID is required']);
+        }
+        
+        $pdo = getDbConnection();
+        
+        $input = json_decode(file_get_contents('php://input'), true);
+        
+        if (!$input || !isset($input['tableNumber'])) {
+            sendValidationError([
+                'tableNumber' => 'Table number is required'
+            ]);
+        }
+        
+        // テーブル番号の重複チェック
+        $checkStmt = $pdo->prepare("
+            SELECT id FROM shop_tables 
+            WHERE shop_id = :shop_id AND table_number = :table_number
+        ");
+        $checkStmt->execute([
+            ':shop_id' => $shopId,
+            ':table_number' => $input['tableNumber']
+        ]);
+        if ($checkStmt->fetch()) {
+            sendConflictError('Table number already exists in this shop');
+        }
+        
+        // 店舗コードを取得（QRコードURL生成用）
+        $shopStmt = $pdo->prepare("SELECT code FROM shops WHERE id = :id");
+        $shopStmt->execute([':id' => $shopId]);
+        $shop = $shopStmt->fetch();
+        
+        if (!$shop) {
+            sendNotFoundError('Shop');
+        }
+        
+        // QRコードURLを生成
+        // フロントエンドのベースURLを取得（環境変数またはデフォルト値）
+        $baseUrl = isset($_SERVER['HTTP_HOST']) ? 
+            (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] : 
+            'http://localhost:3000';
+        
+        $qrCodeUrl = $baseUrl . '/customer?shop=' . urlencode($shop['code']) . '&table=' . urlencode($input['tableNumber']);
+        
+        $stmt = $pdo->prepare("
+            INSERT INTO shop_tables 
+            (shop_id, table_number, name, capacity, is_active, qr_code_url)
+            VALUES 
+            (:shop_id, :table_number, :name, :capacity, :is_active, :qr_code_url)
+        ");
+        
+        $stmt->execute([
+            ':shop_id' => $shopId,
+            ':table_number' => $input['tableNumber'],
+            ':name' => $input['name'] ?? null,
+            ':capacity' => isset($input['capacity']) ? (int)$input['capacity'] : 4,
+            ':is_active' => isset($input['isActive']) ? ($input['isActive'] ? 1 : 0) : 1,
+            ':qr_code_url' => $qrCodeUrl
+        ]);
+        
+        $tableId = $pdo->lastInsertId();
+        
+        // 作成したテーブル情報を返す
+        getTable($tableId);
+        
+    } catch (PDOException $e) {
+        handleDatabaseError($e, 'creating table');
+    }
+}
+
+/**
+ * テーブル更新（認証必須、オーナー・マネージャーのみ）
+ */
+function updateTable($tableId) {
+    try {
+        // 認証チェック（オーナー・マネージャーのみ）
+        $auth = checkPermission(['owner', 'manager']);
+        $shopId = $auth['shop_id'] ?? null;
+        
+        $pdo = getDbConnection();
+        
+        // 既存のテーブル情報を取得
+        $existingStmt = $pdo->prepare("SELECT shop_id FROM shop_tables WHERE id = :id");
+        $existingStmt->execute([':id' => $tableId]);
+        $existing = $existingStmt->fetch();
+        
+        if (!$existing) {
+            sendNotFoundError('Table');
+        }
+        
+        // 権限チェック：自分の店舗のテーブルのみ更新可能
+        if ($shopId && $existing['shop_id'] != $shopId) {
+            sendForbiddenError('You can only update tables from your own shop');
+        }
+        
+        $input = json_decode(file_get_contents('php://input'), true);
+        
+        if (!$input) {
+            sendValidationError(['data' => 'Request data is required']);
+        }
+        
+        $updates = [];
+        $params = [':id' => $tableId];
+        
+        if (isset($input['tableNumber'])) {
+            // テーブル番号の重複チェック（自分以外）
+            $checkStmt = $pdo->prepare("
+                SELECT id FROM shop_tables 
+                WHERE shop_id = :shop_id AND table_number = :table_number AND id != :id
+            ");
+            $checkStmt->execute([
+                ':shop_id' => $existing['shop_id'],
+                ':table_number' => $input['tableNumber'],
+                ':id' => $tableId
+            ]);
+            if ($checkStmt->fetch()) {
+                sendConflictError('Table number already exists in this shop');
+            }
+            
+            $updates[] = "table_number = :table_number";
+            $params[':table_number'] = $input['tableNumber'];
+            
+            // テーブル番号が変更された場合はQRコードURLも更新
+            $shopStmt = $pdo->prepare("SELECT code FROM shops WHERE id = :id");
+            $shopStmt->execute([':id' => $existing['shop_id']]);
+            $shop = $shopStmt->fetch();
+            
+            if ($shop) {
+                $baseUrl = isset($_SERVER['HTTP_HOST']) ? 
+                    (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] : 
+                    'http://localhost:3000';
+                
+                $qrCodeUrl = $baseUrl . '/customer?shop=' . urlencode($shop['code']) . '&table=' . urlencode($input['tableNumber']);
+                $updates[] = "qr_code_url = :qr_code_url";
+                $params[':qr_code_url'] = $qrCodeUrl;
+            }
+        }
+        
+        if (isset($input['name'])) {
+            $updates[] = "name = :name";
+            $params[':name'] = $input['name'];
+        }
+        
+        if (isset($input['capacity'])) {
+            $updates[] = "capacity = :capacity";
+            $params[':capacity'] = (int)$input['capacity'];
+        }
+        
+        if (isset($input['isActive'])) {
+            $updates[] = "is_active = :is_active";
+            $params[':is_active'] = $input['isActive'] ? 1 : 0;
+        }
+        
+        if (empty($updates)) {
+            sendValidationError(['fields' => 'No fields to update']);
+        }
+        
+        $updates[] = "updated_at = NOW()";
+        
+        $sql = "UPDATE shop_tables SET " . implode(', ', $updates) . " WHERE id = :id";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        
+        // 更新したテーブル情報を返す
+        getTable($tableId);
+        
+    } catch (PDOException $e) {
+        handleDatabaseError($e, 'updating table');
+    }
+}
+
+/**
+ * テーブル削除（認証必須、オーナー・マネージャーのみ）
+ */
+function deleteTable($tableId) {
+    try {
+        // 認証チェック（オーナー・マネージャーのみ）
+        $auth = checkPermission(['owner', 'manager']);
+        $shopId = $auth['shop_id'] ?? null;
+        
+        $pdo = getDbConnection();
+        
+        // 既存のテーブル情報を取得
+        $existingStmt = $pdo->prepare("SELECT shop_id FROM shop_tables WHERE id = :id");
+        $existingStmt->execute([':id' => $tableId]);
+        $existing = $existingStmt->fetch();
+        
+        if (!$existing) {
+            sendNotFoundError('Table');
+        }
+        
+        // 権限チェック：自分の店舗のテーブルのみ削除可能
+        if ($shopId && $existing['shop_id'] != $shopId) {
+            sendForbiddenError('You can only delete tables from your own shop');
+        }
+        
+        // 削除（物理削除）
+        $stmt = $pdo->prepare("DELETE FROM shop_tables WHERE id = :id");
+        $stmt->execute([':id' => $tableId]);
+        
+        if ($stmt->rowCount() === 0) {
+            sendNotFoundError('Table');
+        }
+        
+        echo json_encode(['success' => true], JSON_UNESCAPED_UNICODE);
+        
+    } catch (PDOException $e) {
+        handleDatabaseError($e, 'deleting table');
+    }
+}
+
