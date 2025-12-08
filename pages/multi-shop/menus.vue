@@ -99,16 +99,20 @@
           class="bg-white p-4 rounded-lg shadow hover:shadow-lg transition-shadow"
         >
           <div class="flex justify-between items-start mb-2">
-            <div>
-              <p class="text-xs text-gray-500 mb-1">{{ getShopName(menu.shopId) }}</p>
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">
+                  {{ getShopName(menu.shopId) }}
+                </span>
+                <span
+                  v-if="menu.isRecommended"
+                  class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs"
+                >
+                  おすすめ
+                </span>
+              </div>
               <h3 class="font-semibold text-lg">{{ menu.number }}. {{ menu.name }}</h3>
             </div>
-            <span
-              v-if="menu.isRecommended"
-              class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs"
-            >
-              おすすめ
-            </span>
           </div>
           <p v-if="menu.description" class="text-sm text-gray-600 mb-2">{{ menu.description }}</p>
           <div class="flex justify-between items-center">

@@ -1,20 +1,6 @@
 <template>
   <NuxtLayout name="default" title="メニュー一覧">
     <div class="space-y-6">
-      <!-- テーブル番号入力 -->
-      <div class="bg-white p-4 rounded-lg shadow">
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-          テーブル番号
-        </label>
-        <input
-          v-model="tableNumber"
-          type="text"
-          placeholder="テーブル番号を入力"
-          class="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          @input="cartStore.setTableNumber(tableNumber)"
-        />
-      </div>
-
       <!-- 番号入力 -->
       <NumberInput />
 
@@ -81,47 +67,17 @@ import NumberInput from '~/components/NumberInput.vue'
 const menuStore = useMenuStore()
 const cartStore = useCartStore()
 
-const tableNumber = ref('')
-
 const categories = [
   { value: 'food', label: '食べ物' },
   { value: 'drink', label: '飲み物' },
   { value: 'dessert', label: 'デザート' }
 ]
 
-const route = useRoute()
 const shopStore = useShopStore()
 
 onMounted(async () => {
-  // 店舗コードの取得（クエリパラメータまたはストレージから）
-  const shopCode = route.query.shop as string || null
-  const tableParam = route.query.table as string || null
-  
-  if (shopCode) {
-    // クエリパラメータから店舗を取得
-    await shopStore.fetchShopByCode(shopCode)
-    
-    // QRコードからテーブル番号が指定されている場合
-    if (tableParam) {
-      try {
-        // QRコードからテーブル情報を取得して検証
-        const tableStore = useTableStore()
-        const tableInfo = await tableStore.fetchTableByQRCode(shopCode, tableParam)
-        
-        // テーブル番号を設定
-        tableNumber.value = tableInfo.tableNumber
-        cartStore.setTableNumber(tableInfo.tableNumber)
-      } catch (error) {
-        console.error('QRコードからのテーブル情報取得に失敗しました:', error)
-        // エラーが発生してもテーブル番号は設定する（QRコードが無効でも利用可能にする）
-        tableNumber.value = tableParam
-        cartStore.setTableNumber(tableParam)
-      }
-    }
-  } else {
-    // ストレージから店舗を読み込み
-    shopStore.loadShopFromStorage()
-  }
+  // ストレージから店舗を読み込み
+  shopStore.loadShopFromStorage()
   
   // 店舗が選択されていない場合は店舗選択ページにリダイレクト
   if (!shopStore.currentShop) {
@@ -129,13 +85,14 @@ onMounted(async () => {
     return
   }
   
+  // テーブル番号が設定されていない場合は店舗選択ページにリダイレクト
+  if (!cartStore.tableNumber) {
+    await navigateTo('/shop-select')
+    return
+  }
+  
   // メニューを取得（店舗IDを含める）
   await menuStore.fetchMenus(shopStore.currentShop.code)
-  
-  // テーブル番号がまだ設定されていない場合はストレージから読み込む
-  if (!tableNumber.value) {
-    tableNumber.value = cartStore.tableNumber
-  }
 })
 </script>
 

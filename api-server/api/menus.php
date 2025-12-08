@@ -54,6 +54,7 @@ function getMenus() {
         $result = array_map(function($menu) {
             return [
                 'id' => (string)$menu['id'],
+                'shopId' => (string)$menu['shop_id'], // 店舗IDを追加
                 'number' => $menu['number'],
                 'name' => $menu['name'],
                 'description' => $menu['description'],

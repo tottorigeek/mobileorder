@@ -11,19 +11,16 @@
     </div>
 
     <div v-else class="space-y-4">
-      <!-- テーブル番号入力 -->
-      <div class="bg-white p-4 rounded-lg shadow">
+      <!-- テーブル番号表示（編集不可） -->
+      <div v-if="cartStore.tableNumber" class="bg-white p-4 rounded-lg shadow">
         <label class="block text-sm font-medium text-gray-700 mb-2">
-          テーブル番号 <span class="text-red-500">*</span>
+          テーブル番号
         </label>
-        <input
-          v-model="tableNumber"
-          type="text"
-          placeholder="テーブル番号を入力"
-          class="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        />
-        <p v-if="!cartStore.tableNumber" class="mt-2 text-sm text-red-500">
-          テーブル番号を入力してください
+        <div class="px-4 py-3 text-lg bg-gray-50 border border-gray-300 rounded-lg text-gray-700">
+          {{ cartStore.tableNumber }}
+        </div>
+        <p class="mt-2 text-sm text-gray-500">
+          テーブル番号を変更する場合は、店舗選択画面から再度選択してください
         </p>
       </div>
 
@@ -88,21 +85,18 @@ import { useOrder } from '~/composables/useOrder'
 const cartStore = useCartStore()
 const { submitOrder } = useOrder()
 const isSubmitting = ref(false)
-const tableNumber = ref(cartStore.tableNumber || '')
 
-// テーブル番号が変更されたらストアに反映
-watch(tableNumber, (newValue) => {
-  cartStore.setTableNumber(newValue)
-})
-
-// ページ読み込み時にストアの値を反映
 onMounted(() => {
-  tableNumber.value = cartStore.tableNumber || ''
+  // テーブル番号が設定されていない場合は店舗選択ページにリダイレクト
+  if (!cartStore.tableNumber) {
+    navigateTo('/shop-select')
+  }
 })
 
 const handleOrder = async () => {
   if (!cartStore.tableNumber) {
-    alert('テーブル番号を入力してください')
+    alert('テーブル番号が設定されていません。店舗選択画面から再度選択してください。')
+    await navigateTo('/shop-select')
     return
   }
 
