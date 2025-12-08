@@ -121,18 +121,9 @@
                 </option>
               </select>
             </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">メッセージ検索</label>
-              <input
-                v-model="filters.message"
-                type="text"
-                placeholder="メッセージを検索..."
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
-            </div>
           </div>
           
-          <!-- 第2行: メッセージ検索、日付範囲、IPアドレス、リクエストURI -->
+          <!-- 第2行: メッセージ検索、開始日、終了日、IPアドレス -->
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">メッセージ検索</label>
@@ -168,6 +159,10 @@
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
               />
             </div>
+          </div>
+          
+          <!-- 第3行: リクエストURI -->
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">リクエストURI</label>
               <input
@@ -179,8 +174,8 @@
             </div>
           </div>
           
-          <!-- 第3行: ボタン -->
-          <div class="flex gap-2 justify-end">
+          <!-- ボタン -->
+          <div class="flex gap-2 justify-end pt-2">
             <button
               @click="resetFilters"
               class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200"
