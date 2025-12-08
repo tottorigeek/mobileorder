@@ -145,6 +145,68 @@
           <h3 class="text-lg font-semibold mb-4">説明</h3>
           <p class="text-gray-700 whitespace-pre-wrap">{{ shop.description }}</p>
         </div>
+
+        <!-- 営業時間・定休日セクション -->
+        <div v-if="shop.settings" class="bg-white p-6 rounded-lg shadow">
+          <h3 class="text-lg font-semibold mb-4">営業時間・定休日</h3>
+          
+          <!-- 曜日ごとの営業時間 -->
+          <div class="mb-6">
+            <h4 class="text-md font-medium mb-3">営業時間</h4>
+            <div class="space-y-2">
+              <div
+                v-for="day in weekDays"
+                :key="day.key"
+                class="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+              >
+                <span class="text-sm font-medium text-gray-700 w-20">{{ day.label }}</span>
+                <div v-if="shop.settings.businessHours?.[day.key]">
+                  <span
+                    v-if="shop.settings.businessHours[day.key].isClosed"
+                    class="text-sm text-red-600 font-medium"
+                  >
+                    休業
+                  </span>
+                  <span
+                    v-else
+                    class="text-sm text-gray-900"
+                  >
+                    {{ shop.settings.businessHours[day.key].open }} 〜 {{ shop.settings.businessHours[day.key].close }}
+                  </span>
+                </div>
+                <span v-else class="text-sm text-gray-500">未設定</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 定休日 -->
+          <div v-if="shop.settings.regularHolidays && shop.settings.regularHolidays.length > 0" class="mb-6">
+            <h4 class="text-md font-medium mb-3">定休日</h4>
+            <div class="flex flex-wrap gap-2">
+              <span
+                v-for="dayKey in shop.settings.regularHolidays"
+                :key="dayKey"
+                class="px-3 py-1 bg-red-100 text-red-700 rounded-lg text-sm font-medium"
+              >
+                {{ getDayLabel(dayKey) }}
+              </span>
+            </div>
+          </div>
+
+          <!-- 臨時休業日 -->
+          <div v-if="shop.settings.temporaryHolidays && shop.settings.temporaryHolidays.length > 0" class="mb-6">
+            <h4 class="text-md font-medium mb-3">臨時休業日</h4>
+            <div class="space-y-2">
+              <div
+                v-for="(holiday, index) in shop.settings.temporaryHolidays"
+                :key="index"
+                class="p-2 bg-yellow-50 border border-yellow-200 rounded-lg"
+              >
+                <span class="text-sm text-gray-900">{{ formatDate(holiday) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </NuxtLayout>
@@ -167,6 +229,31 @@ const shopId = route.params.id as string
 const shop = ref<Shop | null>(null)
 const isLoading = ref(true)
 const error = ref('')
+
+const weekDays = [
+  { key: 'monday', label: '月曜日' },
+  { key: 'tuesday', label: '火曜日' },
+  { key: 'wednesday', label: '水曜日' },
+  { key: 'thursday', label: '木曜日' },
+  { key: 'friday', label: '金曜日' },
+  { key: 'saturday', label: '土曜日' },
+  { key: 'sunday', label: '日曜日' }
+]
+
+const getDayLabel = (dayKey: string) => {
+  const day = weekDays.find(d => d.key === dayKey)
+  return day ? day.label : dayKey
+}
+
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString)
+  const year = date.getFullYear()
+  const month = date.getMonth() + 1
+  const day = date.getDate()
+  const weekdays = ['日', '月', '火', '水', '木', '金', '土']
+  const weekday = weekdays[date.getDay()]
+  return `${year}年${month}月${day}日（${weekday}）`
+}
 
 const handleLogout = async () => {
   if (confirm('ログアウトしますか？')) {

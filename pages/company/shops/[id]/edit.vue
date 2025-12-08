@@ -563,6 +563,36 @@ onMounted(async () => {
     
     shop.value = fetchedShop
     allUsers.value = fetchedUsers || []
+    
+    // デフォルトの営業時間設定
+    const defaultBusinessHours = {
+      monday: { open: '10:00', close: '22:00', isClosed: false },
+      tuesday: { open: '10:00', close: '22:00', isClosed: false },
+      wednesday: { open: '10:00', close: '22:00', isClosed: false },
+      thursday: { open: '10:00', close: '22:00', isClosed: false },
+      friday: { open: '10:00', close: '22:00', isClosed: false },
+      saturday: { open: '10:00', close: '22:00', isClosed: false },
+      sunday: { open: '10:00', close: '22:00', isClosed: false }
+    }
+    
+    // 既存の設定があればマージ
+    const existingSettings = fetchedShop.settings || {}
+    const existingBusinessHours = existingSettings.businessHours || {}
+    
+    // 既存の営業時間とデフォルトをマージ
+    const mergedBusinessHours: any = {}
+    for (const day of weekDays) {
+      if (existingBusinessHours[day.key]) {
+        mergedBusinessHours[day.key] = {
+          open: existingBusinessHours[day.key].open || '10:00',
+          close: existingBusinessHours[day.key].close || '22:00',
+          isClosed: existingBusinessHours[day.key].isClosed || false
+        }
+      } else {
+        mergedBusinessHours[day.key] = defaultBusinessHours[day.key as keyof typeof defaultBusinessHours]
+      }
+    }
+    
     editData.value = {
       code: fetchedShop.code,
       name: fetchedShop.name,
@@ -571,7 +601,12 @@ onMounted(async () => {
       phone: fetchedShop.phone || '',
       email: fetchedShop.email || '',
       maxTables: fetchedShop.maxTables || 20,
-      isActive: fetchedShop.isActive
+      isActive: fetchedShop.isActive,
+      settings: {
+        regularHolidays: existingSettings.regularHolidays || [],
+        temporaryHolidays: existingSettings.temporaryHolidays || [],
+        businessHours: mergedBusinessHours
+      }
     }
   } catch (err: any) {
     error.value = err?.data?.error || err?.message || '店舗情報の取得に失敗しました'
