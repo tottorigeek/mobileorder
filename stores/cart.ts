@@ -4,7 +4,8 @@ import type { CartItem, Menu } from '~/types'
 export const useCartStore = defineStore('cart', {
   state: () => ({
     items: [] as CartItem[],
-    tableNumber: ''
+    tableNumber: '',
+    visitorId: null as string | null
   }),
 
   getters: {
@@ -57,6 +58,10 @@ export const useCartStore = defineStore('cart', {
 
     setTableNumber(tableNumber: string) {
       this.tableNumber = tableNumber
+    },
+
+    setVisitorId(visitorId: string | null) {
+      this.visitorId = visitorId
     }
   }
 })

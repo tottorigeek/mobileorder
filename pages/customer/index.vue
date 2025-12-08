@@ -1,5 +1,50 @@
 <template>
   <NuxtLayout name="default" title="メニュー一覧">
+    <!-- 来店人数入力モーダル -->
+    <div
+      v-if="showVisitorModal"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      @click.self="closeVisitorModal"
+    >
+      <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+        <h2 class="text-2xl font-bold text-gray-900 mb-6 text-center">来店人数を入力してください</h2>
+        <div class="space-y-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-3">
+              来店人数 <span class="text-red-500">*</span>
+            </label>
+            <div class="flex items-center gap-4">
+              <button
+                @click="decreaseGuests"
+                :disabled="numberOfGuests <= 1"
+                class="w-12 h-12 rounded-xl bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-bold text-xl text-gray-700 transition-colors"
+              >
+                -
+              </button>
+              <div class="flex-1 text-center">
+                <div class="text-4xl font-bold text-blue-600">{{ numberOfGuests }}</div>
+                <div class="text-sm text-gray-500 mt-1">名様</div>
+              </div>
+              <button
+                @click="increaseGuests"
+                :disabled="numberOfGuests >= 20"
+                class="w-12 h-12 rounded-xl bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-bold text-xl text-gray-700 transition-colors"
+              >
+                +
+              </button>
+            </div>
+          </div>
+          <button
+            @click="submitVisitorInfo"
+            :disabled="isSubmittingVisitor"
+            class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-xl text-lg font-bold hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl"
+          >
+            {{ isSubmittingVisitor ? '登録中...' : '登録する' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div class="space-y-6">
       <!-- 席情報表示 -->
       <div v-if="cartStore.tableNumber" class="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-5 shadow-lg text-white">
@@ -106,6 +151,7 @@ import { useCartStore } from '~/stores/cart'
 import { useShopStore } from '~/stores/shop'
 import { useTableStore } from '~/stores/table'
 import { useCategoryStore } from '~/stores/category'
+import { useVisitorStore } from '~/stores/visitor'
 import type { ShopTable, ShopCategory } from '~/types'
 import MenuCard from '~/components/MenuCard.vue'
 import NumberInput from '~/components/NumberInput.vue'
@@ -115,10 +161,14 @@ const cartStore = useCartStore()
 const shopStore = useShopStore()
 const tableStore = useTableStore()
 const categoryStore = useCategoryStore()
+const visitorStore = useVisitorStore()
 
 const currentTableInfo = ref<ShopTable | null>(null)
 const shopCategories = ref<ShopCategory[]>([])
 const isLoadingCategories = ref(false)
+const showVisitorModal = ref(false)
+const numberOfGuests = ref(2)
+const isSubmittingVisitor = ref(false)
 
 onMounted(async () => {
   const route = useRoute()
@@ -206,6 +256,51 @@ onMounted(async () => {
   
   // メニューを取得（店舗IDを含める）
   await menuStore.fetchMenus(shopStore.currentShop.code)
+  
+  // visitorIdが設定されていない場合は来店人数入力モーダルを表示
+  if (!cartStore.visitorId && cartStore.tableNumber && shopStore.currentShop) {
+    showVisitorModal.value = true
+  }
 })
+
+const decreaseGuests = () => {
+  if (numberOfGuests.value > 1) {
+    numberOfGuests.value--
+  }
+}
+
+const increaseGuests = () => {
+  if (numberOfGuests.value < 20) {
+    numberOfGuests.value++
+  }
+}
+
+const submitVisitorInfo = async () => {
+  if (!shopStore.currentShop || !cartStore.tableNumber) {
+    alert('店舗またはテーブル情報が設定されていません')
+    return
+  }
+  
+  isSubmittingVisitor.value = true
+  try {
+    const visitor = await visitorStore.createVisitor({
+      shopId: shopStore.currentShop.id,
+      tableNumber: cartStore.tableNumber,
+      numberOfGuests: numberOfGuests.value,
+      tableId: currentTableInfo.value?.id
+    })
+    
+    cartStore.setVisitorId(visitor.id)
+    showVisitorModal.value = false
+  } catch (error: any) {
+    alert('来店情報の登録に失敗しました: ' + (error.message || 'エラーが発生しました'))
+  } finally {
+    isSubmittingVisitor.value = false
+  }
+}
+
+const closeVisitorModal = () => {
+  // モーダルを閉じることはできない（必須入力）
+}
 </script>
 

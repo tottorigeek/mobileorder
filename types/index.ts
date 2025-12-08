@@ -51,7 +51,7 @@ export interface OrderItem {
   price: number
 }
 
-export type OrderStatus = 'pending' | 'accepted' | 'cooking' | 'completed' | 'cancelled'
+export type OrderStatus = 'pending' | 'accepted' | 'cooking' | 'completed' | 'cancelled' | 'checkout_pending'
 
 export interface Table {
   id: string
@@ -69,6 +69,8 @@ export interface ShopTable {
   name?: string
   capacity: number
   isActive: boolean
+  visitorId?: string
+  status?: TableStatus
   qrCodeUrl?: string
   createdAt?: string
   updatedAt?: string
@@ -82,5 +84,23 @@ export interface Payment {
   paidAt: Date
 }
 
-export type PaymentMethod = 'cash' | 'credit' | 'electronic'
+export type PaymentMethod = 'cash' | 'credit' | 'electronic' | 'paypay'
+
+export interface Visitor {
+  id: string
+  shopId: string
+  tableId?: string
+  tableNumber: string
+  numberOfGuests: number
+  arrivalTime: string
+  checkoutTime?: string
+  totalAmount: number
+  paymentMethod?: PaymentMethod
+  paymentStatus: 'pending' | 'completed'
+  isSetCompleted: boolean
+  createdAt?: string
+  updatedAt?: string
+}
+
+export type TableStatus = 'available' | 'occupied' | 'checkout_pending' | 'set_pending'
 

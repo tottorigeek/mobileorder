@@ -104,6 +104,12 @@ function getTables($shopId = null) {
             INNER JOIN shops s ON st.shop_id = s.id
             WHERE st.shop_id = :shop_id
             ORDER BY 
+                CASE st.status
+                    WHEN 'set_pending' THEN 1
+                    WHEN 'checkout_pending' THEN 2
+                    WHEN 'occupied' THEN 3
+                    ELSE 4
+                END,
                 CAST(st.table_number AS UNSIGNED) ASC,
                 st.table_number ASC
         ");
@@ -120,6 +126,8 @@ function getTables($shopId = null) {
                 'name' => $table['name'],
                 'capacity' => (int)$table['capacity'],
                 'isActive' => (bool)$table['is_active'],
+                'visitorId' => $table['visitor_id'] ? (string)$table['visitor_id'] : null,
+                'status' => $table['status'] ?? 'available',
                 'qrCodeUrl' => $table['qr_code_url'],
                 'createdAt' => $table['created_at'],
                 'updatedAt' => $table['updated_at']
@@ -171,6 +179,8 @@ function getTable($tableId) {
             'name' => $table['name'],
             'capacity' => (int)$table['capacity'],
             'isActive' => (bool)$table['is_active'],
+            'visitorId' => $table['visitor_id'] ? (string)$table['visitor_id'] : null,
+            'status' => $table['status'] ?? 'available',
             'qrCodeUrl' => $table['qr_code_url'],
             'createdAt' => $table['created_at'],
             'updatedAt' => $table['updated_at']

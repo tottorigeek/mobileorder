@@ -59,6 +59,10 @@ switch ($endpoint) {
         require_once __DIR__ . '/error-logs.php';
         break;
     
+    case 'visitors':
+        require_once __DIR__ . '/visitors.php';
+        break;
+    
     default:
         sendErrorResponse(404, 'Endpoint not found');
         break;

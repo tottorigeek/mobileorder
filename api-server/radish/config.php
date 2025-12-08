@@ -173,10 +173,23 @@ function setJsonHeader() {
             'https://mameq.xsrv.jp',
             'http://mameq.xsrv.jp',
             'https://mobileorder-eight.vercel.app',
+            'https://api.towndx.com',
+            'http://api.towndx.com',
         ];
         
         // リクエスト元のオリジンを取得
-        $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+        $origin = $_SERVER['HTTP_ORIGIN'] ?? $_SERVER['HTTP_REFERER'] ?? '';
+        
+        // オリジンが空の場合は、Refererヘッダーから抽出を試みる
+        if (empty($origin) && isset($_SERVER['HTTP_REFERER'])) {
+            $parsedUrl = parse_url($_SERVER['HTTP_REFERER']);
+            if ($parsedUrl) {
+                $origin = $parsedUrl['scheme'] . '://' . $parsedUrl['host'];
+                if (isset($parsedUrl['port'])) {
+                    $origin .= ':' . $parsedUrl['port'];
+                }
+            }
+        }
         
         // 許可されたオリジンの場合のみ設定（セッション使用のため）
         if (in_array($origin, $allowedOrigins)) {
@@ -184,8 +197,11 @@ function setJsonHeader() {
             header('Access-Control-Allow-Credentials: true');
         } elseif (!empty($origin)) {
             // 開発環境でのデバッグ用（オリジンが指定されている場合）
-            header('Access-Control-Allow-Origin: ' . $origin);
-            header('Access-Control-Allow-Credentials: true');
+            // localhostや127.0.0.1のパターンをチェック
+            if (preg_match('/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/', $origin)) {
+                header('Access-Control-Allow-Origin: ' . $origin);
+                header('Access-Control-Allow-Credentials: true');
+            }
         }
         
         header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
@@ -213,10 +229,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
             'https://mameq.xsrv.jp',
             'http://mameq.xsrv.jp',
             'https://mobileorder-eight.vercel.app',
+            'https://api.towndx.com',
+            'http://api.towndx.com',
         ];
         
         // リクエスト元のオリジンを取得
-        $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+        $origin = $_SERVER['HTTP_ORIGIN'] ?? $_SERVER['HTTP_REFERER'] ?? '';
+        
+        // オリジンが空の場合は、Refererヘッダーから抽出を試みる
+        if (empty($origin) && isset($_SERVER['HTTP_REFERER'])) {
+            $parsedUrl = parse_url($_SERVER['HTTP_REFERER']);
+            if ($parsedUrl) {
+                $origin = $parsedUrl['scheme'] . '://' . $parsedUrl['host'];
+                if (isset($parsedUrl['port'])) {
+                    $origin .= ':' . $parsedUrl['port'];
+                }
+            }
+        }
         
         // 許可されたオリジンの場合のみ設定
         if (in_array($origin, $allowedOrigins)) {
@@ -224,8 +253,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
             header('Access-Control-Allow-Credentials: true');
         } elseif (!empty($origin)) {
             // 開発環境でのデバッグ用（オリジンが指定されている場合）
-            header('Access-Control-Allow-Origin: ' . $origin);
-            header('Access-Control-Allow-Credentials: true');
+            // localhostや127.0.0.1のパターンをチェック
+            if (preg_match('/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/', $origin)) {
+                header('Access-Control-Allow-Origin: ' . $origin);
+                header('Access-Control-Allow-Credentials: true');
+            }
         }
         
         header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
