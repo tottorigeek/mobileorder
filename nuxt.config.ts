@@ -28,8 +28,8 @@ export default defineNuxtConfig({
     buildAssetsDir: '/_nuxt/'
   },
 
-  // Vercel用の設定（SSRを有効化）
-  // ssr: true がデフォルト（VercelではSSRが推奨）
+  // 静的サイト生成の設定
+  ssr: false, // SPAモード（GitHub Pages用）
 
   runtimeConfig: {
     public: {

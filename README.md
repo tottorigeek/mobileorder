@@ -34,21 +34,9 @@ npm run preview
 
 ## デプロイ
 
-### Vercelへのデプロイ（推奨）
-
-このプロジェクトはVercelに最適化されています。
-
-**クイックスタート:**
-1. [Vercel](https://vercel.com) にアクセス
-2. GitHubアカウントでサインアップ
-3. リポジトリをインポート
-4. 自動的にデプロイされます
-
-詳細は [VERCEL_DEPLOY.md](./VERCEL_DEPLOY.md) または [GITHUB_TO_VERCEL.md](./GITHUB_TO_VERCEL.md) を参照してください。
-
 ### GitHub Pagesへのデプロイ
 
-GitHub Pagesへのデプロイも可能です。
+GitHub Pagesへのデプロイが可能です。
 
 詳細は [DEPLOY.md](./DEPLOY.md) を参照してください。
 
