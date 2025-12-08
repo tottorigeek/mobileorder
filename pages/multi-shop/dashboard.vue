@@ -155,12 +155,7 @@ const myShops = ref<Shop[]>([])
 const selectedShopId = ref<string>('')
 const filteredOrders = ref<Order[]>([])
 
-const navigationItems = computed(() => [
-  { to: '/multi-shop/dashboard', label: 'ダッシュボード', isActive: true },
-  { to: '/multi-shop/orders', label: '注文一覧', isActive: false },
-  { to: '/multi-shop/menus', label: 'メニュー管理', isActive: false },
-  { to: '/multi-shop/staff', label: 'スタッフ管理', isActive: false }
-])
+const { navigationItems } = useMultiShopNavigation()
 
 const selectShop = (shop: Shop) => {
   shopStore.setCurrentShop(shop)

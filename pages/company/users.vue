@@ -311,11 +311,8 @@ const userStore = useUserStore()
 const authStore = useAuthStore()
 const shopStore = useShopStore()
 
-const handleLogout = async () => {
-  if (confirm('ログアウトしますか？')) {
-    await authStore.logout()
-  }
-}
+const { navigationItems } = useCompanyNavigation()
+const { handleLogout } = useAuthCheck()
 
 const showEditModal = ref(false)
 const isSubmitting = ref(false)

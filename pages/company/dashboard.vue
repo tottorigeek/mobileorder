@@ -2,44 +2,10 @@
   <NuxtLayout name="default" title="弊社向け管理ダッシュボード">
     <div class="space-y-6">
       <!-- ナビゲーション -->
-      <div class="flex gap-3 overflow-x-auto pb-2">
-        <NuxtLink
-          to="/company/dashboard"
-          class="px-4 py-2 bg-green-600 text-white rounded-lg font-medium whitespace-nowrap"
-        >
-          ダッシュボード
-        </NuxtLink>
-        <NuxtLink
-          to="/company/shops"
-          class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium whitespace-nowrap hover:bg-gray-100"
-        >
-          店舗管理
-        </NuxtLink>
-        <NuxtLink
-          to="/company/users"
-          class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium whitespace-nowrap hover:bg-gray-100"
-        >
-          ユーザー管理
-        </NuxtLink>
-        <NuxtLink
-          to="/company/error-logs"
-          class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium whitespace-nowrap hover:bg-gray-100"
-        >
-          エラーログ
-        </NuxtLink>
-        <NuxtLink
-          to="/shop/users/password"
-          class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium whitespace-nowrap hover:bg-gray-100"
-        >
-          パスワード変更
-        </NuxtLink>
-        <button
-          @click="handleLogout"
-          class="px-4 py-2 bg-red-100 text-red-700 rounded-lg font-medium whitespace-nowrap hover:bg-red-200 ml-auto"
-        >
-          ログアウト
-        </button>
-      </div>
+      <AdminNavigation
+        :navigation-items="navigationItems"
+        active-color="green"
+      />
 
       <!-- ヘッダー -->
       <div class="bg-white p-6 rounded-lg shadow">
@@ -126,17 +92,13 @@ import { useShopStore } from '~/stores/shop'
 
 const authStore = useAuthStore()
 const shopStore = useShopStore()
+const { navigationItems } = useCompanyNavigation()
+const { handleLogout } = useAuthCheck()
 
 const totalShops = ref(0)
 const activeShops = ref(0)
 const totalUsers = ref(0)
 const recentShops = ref([])
-
-const handleLogout = async () => {
-  if (confirm('ログアウトしますか？')) {
-    await authStore.logout()
-  }
-}
 
 onMounted(async () => {
   // 認証チェック

@@ -242,11 +242,7 @@ const authStore = useAuthStore()
 const shopStore = useShopStore()
 const { handleLogout, checkAuth } = useAuthCheck()
 
-const navigationItems = computed(() => [
-  { to: '/shop/dashboard', label: 'ダッシュボード', isActive: false },
-  { to: '/shop/users', label: 'スタッフ管理', isActive: true },
-  { to: '/staff/orders', label: '注文管理', isActive: false }
-])
+const { navigationItems } = useShopNavigation()
 
 const showAddModal = ref(false)
 const showEditModal = ref(false)

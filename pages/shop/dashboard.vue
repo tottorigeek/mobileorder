@@ -69,12 +69,7 @@ const shopStore = useShopStore()
 const { handleLogout, checkAuth } = useAuthCheck()
 const { getStatusLabel, getStatusClass, formatDate } = useAdminUtils()
 
-const navigationItems = computed(() => [
-  { to: '/shop/dashboard', label: 'ダッシュボード', isActive: true },
-  { to: '/shop/users', label: 'スタッフ管理', isActive: false },
-  { to: '/staff/tables', label: 'テーブル設定', isActive: false },
-  { to: '/staff/orders', label: '注文管理', isActive: false }
-])
+const { navigationItems } = useShopNavigation()
 
 const orderStore = useOrderStore()
 

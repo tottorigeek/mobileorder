@@ -655,11 +655,8 @@ const handleOwnerInputBlur = () => {
   }, 200)
 }
 
-const handleLogout = async () => {
-  if (confirm('ログアウトしますか？')) {
-    await authStore.logout()
-  }
-}
+const { navigationItems } = useCompanyNavigation()
+const { handleLogout } = useAuthCheck()
 
 const handleUpdateShop = async () => {
   isSubmitting.value = true

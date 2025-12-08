@@ -1,6 +1,11 @@
 <template>
   <NuxtLayout name="default" title="注文管理">
     <div class="space-y-4">
+      <!-- ナビゲーション -->
+      <AdminNavigation
+        :navigation-items="navigationItems"
+        active-color="blue"
+      />
       <!-- ステータスフィルター -->
       <div class="flex gap-2 overflow-x-auto pb-2">
         <button
@@ -96,6 +101,8 @@ import { useOrderStore } from '~/stores/order'
 import { useAuthStore } from '~/stores/auth'
 import { useShopStore } from '~/stores/shop'
 import type { OrderStatus } from '~/types'
+
+const { navigationItems } = useShopNavigation()
 
 const orderStore = useOrderStore()
 const selectedStatus = ref<OrderStatus | 'all'>('all')

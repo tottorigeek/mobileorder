@@ -74,12 +74,7 @@ const allStaff = ref<User[]>([])
 const filteredStaff = ref<User[]>([])
 const isLoading = ref(false)
 
-const navigationItems = computed(() => [
-  { to: '/multi-shop/dashboard', label: 'ダッシュボード', isActive: false },
-  { to: '/multi-shop/orders', label: '注文一覧', isActive: false },
-  { to: '/multi-shop/menus', label: 'メニュー管理', isActive: false },
-  { to: '/multi-shop/staff', label: 'スタッフ管理', isActive: true }
-])
+const { navigationItems } = useMultiShopNavigation()
 
 const filterStaff = () => {
   if (selectedShopId.value) {

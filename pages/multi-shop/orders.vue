@@ -2,44 +2,10 @@
   <NuxtLayout name="default" title="注文一覧">
     <div class="space-y-6">
       <!-- ナビゲーション -->
-      <div class="flex gap-3 overflow-x-auto pb-2">
-        <NuxtLink
-          to="/multi-shop/dashboard"
-          class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium whitespace-nowrap hover:bg-gray-100"
-        >
-          ダッシュボード
-        </NuxtLink>
-        <NuxtLink
-          to="/multi-shop/orders"
-          class="px-4 py-2 bg-green-600 text-white rounded-lg font-medium whitespace-nowrap"
-        >
-          注文一覧
-        </NuxtLink>
-        <NuxtLink
-          to="/multi-shop/menus"
-          class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium whitespace-nowrap hover:bg-gray-100"
-        >
-          メニュー管理
-        </NuxtLink>
-        <NuxtLink
-          to="/multi-shop/staff"
-          class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium whitespace-nowrap hover:bg-gray-100"
-        >
-          スタッフ管理
-        </NuxtLink>
-        <NuxtLink
-          to="/shop/users/password"
-          class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium whitespace-nowrap hover:bg-gray-100"
-        >
-          パスワード変更
-        </NuxtLink>
-        <button
-          @click="handleLogout"
-          class="px-4 py-2 bg-red-100 text-red-700 rounded-lg font-medium whitespace-nowrap hover:bg-red-200 ml-auto"
-        >
-          ログアウト
-        </button>
-      </div>
+      <AdminNavigation
+        :navigation-items="navigationItems"
+        active-color="green"
+      />
 
       <!-- フィルター -->
       <div class="bg-white p-4 rounded-lg shadow">
@@ -184,11 +150,8 @@ const selectedShopId = ref<string>('')
 const selectedStatus = ref<string>('')
 const filteredOrders = ref<Order[]>([])
 
-const handleLogout = async () => {
-  if (confirm('ログアウトしますか？')) {
-    await authStore.logout()
-  }
-}
+const { navigationItems } = useMultiShopNavigation()
+const { handleLogout } = useAuthCheck()
 
 const filterOrders = () => {
   let orders = orderStore.orders

@@ -26,6 +26,7 @@
       パスワード変更
     </NuxtLink>
     <button
+      v-if="showLogout"
       @click="handleLogout"
       class="px-4 py-2 bg-red-100 text-red-700 rounded-lg font-medium whitespace-nowrap hover:bg-red-200 ml-auto"
     >
@@ -46,12 +47,14 @@ interface Props {
   showPasswordChange?: boolean
   passwordChangePath?: string
   activeColor?: 'blue' | 'green'
+  showLogout?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   showPasswordChange: true,
   passwordChangePath: '/shop/users/password',
-  activeColor: 'blue'
+  activeColor: 'blue',
+  showLogout: true
 })
 
 const { handleLogout } = useAuthCheck()

@@ -1,6 +1,11 @@
 <template>
   <NuxtLayout name="default" title="テーブル管理">
     <div class="space-y-6">
+      <!-- ナビゲーション -->
+      <AdminNavigation
+        :navigation-items="navigationItems"
+        active-color="blue"
+      />
       <!-- ヘッダー -->
       <div class="flex justify-between items-center">
         <h1 class="text-2xl font-bold text-gray-900">テーブル管理</h1>
@@ -179,6 +184,8 @@ import { useAuthStore } from '~/stores/auth'
 import { useShopStore } from '~/stores/shop'
 import QRCodeGenerator from '~/components/QRCodeGenerator.vue'
 import type { ShopTable } from '~/types'
+
+const { navigationItems } = useShopNavigation()
 
 definePageMeta({
   middleware: 'auth'
