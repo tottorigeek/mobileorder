@@ -94,6 +94,12 @@
               <p v-else class="text-sm text-gray-400 mt-1">オーナー未設定</p>
             </div>
             <div class="flex gap-2">
+              <button
+                @click="handleGoToShopDashboard(shop)"
+                class="px-3 py-1 bg-blue-200 text-blue-700 rounded hover:bg-blue-300 transition-colors touch-target text-sm"
+              >
+                ダッシュボード
+              </button>
               <NuxtLink
                 :to="`/company/shops/${shop.id}/edit`"
                 class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors touch-target text-sm"
@@ -233,7 +239,7 @@
 <script setup lang="ts">
 import { useShopStore } from '~/stores/shop'
 import { useAuthStore } from '~/stores/auth'
-import type { Shop } from '~/types'
+import type { Shop } from '~/types/multi-shop'
 
 definePageMeta({
   layout: 'default'
@@ -282,6 +288,18 @@ const handleAddShop = async () => {
     addError.value = error?.data?.error || '店舗の追加に失敗しました'
   } finally {
     isSubmitting.value = false
+  }
+}
+
+const handleGoToShopDashboard = async (shop: Shop) => {
+  try {
+    // 店舗をストアに設定
+    shopStore.setCurrentShop(shop)
+    // 店舗ダッシュボードに遷移
+    await navigateTo('/shop/dashboard')
+  } catch (error) {
+    console.error('店舗ダッシュボードへの遷移に失敗しました:', error)
+    alert('店舗ダッシュボードへの遷移に失敗しました')
   }
 }
 

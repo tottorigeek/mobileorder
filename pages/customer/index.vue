@@ -108,32 +108,74 @@ const shopCategories = ref<ShopCategory[]>([])
 const isLoadingCategories = ref(false)
 
 onMounted(async () => {
-  // ストレージから店舗を読み込み
-  shopStore.loadShopFromStorage()
+  const route = useRoute()
   
-  // 店舗が選択されていない場合は店舗選択ページにリダイレクト
+  // QRコードから来た場合の処理（GETパラメータから店舗コードとテーブル番号を取得）
+  const shopCodeFromQuery = route.query.shop as string || null
+  const tableNumberFromQuery = route.query.table as string || null
+  
+  if (shopCodeFromQuery && tableNumberFromQuery) {
+    // QRコードから来た場合
+    try {
+      // 店舗を取得
+      const shop = await shopStore.fetchShopByCode(shopCodeFromQuery)
+      if (shop) {
+        shopStore.setCurrentShop(shop)
+        
+        // テーブル情報を検証して設定
+        try {
+          const tableInfo = await tableStore.fetchTableByQRCode(shopCodeFromQuery, tableNumberFromQuery)
+          cartStore.setTableNumber(tableInfo.tableNumber)
+          currentTableInfo.value = tableInfo
+        } catch (error) {
+          // 検証に失敗してもテーブル番号は設定する
+          cartStore.setTableNumber(tableNumberFromQuery)
+          currentTableInfo.value = null
+        }
+      } else {
+        // 店舗が見つからない場合は店舗選択ページにリダイレクト
+        await navigateTo('/shop-select')
+        return
+      }
+    } catch (error) {
+      console.error('QRコードからの店舗情報取得に失敗しました:', error)
+      await navigateTo('/shop-select')
+      return
+    }
+  } else {
+    // QRコードから来ていない場合：ストレージから店舗を読み込み
+    shopStore.loadShopFromStorage()
+    
+    // 店舗が選択されていない場合は店舗選択ページにリダイレクト
+    if (!shopStore.currentShop) {
+      await navigateTo('/shop-select')
+      return
+    }
+    
+    // テーブル番号が設定されていない場合は店舗選択ページにリダイレクト
+    if (!cartStore.tableNumber) {
+      await navigateTo('/shop-select')
+      return
+    }
+    
+    // テーブル情報を取得
+    try {
+      const tableInfo = await tableStore.fetchTableByQRCode(
+        shopStore.currentShop.code,
+        cartStore.tableNumber
+      )
+      currentTableInfo.value = tableInfo
+    } catch (error) {
+      console.error('テーブル情報の取得に失敗しました:', error)
+      // エラーが発生してもテーブル番号だけは表示する
+      currentTableInfo.value = null
+    }
+  }
+  
+  // 店舗が設定されていることを確認
   if (!shopStore.currentShop) {
     await navigateTo('/shop-select')
     return
-  }
-  
-  // テーブル番号が設定されていない場合は店舗選択ページにリダイレクト
-  if (!cartStore.tableNumber) {
-    await navigateTo('/shop-select')
-    return
-  }
-  
-  // テーブル情報を取得
-  try {
-    const tableInfo = await tableStore.fetchTableByQRCode(
-      shopStore.currentShop.code,
-      cartStore.tableNumber
-    )
-    currentTableInfo.value = tableInfo
-  } catch (error) {
-    console.error('テーブル情報の取得に失敗しました:', error)
-    // エラーが発生してもテーブル番号だけは表示する
-    currentTableInfo.value = null
   }
   
   // 店舗独自カテゴリを取得

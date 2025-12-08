@@ -52,7 +52,7 @@
           </div>
 
           <!-- QRコード表示 -->
-          <div v-if="table.qrCodeUrl" class="mb-4">
+          <div class="mb-4">
             <QRCodeGenerator
               :shop-code="table.shopCode"
               :table-number="table.tableNumber"

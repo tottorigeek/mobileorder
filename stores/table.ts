@@ -189,9 +189,9 @@ export const useTableStore = defineStore('table', {
 
     generateQRCodeUrl(shopCode: string, tableNumber: string): string {
       // フロントエンドのベースURLを取得
-      // QRコードは店舗選択画面へのリンクとして使用（テーブル番号は含めない）
+      // QRコードは直接顧客ページへのリンクとして使用
       const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'
-      return `${baseUrl}/shop-select?shop=${encodeURIComponent(shopCode)}&table=${encodeURIComponent(tableNumber)}`
+      return `${baseUrl}/customer?shop=${encodeURIComponent(shopCode)}&table=${encodeURIComponent(tableNumber)}`
     }
   }
 })
