@@ -117,6 +117,18 @@
 
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">
+              メールアドレス
+            </label>
+            <input
+              v-model="editData.email"
+              type="email"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              placeholder="shop@example.com"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
               最大テーブル数
             </label>
             <input
@@ -191,6 +203,7 @@ const editData = ref({
   description: '',
   address: '',
   phone: '',
+  email: '',
   maxTables: 20,
   isActive: true
 })
@@ -207,9 +220,7 @@ const handleUpdateShop = async () => {
   success.value = false
   
   try {
-    // TODO: 店舗更新APIの実装が必要
-    // await shopStore.updateShop(shopId, editData.value)
-    alert('店舗更新機能は実装予定です')
+    await shopStore.updateShop(shopId, editData.value)
     success.value = true
     
     // 2秒後にリダイレクト
@@ -217,7 +228,7 @@ const handleUpdateShop = async () => {
       navigateTo('/company/shops')
     }, 2000)
   } catch (err: any) {
-    updateError.value = err?.data?.error || '店舗情報の更新に失敗しました'
+    updateError.value = err?.data?.error || err?.message || '店舗情報の更新に失敗しました'
   } finally {
     isSubmitting.value = false
   }
@@ -233,27 +244,28 @@ onMounted(async () => {
 
   // 店舗情報を取得
   try {
-    await shopStore.fetchShops()
-    const foundShop = shopStore.shops.find(s => s.id === shopId)
+    // IDで直接店舗情報を取得
+    const fetchedShop = await shopStore.fetchShopById(shopId)
     
-    if (!foundShop) {
+    if (!fetchedShop) {
       error.value = '店舗が見つかりませんでした'
       isLoading.value = false
       return
     }
     
-    shop.value = foundShop
+    shop.value = fetchedShop
     editData.value = {
-      code: foundShop.code,
-      name: foundShop.name,
-      description: foundShop.description || '',
-      address: foundShop.address || '',
-      phone: foundShop.phone || '',
-      maxTables: foundShop.maxTables || 20,
-      isActive: foundShop.isActive
+      code: fetchedShop.code,
+      name: fetchedShop.name,
+      description: fetchedShop.description || '',
+      address: fetchedShop.address || '',
+      phone: fetchedShop.phone || '',
+      email: fetchedShop.email || '',
+      maxTables: fetchedShop.maxTables || 20,
+      isActive: fetchedShop.isActive
     }
   } catch (err: any) {
-    error.value = err?.data?.error || '店舗情報の取得に失敗しました'
+    error.value = err?.data?.error || err?.message || '店舗情報の取得に失敗しました'
   } finally {
     isLoading.value = false
   }

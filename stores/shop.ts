@@ -96,6 +96,86 @@ export const useShopStore = defineStore('shop', {
           localStorage.removeItem('currentShop')
         }
       }
+    },
+
+    async fetchShopById(shopId: string) {
+      this.isLoading = true
+      try {
+        const config = useRuntimeConfig()
+        const apiBase = config.public.apiBase
+        
+        // 認証トークンを取得
+        const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+        const headers: Record<string, string> = {
+          'Accept': 'application/json'
+        }
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`
+        }
+        
+        const shop = await $fetch<Shop>(`${apiBase}/shops/${shopId}`, {
+          headers: headers
+        })
+        
+        // 店舗一覧も更新
+        const index = this.shops.findIndex(s => s.id === shopId)
+        if (index > -1) {
+          this.shops[index] = shop
+        } else {
+          this.shops.push(shop)
+        }
+        
+        return shop
+      } catch (error) {
+        console.error('店舗情報の取得に失敗しました:', error)
+        throw error
+      } finally {
+        this.isLoading = false
+      }
+    },
+
+    async updateShop(shopId: string, shopData: Partial<Shop>) {
+      this.isLoading = true
+      try {
+        const config = useRuntimeConfig()
+        const apiBase = config.public.apiBase
+        
+        // 認証トークンを取得
+        const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+        if (!token) {
+          throw new Error('認証トークンが見つかりません')
+        }
+        
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+        
+        const updatedShop = await $fetch<Shop>(`${apiBase}/shops/${shopId}`, {
+          method: 'PUT',
+          body: shopData,
+          headers: headers
+        })
+        
+        // 店舗一覧を更新
+        const index = this.shops.findIndex(s => s.id === shopId)
+        if (index > -1) {
+          this.shops[index] = updatedShop
+        }
+        
+        // 現在の店舗も更新
+        if (this.currentShop?.id === shopId) {
+          this.currentShop = updatedShop
+        }
+        
+        return updatedShop
+      } catch (error) {
+        console.error('店舗情報の更新に失敗しました:', error)
+        throw error
+      } finally {
+        this.isLoading = false
+      }
     }
   }
 })

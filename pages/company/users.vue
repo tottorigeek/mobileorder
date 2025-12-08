@@ -47,21 +47,156 @@
         </p>
       </div>
 
-      <!-- 実装予定メッセージ -->
-      <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-        <h3 class="text-lg font-semibold text-yellow-800 mb-2">実装予定</h3>
-        <p class="text-yellow-700">
-          システム全体のユーザー管理機能は現在実装中です。
-          現在は各店舗の管理画面からユーザーを管理できます。
-        </p>
+      <!-- ローディング -->
+      <div v-if="userStore.isLoading" class="text-center py-12">
+        <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+      </div>
+
+      <!-- ユーザー一覧 -->
+      <div v-else-if="userStore.users.length === 0" class="text-center py-12 text-gray-500">
+        ユーザーが登録されていません
+      </div>
+
+      <div v-else class="space-y-3">
+        <div
+          v-for="user in userStore.users"
+          :key="user.id"
+          class="bg-white p-4 rounded-lg shadow"
+        >
+          <div class="flex justify-between items-start">
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-2">
+                <h3 class="text-lg font-semibold">{{ user.name }}</h3>
+                <span :class="getRoleBadgeClass(user.role)">
+                  {{ getRoleLabel(user.role) }}
+                </span>
+                <span v-if="!user.isActive" class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-sm">
+                  無効
+                </span>
+              </div>
+              <p class="text-sm text-gray-600 mb-1">ユーザー名: {{ user.username }}</p>
+              <p v-if="user.shop" class="text-sm text-gray-600 mb-1">
+                店舗: {{ user.shop.name }} ({{ user.shop.code }})
+              </p>
+              <p v-else class="text-sm text-gray-500 mb-1">店舗: 未設定</p>
+              <p v-if="user.email" class="text-sm text-gray-600 mb-1">メール: {{ user.email }}</p>
+              <p v-if="user.lastLoginAt" class="text-xs text-gray-500">
+                最終ログイン: {{ formatDate(user.lastLoginAt) }}
+              </p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button
+                @click="editUser(user)"
+                class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors touch-target text-sm"
+              >
+                編集
+              </button>
+              <button
+                v-if="user.id !== authStore.user?.id"
+                @click="confirmDelete(user)"
+                class="px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors touch-target text-sm"
+              >
+                削除
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 編集モーダル -->
+    <div
+      v-if="showEditModal"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      @click.self="showEditModal = false"
+    >
+      <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div class="p-6">
+          <h3 class="text-lg font-semibold mb-4">ユーザー情報を編集</h3>
+
+          <form @submit.prevent="handleUpdateUser" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">
+                表示名 <span class="text-red-500">*</span>
+              </label>
+              <input
+                v-model="editUserData.name"
+                type="text"
+                required
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">
+                メールアドレス
+              </label>
+              <input
+                v-model="editUserData.email"
+                type="email"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                placeholder="メールアドレスを入力"
+              />
+            </div>
+
+            <div v-if="editingUser && editingUser.id !== authStore.user?.id">
+              <label class="block text-sm font-medium text-gray-700 mb-1">
+                役割
+              </label>
+              <select
+                v-model="editUserData.role"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              >
+                <option value="staff">スタッフ</option>
+                <option value="manager">管理者</option>
+                <option value="owner">オーナー</option>
+              </select>
+            </div>
+
+            <div v-if="editingUser && editingUser.id !== authStore.user?.id">
+              <label class="flex items-center gap-2">
+                <input
+                  v-model="editUserData.isActive"
+                  type="checkbox"
+                  class="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                />
+                <span class="text-sm text-gray-700">有効</span>
+              </label>
+            </div>
+
+            <div v-if="editError" class="p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+              {{ editError }}
+            </div>
+
+            <div class="flex gap-3 justify-end">
+              <button
+                type="button"
+                @click="showEditModal = false"
+                class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                キャンセル
+              </button>
+              <button
+                type="submit"
+                :disabled="isSubmitting"
+                class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              >
+                {{ isSubmitting ? '更新中...' : '更新' }}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   </NuxtLayout>
 </template>
 
 <script setup lang="ts">
+import { useUserStore, type UpdateUserInput } from '~/stores/user'
 import { useAuthStore } from '~/stores/auth'
+import type { User } from '~/types'
 
+const userStore = useUserStore()
 const authStore = useAuthStore()
 
 const handleLogout = async () => {
@@ -70,13 +205,94 @@ const handleLogout = async () => {
   }
 }
 
+const showEditModal = ref(false)
+const isSubmitting = ref(false)
+const editError = ref('')
+const editingUser = ref<User | null>(null)
+
+const editUserData = ref<UpdateUserInput>({
+  name: '',
+  email: '',
+  role: 'staff',
+  isActive: true
+})
+
+const getRoleLabel = (role: string) => {
+  const labels: Record<string, string> = {
+    owner: 'オーナー',
+    manager: '管理者',
+    staff: 'スタッフ'
+  }
+  return labels[role] || role
+}
+
+const getRoleBadgeClass = (role: string) => {
+  const classes: Record<string, string> = {
+    owner: 'px-2 py-1 bg-purple-100 text-purple-800 rounded text-sm',
+    manager: 'px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm',
+    staff: 'px-2 py-1 bg-gray-100 text-gray-800 rounded text-sm'
+  }
+  return classes[role] || ''
+}
+
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString)
+  return date.toLocaleString('ja-JP', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+const editUser = (user: User) => {
+  editingUser.value = user
+  editUserData.value = {
+    name: user.name,
+    email: user.email || '',
+    role: user.role,
+    isActive: user.isActive
+  }
+  showEditModal.value = true
+}
+
+const handleUpdateUser = async () => {
+  if (!editingUser.value) return
+  
+  isSubmitting.value = true
+  editError.value = ''
+  
+  try {
+    await userStore.updateCompanyUser(editingUser.value.id, editUserData.value)
+    showEditModal.value = false
+    editingUser.value = null
+  } catch (error: any) {
+    editError.value = error?.data?.error || 'ユーザー情報の更新に失敗しました'
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+const confirmDelete = async (user: User) => {
+  if (confirm(`本当に「${user.name}」を削除しますか？`)) {
+    try {
+      await userStore.deleteCompanyUser(user.id)
+    } catch (error: any) {
+      alert(error?.data?.error || 'ユーザーの削除に失敗しました')
+    }
+  }
+}
+
 onMounted(async () => {
   // 認証チェック
   authStore.loadUserFromStorage()
-  if (!authStore.isAuthenticated) {
+  if (!authStore.isAuthenticated || !authStore.isOwner) {
     await navigateTo('/company/login')
     return
   }
+  
+  await userStore.fetchAllUsers()
 })
 </script>
 

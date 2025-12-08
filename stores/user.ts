@@ -74,6 +74,26 @@ export const useUserStore = defineStore('user', {
       }
     },
 
+    async fetchAllUsers() {
+      this.isLoading = true
+      try {
+        const config = useRuntimeConfig()
+        const apiBase = config.public.apiBase
+        
+        const data = await $fetch<User[]>(`${apiBase}/company-users`, {
+          headers: getAuthHeaders()
+        })
+        this.users = data || []
+        return data || []
+      } catch (error) {
+        console.error('全ユーザー一覧の取得に失敗しました:', error)
+        this.users = []
+        throw error
+      } finally {
+        this.isLoading = false
+      }
+    },
+
     async fetchUser(userId: string) {
       this.isLoading = true
       try {
@@ -193,6 +213,59 @@ export const useUserStore = defineStore('user', {
             error.status = parseInt(statusMatch[1])
           }
         }
+        throw error
+      } finally {
+        this.isLoading = false
+      }
+    },
+
+    async updateCompanyUser(userId: string, input: UpdateUserInput) {
+      this.isLoading = true
+      try {
+        const config = useRuntimeConfig()
+        const apiBase = config.public.apiBase
+        
+        const user = await $fetch<User>(`${apiBase}/company-users/${userId}`, {
+          method: 'PUT',
+          body: input,
+          headers: getAuthHeaders()
+        })
+        
+        const index = this.users.findIndex(u => u.id === userId)
+        if (index > -1) {
+          this.users[index] = user
+        }
+        
+        if (this.currentUser?.id === userId) {
+          this.currentUser = user
+        }
+        
+        return user
+      } catch (error) {
+        console.error('ユーザー情報の更新に失敗しました:', error)
+        throw error
+      } finally {
+        this.isLoading = false
+      }
+    },
+
+    async deleteCompanyUser(userId: string) {
+      this.isLoading = true
+      try {
+        const config = useRuntimeConfig()
+        const apiBase = config.public.apiBase
+        
+        await $fetch(`${apiBase}/company-users/${userId}`, {
+          method: 'DELETE',
+          headers: getAuthHeaders()
+        })
+        
+        this.users = this.users.filter(u => u.id !== userId)
+        if (this.currentUser?.id === userId) {
+          this.currentUser = null
+        }
+      } catch (error) {
+        console.error('ユーザーの削除に失敗しました:', error)
         throw error
       } finally {
         this.isLoading = false
