@@ -30,10 +30,16 @@ switch ($endpoint) {
         break;
     
     case 'users':
+        // 残りのパスを取得（users以降の部分）
+        $remainingPath = isset($pathParts[1]) ? implode('/', array_slice($pathParts, 1)) : '';
+        $_ENV['USERS_REMAINING_PATH'] = $remainingPath;
         require_once __DIR__ . '/users.php';
         break;
     
     case 'company-users':
+        // 残りのパスを取得（company-users以降の部分）
+        $remainingPath = isset($pathParts[1]) ? implode('/', array_slice($pathParts, 1)) : '';
+        $_ENV['COMPANY_USERS_REMAINING_PATH'] = $remainingPath;
         require_once __DIR__ . '/company-users.php';
         break;
     
@@ -55,17 +61,30 @@ switch ($endpoint) {
     
     case 'orders':
         // ordersエンドポイントの場合、残りのパスを取得
-        $remainingPath = isset($pathParts[1]) ? $pathParts[1] : null;
-        // orders.phpに直接処理を委譲
+        $remainingPath = isset($pathParts[1]) ? implode('/', array_slice($pathParts, 1)) : '';
+        $_ENV['ORDERS_REMAINING_PATH'] = $remainingPath;
         require_once __DIR__ . '/orders.php';
         break;
     
     case 'error-logs':
+        // 残りのパスを取得（error-logs以降の部分）
+        $remainingPath = isset($pathParts[1]) ? implode('/', array_slice($pathParts, 1)) : '';
+        $_ENV['ERROR_LOGS_REMAINING_PATH'] = $remainingPath;
         require_once __DIR__ . '/error-logs.php';
         break;
     
     case 'visitors':
+        // 残りのパスを取得（visitors以降の部分）
+        $remainingPath = isset($pathParts[1]) ? implode('/', array_slice($pathParts, 1)) : '';
+        $_ENV['VISITORS_REMAINING_PATH'] = $remainingPath;
         require_once __DIR__ . '/visitors.php';
+        break;
+    
+    case 'categories':
+        // 残りのパスを取得（categories以降の部分）
+        $remainingPath = isset($pathParts[1]) ? implode('/', array_slice($pathParts, 1)) : '';
+        $_ENV['CATEGORIES_REMAINING_PATH'] = $remainingPath;
+        require_once __DIR__ . '/categories.php';
         break;
     
     default:

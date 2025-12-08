@@ -17,8 +17,16 @@ setJsonHeader();
 $method = $_SERVER['REQUEST_METHOD'];
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
-// パスの解析
-$pathParts = explode('/', trim(str_replace('/radish/api/visitors/', '', $path), '/'));
+// パスの解析（index.php経由で呼び出される場合を考慮）
+// v1/index.php経由で呼び出された場合、環境変数から残りのパスを取得
+if (isset($_ENV['VISITORS_REMAINING_PATH']) && !empty($_ENV['VISITORS_REMAINING_PATH'])) {
+    $path = $_ENV['VISITORS_REMAINING_PATH'];
+} else {
+    // 直接呼び出された場合、/radish/v1/visitors/ または /radish/api/visitors/ を削除
+    $path = preg_replace('#^/radish/(v1|api)/visitors/#', '', $path);
+}
+$path = trim($path, '/');
+$pathParts = explode('/', $path);
 
 $visitorId = isset($pathParts[0]) && is_numeric($pathParts[0]) ? (int)$pathParts[0] : null;
 $action = isset($pathParts[1]) ? $pathParts[1] : null;

@@ -16,9 +16,18 @@ $method = $_SERVER['REQUEST_METHOD'];
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $orderId = null;
 
-// /radish/api/orders/{id} の形式からIDを抽出
-if (preg_match('#/orders/(\d+)/?$#', $path, $matches)) {
-    $orderId = $matches[1];
+// v1/index.php経由で呼び出された場合、環境変数から残りのパスを取得
+if (isset($_ENV['ORDERS_REMAINING_PATH']) && !empty($_ENV['ORDERS_REMAINING_PATH'])) {
+    $remainingPath = $_ENV['ORDERS_REMAINING_PATH'];
+    // 残りのパスからIDを抽出
+    if (preg_match('#^(\d+)/?$#', $remainingPath, $matches)) {
+        $orderId = $matches[1];
+    }
+} else {
+    // 直接呼び出された場合、/radish/v1/orders/{id} または /radish/api/orders/{id} の形式からIDを抽出
+    if (preg_match('#/orders/(\d+)/?$#', $path, $matches)) {
+        $orderId = $matches[1];
+    }
 }
 
 switch ($method) {

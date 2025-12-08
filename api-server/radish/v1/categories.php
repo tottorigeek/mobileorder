@@ -16,8 +16,16 @@ setJsonHeader();
 $method = $_SERVER['REQUEST_METHOD'];
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
-// パスの解析
-$pathParts = explode('/', trim(str_replace('/radish/api/categories/', '', $path), '/'));
+// パスの解析（index.php経由で呼び出される場合を考慮）
+// v1/index.php経由で呼び出された場合、環境変数から残りのパスを取得
+if (isset($_ENV['CATEGORIES_REMAINING_PATH']) && !empty($_ENV['CATEGORIES_REMAINING_PATH'])) {
+    $path = $_ENV['CATEGORIES_REMAINING_PATH'];
+} else {
+    // 直接呼び出された場合、/radish/v1/categories/ または /radish/api/categories/ を削除
+    $path = preg_replace('#^/radish/(v1|api)/categories/#', '', $path);
+}
+$path = trim($path, '/');
+$pathParts = explode('/', $path);
 
 // 店舗コードからカテゴリ一覧取得（公開エンドポイント）
 if (isset($pathParts[0]) && $pathParts[0] === 'shop' && isset($pathParts[1])) {
