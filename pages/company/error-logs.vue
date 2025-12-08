@@ -69,40 +69,127 @@
 
       <!-- フィルター -->
       <div v-if="showFilters" class="bg-white p-6 rounded-lg shadow">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">エラーレベル</label>
-            <select
-              v-model="filters.level"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+        <div class="space-y-4">
+          <!-- 第1行: エラーレベル、環境、店舗、ユーザー -->
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">エラーレベル</label>
+              <select
+                v-model="filters.level"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              >
+                <option value="">すべて</option>
+                <option value="error">エラー</option>
+                <option value="warning">警告</option>
+                <option value="info">情報</option>
+                <option value="debug">デバッグ</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">環境</label>
+              <select
+                v-model="filters.environment"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              >
+                <option value="">すべて</option>
+                <option value="development">開発環境</option>
+                <option value="production">本番環境</option>
+                <option value="staging">ステージング</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">店舗</label>
+              <select
+                v-model="filters.shopId"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              >
+                <option value="">すべて</option>
+                <option v-for="shop in shops" :key="shop.id" :value="shop.id">
+                  {{ shop.name }}
+                </option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">ユーザー</label>
+              <select
+                v-model="filters.userId"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              >
+                <option value="">すべて</option>
+                <option v-for="user in users" :key="user.id" :value="user.id">
+                  {{ user.name }} ({{ user.username }})
+                </option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">メッセージ検索</label>
+              <input
+                v-model="filters.message"
+                type="text"
+                placeholder="メッセージを検索..."
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              />
+            </div>
+          </div>
+          
+          <!-- 第2行: メッセージ検索、日付範囲、IPアドレス、リクエストURI -->
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">メッセージ検索</label>
+              <input
+                v-model="filters.message"
+                type="text"
+                placeholder="メッセージを検索..."
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">開始日</label>
+              <input
+                v-model="filters.startDate"
+                type="date"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">終了日</label>
+              <input
+                v-model="filters.endDate"
+                type="date"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">IPアドレス</label>
+              <input
+                v-model="filters.ipAddress"
+                type="text"
+                placeholder="IPアドレスを検索..."
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">リクエストURI</label>
+              <input
+                v-model="filters.requestUri"
+                type="text"
+                placeholder="URIを検索..."
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              />
+            </div>
+          </div>
+          
+          <!-- 第3行: ボタン -->
+          <div class="flex gap-2 justify-end">
+            <button
+              @click="resetFilters"
+              class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200"
             >
-              <option value="">すべて</option>
-              <option value="error">エラー</option>
-              <option value="warning">警告</option>
-              <option value="info">情報</option>
-              <option value="debug">デバッグ</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">開始日</label>
-            <input
-              v-model="filters.startDate"
-              type="date"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-            />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">終了日</label>
-            <input
-              v-model="filters.endDate"
-              type="date"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-            />
-          </div>
-          <div class="flex items-end">
+              リセット
+            </button>
             <button
               @click="applyFilters"
-              class="w-full px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700"
+              class="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700"
             >
               適用
             </button>
@@ -141,9 +228,12 @@
         >
           <div class="flex justify-between items-start">
             <div class="flex-1">
-              <div class="flex items-center gap-2 mb-2">
+              <div class="flex items-center gap-2 mb-2 flex-wrap">
                 <span :class="getLevelBadgeClass(log.level)">
                   {{ getLevelLabel(log.level) }}
+                </span>
+                <span v-if="log.environment" :class="getEnvironmentBadgeClass(log.environment)">
+                  {{ getEnvironmentLabel(log.environment) }}
                 </span>
                 <span class="text-sm text-gray-500">{{ formatDate(log.createdAt) }}</span>
                 <span v-if="log.shop" class="text-sm text-gray-600">
@@ -220,6 +310,13 @@
               </span>
             </div>
 
+            <div v-if="selectedLog.environment">
+              <label class="block text-sm font-medium text-gray-700 mb-1">環境</label>
+              <span :class="getEnvironmentBadgeClass(selectedLog.environment)">
+                {{ getEnvironmentLabel(selectedLog.environment) }}
+              </span>
+            </div>
+
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">メッセージ</label>
               <div class="bg-gray-50 p-3 rounded-lg text-sm font-mono whitespace-pre-wrap">{{ selectedLog.message }}</div>
@@ -279,6 +376,7 @@ import { useAuthStore } from '~/stores/auth'
 interface ErrorLog {
   id: string
   level: 'error' | 'warning' | 'info' | 'debug'
+  environment?: 'development' | 'production' | 'staging'
   message: string
   file?: string
   line?: number
@@ -339,11 +437,19 @@ const isLoading = ref(false)
 const showFilters = ref(false)
 const selectedLog = ref<ErrorLog | null>(null)
 const errorMessage = ref('')
+const shops = ref<Array<{ id: string; name: string; code: string }>>([])
+const users = ref<Array<{ id: string; name: string; username: string }>>([])
 
 const filters = ref({
   level: '',
+  environment: '',
+  shopId: '',
+  userId: '',
   startDate: '',
-  endDate: ''
+  endDate: '',
+  message: '',
+  ipAddress: '',
+  requestUri: ''
 })
 
 const handleLogout = async () => {
@@ -370,6 +476,24 @@ const getLevelBadgeClass = (level: string) => {
     debug: 'px-2 py-1 bg-gray-100 text-gray-800 rounded text-sm font-medium'
   }
   return classes[level] || ''
+}
+
+const getEnvironmentLabel = (environment: string) => {
+  const labels: Record<string, string> = {
+    development: '開発',
+    production: '本番',
+    staging: 'ステージング'
+  }
+  return labels[environment] || environment
+}
+
+const getEnvironmentBadgeClass = (environment: string) => {
+  const classes: Record<string, string> = {
+    development: 'px-2 py-1 bg-green-100 text-green-800 rounded text-sm font-medium',
+    production: 'px-2 py-1 bg-purple-100 text-purple-800 rounded text-sm font-medium',
+    staging: 'px-2 py-1 bg-orange-100 text-orange-800 rounded text-sm font-medium'
+  }
+  return classes[environment] || 'px-2 py-1 bg-gray-100 text-gray-800 rounded text-sm font-medium'
 }
 
 const formatDate = (dateString: string) => {
@@ -399,11 +523,29 @@ const fetchLogs = async () => {
     if (filters.value.level) {
       params.append('level', filters.value.level)
     }
+    if (filters.value.environment) {
+      params.append('environment', filters.value.environment)
+    }
+    if (filters.value.shopId) {
+      params.append('shop_id', filters.value.shopId)
+    }
+    if (filters.value.userId) {
+      params.append('user_id', filters.value.userId)
+    }
     if (filters.value.startDate) {
       params.append('start_date', filters.value.startDate)
     }
     if (filters.value.endDate) {
       params.append('end_date', filters.value.endDate)
+    }
+    if (filters.value.message) {
+      params.append('message', filters.value.message)
+    }
+    if (filters.value.ipAddress) {
+      params.append('ip_address', filters.value.ipAddress)
+    }
+    if (filters.value.requestUri) {
+      params.append('request_uri', filters.value.requestUri)
     }
     
     const response = await $fetch<{ logs: ErrorLog[]; pagination: Pagination }>(
@@ -437,6 +579,58 @@ const applyFilters = () => {
   fetchLogs()
 }
 
+const resetFilters = () => {
+  filters.value = {
+    level: '',
+    environment: '',
+    shopId: '',
+    userId: '',
+    startDate: '',
+    endDate: '',
+    message: '',
+    ipAddress: '',
+    requestUri: ''
+  }
+  pagination.value.page = 1
+  fetchLogs()
+}
+
+const fetchShops = async () => {
+  try {
+    const config = useRuntimeConfig()
+    const apiBase = config.public.apiBase
+    
+    const data = await $fetch<Array<{ id: string; name: string; code: string }>>(
+      `${apiBase}/my-shops`,
+      {
+        headers: getAuthHeaders()
+      }
+    )
+    shops.value = data || []
+  } catch (error) {
+    console.error('店舗一覧の取得に失敗しました:', error)
+    shops.value = []
+  }
+}
+
+const fetchUsers = async () => {
+  try {
+    const config = useRuntimeConfig()
+    const apiBase = config.public.apiBase
+    
+    const data = await $fetch<Array<{ id: string; name: string; username: string }>>(
+      `${apiBase}/company-users`,
+      {
+        headers: getAuthHeaders()
+      }
+    )
+    users.value = data || []
+  } catch (error) {
+    console.error('ユーザー一覧の取得に失敗しました:', error)
+    users.value = []
+  }
+}
+
 const changePage = (page: number) => {
   pagination.value.page = page
   fetchLogs()
@@ -467,8 +661,20 @@ const confirmDelete = async (log: ErrorLog) => {
 const confirmDeleteAll = async () => {
   const conditions: string[] = []
   if (filters.value.level) conditions.push(`レベル: ${getLevelLabel(filters.value.level)}`)
+  if (filters.value.environment) conditions.push(`環境: ${getEnvironmentLabel(filters.value.environment)}`)
+  if (filters.value.shopId) {
+    const shop = shops.value.find(s => s.id === filters.value.shopId)
+    if (shop) conditions.push(`店舗: ${shop.name}`)
+  }
+  if (filters.value.userId) {
+    const user = users.value.find(u => u.id === filters.value.userId)
+    if (user) conditions.push(`ユーザー: ${user.name}`)
+  }
   if (filters.value.startDate) conditions.push(`開始日: ${filters.value.startDate}`)
   if (filters.value.endDate) conditions.push(`終了日: ${filters.value.endDate}`)
+  if (filters.value.message) conditions.push(`メッセージ: ${filters.value.message}`)
+  if (filters.value.ipAddress) conditions.push(`IPアドレス: ${filters.value.ipAddress}`)
+  if (filters.value.requestUri) conditions.push(`URI: ${filters.value.requestUri}`)
   
   const message = conditions.length > 0
     ? `フィルター条件に一致するエラーログをすべて削除しますか？\n条件: ${conditions.join(', ')}`
@@ -481,6 +687,9 @@ const confirmDeleteAll = async () => {
       
       const body: any = {}
       if (filters.value.level) body.level = filters.value.level
+      if (filters.value.environment) body.environment = filters.value.environment
+      if (filters.value.shopId) body.shop_id = filters.value.shopId
+      if (filters.value.userId) body.user_id = filters.value.userId
       if (filters.value.startDate) body.start_date = filters.value.startDate
       if (filters.value.endDate) body.end_date = filters.value.endDate
       
@@ -514,7 +723,7 @@ onMounted(async () => {
   }
   
   // API側で権限チェックを行うため、フロントエンドでは認証のみ確認
-  await fetchLogs()
+  await Promise.all([fetchLogs(), fetchShops(), fetchUsers()])
 })
 </script>
 

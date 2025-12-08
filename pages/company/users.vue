@@ -53,6 +53,92 @@
         </p>
       </div>
 
+      <!-- フィルター -->
+      <div class="bg-white p-6 rounded-lg shadow">
+        <h3 class="text-lg font-semibold mb-4">フィルター</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- 検索 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              検索
+            </label>
+            <input
+              v-model="filters.search"
+              type="text"
+              placeholder="名前、ユーザー名、メールで検索"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+            />
+          </div>
+
+          <!-- ロールフィルター -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              役割
+            </label>
+            <select
+              v-model="filters.role"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+            >
+              <option value="">すべて</option>
+              <option value="owner">オーナー</option>
+              <option value="manager">管理者</option>
+              <option value="staff">スタッフ</option>
+            </select>
+          </div>
+
+          <!-- 店舗フィルター -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              店舗
+            </label>
+            <select
+              v-model="filters.shopId"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+            >
+              <option value="">すべて</option>
+              <option value="none">未設定</option>
+              <option
+                v-for="shop in shopStore.shops"
+                :key="shop.id"
+                :value="shop.id"
+              >
+                {{ shop.name }} ({{ shop.code }})
+              </option>
+            </select>
+          </div>
+
+          <!-- 有効/無効フィルター -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              ステータス
+            </label>
+            <select
+              v-model="filters.isActive"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+            >
+              <option :value="null">すべて</option>
+              <option :value="true">有効</option>
+              <option :value="false">無効</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- フィルターリセットボタン -->
+        <div class="mt-4 flex justify-end">
+          <button
+            @click="resetFilters"
+            class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm"
+          >
+            フィルターをリセット
+          </button>
+        </div>
+
+        <!-- フィルター結果の件数表示 -->
+        <div class="mt-4 text-sm text-gray-600">
+          表示中: {{ filteredUsers.length }} / {{ userStore.users.length }} 件
+        </div>
+      </div>
+
       <!-- エラーメッセージ -->
       <div v-if="errorMessage" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4">
         {{ errorMessage }}
@@ -68,9 +154,13 @@
         ユーザーが登録されていません
       </div>
 
+      <div v-else-if="filteredUsers.length === 0" class="text-center py-12 text-gray-500">
+        フィルター条件に一致するユーザーが見つかりませんでした
+      </div>
+
       <div v-else class="space-y-3">
         <div
-          v-for="user in userStore.users"
+          v-for="user in filteredUsers"
           :key="user.id"
           class="bg-white p-4 rounded-lg shadow"
         >
@@ -205,10 +295,12 @@
 <script setup lang="ts">
 import { useUserStore, type UpdateUserInput } from '~/stores/user'
 import { useAuthStore } from '~/stores/auth'
+import { useShopStore } from '~/stores/shop'
 import type { User } from '~/types'
 
 const userStore = useUserStore()
 const authStore = useAuthStore()
+const shopStore = useShopStore()
 
 const handleLogout = async () => {
   if (confirm('ログアウトしますか？')) {
@@ -221,6 +313,14 @@ const isSubmitting = ref(false)
 const editError = ref('')
 const editingUser = ref<User | null>(null)
 const errorMessage = ref('')
+
+// フィルター設定
+const filters = ref({
+  search: '',
+  role: '',
+  shopId: '',
+  isActive: null as boolean | null
+})
 
 const editUserData = ref<UpdateUserInput>({
   name: '',
@@ -256,6 +356,54 @@ const formatDate = (dateString: string) => {
     hour: '2-digit',
     minute: '2-digit'
   })
+}
+
+// フィルターされたユーザーリスト
+const filteredUsers = computed(() => {
+  let users = [...userStore.users]
+
+  // 検索フィルター
+  if (filters.value.search) {
+    const searchLower = filters.value.search.toLowerCase()
+    users = users.filter(user => {
+      return (
+        user.name.toLowerCase().includes(searchLower) ||
+        user.username.toLowerCase().includes(searchLower) ||
+        (user.email && user.email.toLowerCase().includes(searchLower))
+      )
+    })
+  }
+
+  // ロールフィルター
+  if (filters.value.role) {
+    users = users.filter(user => user.role === filters.value.role)
+  }
+
+  // 店舗フィルター
+  if (filters.value.shopId) {
+    if (filters.value.shopId === 'none') {
+      users = users.filter(user => !user.shop || !user.shopId)
+    } else {
+      users = users.filter(user => user.shopId === filters.value.shopId)
+    }
+  }
+
+  // 有効/無効フィルター
+  if (filters.value.isActive !== null) {
+    users = users.filter(user => user.isActive === filters.value.isActive)
+  }
+
+  return users
+})
+
+// フィルターリセット
+const resetFilters = () => {
+  filters.value = {
+    search: '',
+    role: '',
+    shopId: '',
+    isActive: null
+  }
 }
 
 const editUser = (user: User) => {
@@ -325,7 +473,10 @@ onMounted(async () => {
   // API側で権限チェックを行うため、フロントエンドでは認証のみ確認
   try {
     console.log('[company/users] Fetching all users...')
-    await userStore.fetchAllUsers()
+    await Promise.all([
+      userStore.fetchAllUsers(),
+      shopStore.fetchShops()
+    ])
     console.log('[company/users] Users fetched successfully')
     errorMessage.value = ''
   } catch (error: any) {

@@ -56,32 +56,62 @@ function getErrorLogs() {
         $offset = ($page - 1) * $limit;
         
         $level = isset($_GET['level']) ? $_GET['level'] : null;
+        $environment = isset($_GET['environment']) ? $_GET['environment'] : null;
         $shopId = isset($_GET['shop_id']) ? intval($_GET['shop_id']) : null;
+        $userId = isset($_GET['user_id']) ? intval($_GET['user_id']) : null;
         $startDate = isset($_GET['start_date']) ? $_GET['start_date'] : null;
         $endDate = isset($_GET['end_date']) ? $_GET['end_date'] : null;
+        $messageSearch = isset($_GET['message']) ? trim($_GET['message']) : null;
+        $ipAddress = isset($_GET['ip_address']) ? trim($_GET['ip_address']) : null;
+        $requestUri = isset($_GET['request_uri']) ? trim($_GET['request_uri']) : null;
         
         // WHERE句の構築
         $where = [];
         $params = [];
         
         if ($level && in_array($level, ['error', 'warning', 'info', 'debug'])) {
-            $where[] = "level = :level";
+            $where[] = "el.level = :level";
             $params[':level'] = $level;
         }
         
+        if ($environment && in_array($environment, ['development', 'production', 'staging'])) {
+            $where[] = "el.environment = :environment";
+            $params[':environment'] = $environment;
+        }
+        
         if ($shopId) {
-            $where[] = "shop_id = :shop_id";
+            $where[] = "el.shop_id = :shop_id";
             $params[':shop_id'] = $shopId;
         }
         
+        if ($userId) {
+            $where[] = "el.user_id = :user_id";
+            $params[':user_id'] = $userId;
+        }
+        
         if ($startDate) {
-            $where[] = "created_at >= :start_date";
+            $where[] = "el.created_at >= :start_date";
             $params[':start_date'] = $startDate;
         }
         
         if ($endDate) {
-            $where[] = "created_at <= :end_date";
+            $where[] = "el.created_at <= :end_date";
             $params[':end_date'] = $endDate . ' 23:59:59';
+        }
+        
+        if ($messageSearch) {
+            $where[] = "el.message LIKE :message";
+            $params[':message'] = '%' . $messageSearch . '%';
+        }
+        
+        if ($ipAddress) {
+            $where[] = "el.ip_address LIKE :ip_address";
+            $params[':ip_address'] = '%' . $ipAddress . '%';
+        }
+        
+        if ($requestUri) {
+            $where[] = "el.request_uri LIKE :request_uri";
+            $params[':request_uri'] = '%' . $requestUri . '%';
         }
         
         $whereClause = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
@@ -93,7 +123,7 @@ function getErrorLogs() {
         $total = $countStmt->fetch()['total'];
         
         // エラーログ一覧を取得
-        $sql = "SELECT el.id, el.level, el.message, el.file, el.line, el.trace, 
+        $sql = "SELECT el.id, el.level, el.environment, el.message, el.file, el.line, el.trace, 
                        el.user_id, el.shop_id, el.request_method, el.request_uri, el.ip_address, el.created_at,
                        u.name as user_name, u.username as user_username,
                        s.name as shop_name, s.code as shop_code
@@ -125,6 +155,7 @@ function getErrorLogs() {
             return [
                 'id' => (string)$log['id'],
                 'level' => $log['level'],
+                'environment' => $log['environment'] ?? 'development',
                 'message' => $log['message'],
                 'file' => $log['file'],
                 'line' => $log['line'] ? (int)$log['line'] : null,
@@ -173,7 +204,7 @@ function getErrorLog($logId) {
         
         $pdo = getDbConnection();
         
-        $sql = "SELECT el.id, el.level, el.message, el.file, el.line, el.trace, 
+        $sql = "SELECT el.id, el.level, el.environment, el.message, el.file, el.line, el.trace, 
                        el.user_id, el.shop_id, el.request_method, el.request_uri, el.ip_address, el.created_at,
                        u.name as user_name, u.username as user_username,
                        s.name as shop_name, s.code as shop_code
@@ -198,6 +229,7 @@ function getErrorLog($logId) {
         echo json_encode([
             'id' => (string)$log['id'],
             'level' => $log['level'],
+            'environment' => $log['environment'] ?? 'development',
             'message' => $log['message'],
             'file' => $log['file'],
             'line' => $log['line'] ? (int)$log['line'] : null,
@@ -262,10 +294,15 @@ function deleteAllErrorLogs() {
         
         // 削除条件を取得
         $level = isset($input['level']) ? $input['level'] : null;
+        $environment = isset($input['environment']) ? $input['environment'] : null;
         $shopId = isset($input['shop_id']) ? intval($input['shop_id']) : null;
+        $userId = isset($input['user_id']) ? intval($input['user_id']) : null;
         $startDate = isset($input['start_date']) ? $input['start_date'] : null;
         $endDate = isset($input['end_date']) ? $input['end_date'] : null;
         $olderThan = isset($input['older_than_days']) ? intval($input['older_than_days']) : null;
+        $messageSearch = isset($input['message']) ? trim($input['message']) : null;
+        $ipAddress = isset($input['ip_address']) ? trim($input['ip_address']) : null;
+        $requestUri = isset($input['request_uri']) ? trim($input['request_uri']) : null;
         
         $pdo = getDbConnection();
         
@@ -278,9 +315,19 @@ function deleteAllErrorLogs() {
             $params[':level'] = $level;
         }
         
+        if ($environment && in_array($environment, ['development', 'production', 'staging'])) {
+            $where[] = "environment = :environment";
+            $params[':environment'] = $environment;
+        }
+        
         if ($shopId) {
             $where[] = "shop_id = :shop_id";
             $params[':shop_id'] = $shopId;
+        }
+        
+        if ($userId) {
+            $where[] = "user_id = :user_id";
+            $params[':user_id'] = $userId;
         }
         
         if ($startDate) {
@@ -296,6 +343,21 @@ function deleteAllErrorLogs() {
         if ($olderThan) {
             $where[] = "created_at < DATE_SUB(NOW(), INTERVAL :older_than DAY)";
             $params[':older_than'] = $olderThan;
+        }
+        
+        if ($messageSearch) {
+            $where[] = "message LIKE :message";
+            $params[':message'] = '%' . $messageSearch . '%';
+        }
+        
+        if ($ipAddress) {
+            $where[] = "ip_address LIKE :ip_address";
+            $params[':ip_address'] = '%' . $ipAddress . '%';
+        }
+        
+        if ($requestUri) {
+            $where[] = "request_uri LIKE :request_uri";
+            $params[':request_uri'] = '%' . $requestUri . '%';
         }
         
         $whereClause = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';

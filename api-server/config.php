@@ -18,9 +18,13 @@ date_default_timezone_set('Asia/Tokyo');
 error_reporting(E_ALL);
 ini_set('display_errors', 0); // 本番環境では0に設定
 
+// 環境設定（development/production）
+// 本番環境では 'production' に設定してください
+define('ENVIRONMENT', 'development'); // 'development' または 'production'
+
 // デバッグモード設定（本番環境ではfalseに設定）
-// 一時的にtrueに設定してエラー詳細を確認
-define('DEBUG_MODE', true); // 本番環境ではfalseに設定
+// 開発環境ではtrue、本番環境ではfalseに設定
+define('DEBUG_MODE', ENVIRONMENT === 'development');
 
 // JWT設定
 // 注意: 本番環境では必ず強力な秘密鍵に変更してください
@@ -395,7 +399,22 @@ function sendErrorResponse($statusCode, $message, $details = [], $exception = nu
         $response['details'] = $details;
     }
     
-    // 例外がある場合はログに記録
+    // エラーレベルの決定
+    $level = 'error';
+    if ($statusCode >= 400 && $statusCode < 500) {
+        // クライアントエラー（400番台）はwarning
+        $level = 'warning';
+        if ($statusCode === 401 || $statusCode === 403) {
+            // 認証・権限エラーはwarning
+            $level = 'warning';
+        }
+    } else if ($statusCode >= 500) {
+        // サーバーエラー（500番台）はerror
+        $level = 'error';
+    }
+    
+    // ログメッセージの構築
+    $logMessage = $message;
     if ($exception !== null) {
         $logMessage = sprintf(
             "[%s] %s: %s in %s:%d",
@@ -407,9 +426,6 @@ function sendErrorResponse($statusCode, $message, $details = [], $exception = nu
         );
         error_log($logMessage);
         
-        // データベースにも記録
-        logErrorToDatabase('error', $logMessage, $exception);
-        
         // デバッグモードの場合のみスタックトレースを追加
         if (DEBUG_MODE) {
             $response['debug'] = [
@@ -418,7 +434,18 @@ function sendErrorResponse($statusCode, $message, $details = [], $exception = nu
                 'line' => $exception->getLine()
             ];
         }
+    } else {
+        // 例外がない場合もログに記録
+        $logMessage = sprintf(
+            "[%s] HTTP %d: %s",
+            date('Y-m-d H:i:s'),
+            $statusCode,
+            $message
+        );
     }
+    
+    // データベースにエラーログを記録
+    logErrorToDatabase($level, $logMessage, $exception);
     
     echo json_encode($response, JSON_UNESCAPED_UNICODE);
     exit;
@@ -568,15 +595,19 @@ function logErrorToDatabase($level = 'error', $message = '', $exception = null, 
         $requestUri = $_SERVER['REQUEST_URI'] ?? null;
         $ipAddress = $_SERVER['REMOTE_ADDR'] ?? null;
         
+        // 環境情報を取得
+        $environment = defined('ENVIRONMENT') ? ENVIRONMENT : 'development';
+        
         // エラーログをデータベースに挿入
         $sql = "INSERT INTO error_logs 
-                (level, message, file, line, trace, user_id, shop_id, request_method, request_uri, ip_address) 
+                (level, environment, message, file, line, trace, user_id, shop_id, request_method, request_uri, ip_address) 
                 VALUES 
-                (:level, :message, :file, :line, :trace, :user_id, :shop_id, :request_method, :request_uri, :ip_address)";
+                (:level, :environment, :message, :file, :line, :trace, :user_id, :shop_id, :request_method, :request_uri, :ip_address)";
         
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
             ':level' => $level,
+            ':environment' => $environment,
             ':message' => $message,
             ':file' => $file,
             ':line' => $line,
