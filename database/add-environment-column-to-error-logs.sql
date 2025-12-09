@@ -15,3 +15,4 @@ ADD INDEX `idx_environment` (`environment`);
 -- 既存データの環境を設定（必要に応じて変更）
 -- UPDATE error_logs SET environment = 'development' WHERE environment IS NULL;
 
+

@@ -101,3 +101,4 @@ SELECT
     (SELECT COUNT(*) FROM users WHERE username LIKE 'staff_%') AS staff_count,
     '全スタッフのパスワード: password123' AS password_info;
 
+
