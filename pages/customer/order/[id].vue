@@ -53,13 +53,30 @@ import type { OrderStatus } from '~/types'
 const route = useRoute()
 const orderStore = useOrderStore()
 const cartStore = useCartStore()
+const shopStore = useShopStore()
 
 const order = computed(() => {
   return orderStore.orders.find(o => o.id === route.params.id as string)
 })
 
-// 注文完了時にセッション情報を保存（精算完了まで/shop-selectから/customerにリダイレクトするため）
-onMounted(() => {
+// 注文情報から店舗情報を取得
+onMounted(async () => {
+  // 注文情報を取得（単一の注文IDから取得）
+  if (!order.value) {
+    try {
+      const orderId = route.params.id as string
+      await orderStore.fetchOrder(orderId)
+    } catch (error) {
+      console.error('注文情報の取得に失敗しました:', error)
+    }
+  }
+  
+  // 注文情報からテーブル番号を取得してcartStoreに設定（ヘッダー表示用）
+  if (order.value && order.value.tableNumber && !cartStore.tableNumber) {
+    cartStore.setTableNumber(order.value.tableNumber)
+  }
+  
+  // 注文完了時にセッション情報を保存（精算完了まで/shop-selectから/customerにリダイレクトするため）
   if (order.value && cartStore.visitorId) {
     // ローカルストレージにアクティブな注文IDとvisitorIdを保存
     if (typeof window !== 'undefined') {

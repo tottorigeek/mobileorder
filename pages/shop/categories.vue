@@ -1,11 +1,6 @@
 <template>
   <NuxtLayout name="default" :title="pageTitle">
     <div class="space-y-6">
-      <!-- ナビゲーション -->
-      <AdminNavigation
-        :navigation-items="navigationItems"
-        active-color="blue"
-      />
       <!-- ヘッダー -->
       <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <div>
@@ -186,7 +181,6 @@ import { useAuthStore } from '~/stores/auth'
 import { useShopStore } from '~/stores/shop'
 import type { ShopCategory } from '~/types'
 
-const { navigationItems } = useShopNavigation()
 const { pageTitle } = useShopPageTitle('カテゴリ管理')
 
 const categoryStore = useCategoryStore()

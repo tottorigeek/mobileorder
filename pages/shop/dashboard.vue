@@ -1,11 +1,6 @@
 <template>
   <NuxtLayout name="default" :title="pageTitle">
     <div class="space-y-6">
-      <!-- ナビゲーション -->
-      <AdminNavigation
-        :navigation-items="navigationItems"
-        active-color="blue"
-      />
       <!-- 今日の売上カード -->
       <div class="bg-gradient-to-br from-blue-600 to-indigo-700 p-6 sm:p-8 rounded-2xl shadow-xl text-white">
         <div class="flex items-center justify-between mb-4">
@@ -120,7 +115,6 @@ const shopStore = useShopStore()
 const { handleLogout, checkAuth } = useAuthCheck()
 const { getStatusLabel, getStatusClass, formatDate } = useAdminUtils()
 
-const { navigationItems } = useShopNavigation()
 const { pageTitle } = useShopPageTitle('ダッシュボード')
 
 const orderStore = useOrderStore()

@@ -1,11 +1,6 @@
 <template>
   <NuxtLayout name="default" :title="pageTitle">
     <div class="space-y-6">
-      <!-- ナビゲーション -->
-      <AdminNavigation
-        :navigation-items="navigationItems"
-        active-color="blue"
-      />
 
       <!-- ヘッダー -->
       <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
@@ -260,7 +255,6 @@ const authStore = useAuthStore()
 const shopStore = useShopStore()
 const { handleLogout, checkAuth } = useAuthCheck()
 
-const { navigationItems } = useShopNavigation()
 const { pageTitle } = useShopPageTitle('スタッフ管理')
 
 const showAddModal = ref(false)

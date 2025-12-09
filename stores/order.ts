@@ -84,11 +84,64 @@ export const useOrderStore = defineStore('order', {
       }
     },
 
+    async fetchOrder(orderId: string) {
+      this.isLoading = true
+      try {
+        const config = useRuntimeConfig()
+        const apiBase = config.public.apiBase
+        
+        // 認証トークンを取得（オプション）
+        const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+        const headers: Record<string, string> = {
+          'Accept': 'application/json'
+        }
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`
+        }
+        
+        const order = await $fetch<Order>(`${apiBase}/orders/${orderId}`, {
+          headers
+        })
+        
+        // 日付文字列をDateオブジェクトに変換
+        const formattedOrder: Order = {
+          ...order,
+          createdAt: new Date(order.createdAt),
+          updatedAt: new Date(order.updatedAt)
+        }
+        
+        // 既存の注文を更新または追加
+        const index = this.orders.findIndex(o => o.id === orderId)
+        if (index > -1) {
+          this.orders[index] = formattedOrder
+        } else {
+          this.orders.push(formattedOrder)
+        }
+        
+        this.currentOrder = formattedOrder
+        return formattedOrder
+      } catch (error) {
+        console.error('注文の取得に失敗しました:', error)
+        throw error
+      } finally {
+        this.isLoading = false
+      }
+    },
+
     async fetchOrders(status?: OrderStatus, shopCode?: string, shopIds?: string[]) {
       this.isLoading = true
       try {
         const config = useRuntimeConfig()
         const apiBase = config.public.apiBase
+        
+        // 認証トークンを取得（オプション）
+        const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+        const headers: Record<string, string> = {
+          'Accept': 'application/json'
+        }
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`
+        }
         
         // 複数店舗IDが指定されている場合は、各店舗の注文を取得して結合
         if (shopIds && shopIds.length > 0) {
@@ -104,7 +157,7 @@ export const useOrderStore = defineStore('order', {
                 url += `&status=${status}`
               }
               
-              const data = await $fetch<Order[]>(url)
+              const data = await $fetch<Order[]>(url, { headers })
               return data || []
             } catch (error) {
               console.error(`店舗 ${shopId} の注文取得に失敗:`, error)
@@ -137,7 +190,7 @@ export const useOrderStore = defineStore('order', {
             url += `?${params.join('&')}`
           }
           
-          const data = await $fetch<Order[]>(url)
+          const data = await $fetch<Order[]>(url, { headers })
           
           // 日付文字列をDateオブジェクトに変換
           this.orders = (data || []).map(order => ({

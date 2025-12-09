@@ -215,18 +215,29 @@ onMounted(async () => {
   } else {
     // ローカルにない場合はAPIから取得
     try {
-      const config = useRuntimeConfig()
-      const apiBase = config.public.apiBase
-      const orderData = await $fetch<Order>(`${apiBase}/orders/${orderId}`)
-      order.value = {
-        ...orderData,
-        createdAt: new Date(orderData.createdAt),
-        updatedAt: new Date(orderData.updatedAt)
+      // orderStoreのfetchOrderメソッドを使用
+      await orderStore.fetchOrder(orderId)
+      const fetchedOrder = orderStore.orders.find(o => o.id === orderId)
+      if (fetchedOrder) {
+        order.value = fetchedOrder
       }
     } catch (error) {
       console.error('注文の取得に失敗しました:', error)
     } finally {
       isLoading.value = false
+    }
+  }
+  
+  // 注文情報からテーブル番号を取得してcartStoreに設定（ヘッダー表示用）
+  if (order.value && order.value.tableNumber && !cartStore.tableNumber) {
+    cartStore.setTableNumber(order.value.tableNumber)
+  }
+  
+  // ローカルストレージからvisitorIdを読み込む
+  if (!cartStore.visitorId && typeof window !== 'undefined') {
+    const storedVisitorId = localStorage.getItem('activeVisitorId')
+    if (storedVisitorId) {
+      cartStore.setVisitorId(storedVisitorId)
     }
   }
 })
@@ -275,8 +286,48 @@ const getStepClass = (status: OrderStatus) => {
 }
 
 const processPayment = async (method: PaymentMethod) => {
-  if (!cartStore.visitorId) {
-    alert('来店情報が見つかりません')
+  // visitorIdを取得（複数のソースから試行）
+  let visitorId = cartStore.visitorId
+  
+  // cartStoreにvisitorIdがない場合、ローカルストレージから取得を試みる
+  if (!visitorId && typeof window !== 'undefined') {
+    visitorId = localStorage.getItem('activeVisitorId') || null
+    if (visitorId) {
+      cartStore.setVisitorId(visitorId)
+    }
+  }
+  
+  // まだ見つからない場合、テーブル番号からvisitorを検索
+  if (!visitorId && order.value && order.value.tableNumber && shopStore.currentShop) {
+    try {
+      // テーブル番号からvisitorを検索（認証が必要な可能性があるため、エラーハンドリング）
+      const visitors = await visitorStore.fetchVisitors(shopStore.currentShop.id, {
+        tableNumber: order.value.tableNumber,
+        paymentStatus: 'pending'
+      })
+      
+      if (visitors && visitors.length > 0) {
+        // 最新のvisitorを使用
+        const latestVisitor = visitors[0]
+        visitorId = latestVisitor.id
+        cartStore.setVisitorId(visitorId)
+      }
+    } catch (error) {
+      console.error('テーブル番号からのvisitor検索に失敗:', error)
+    }
+  }
+  
+  // visitorIdが見つからない場合、詳細なエラーメッセージを表示
+  if (!visitorId) {
+    const debugInfo = {
+      cartStoreVisitorId: cartStore.visitorId || 'null',
+      localStorageVisitorId: typeof window !== 'undefined' ? (localStorage.getItem('activeVisitorId') || 'null') : 'N/A',
+      orderTableNumber: order.value?.tableNumber || 'null',
+      shopId: shopStore.currentShop?.id || 'null',
+      orderId: orderId
+    }
+    
+    alert(`来店情報が見つかりません\n\nデバッグ情報:\n- cartStore.visitorId: ${debugInfo.cartStoreVisitorId}\n- localStorage.activeVisitorId: ${debugInfo.localStorageVisitorId}\n- 注文テーブル番号: ${debugInfo.orderTableNumber}\n- 店舗ID: ${debugInfo.shopId}\n- 注文ID: ${debugInfo.orderId}`)
     return
   }
   
@@ -289,7 +340,7 @@ const processPayment = async (method: PaymentMethod) => {
     await new Promise(resolve => setTimeout(resolve, 2000))
     
     // 支払い処理を実行
-    await visitorStore.processPayment(cartStore.visitorId, paymentMethodForApi)
+    await visitorStore.processPayment(visitorId, paymentMethodForApi)
     
     isPaymentCompleted.value = true
     paymentMethod.value = method

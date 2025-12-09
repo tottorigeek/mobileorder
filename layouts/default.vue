@@ -37,12 +37,12 @@
                 </svg>
                 <span class="text-sm font-medium text-orange-700">店舗未設定</span>
               </div>
-              <div v-if="shopStore.currentShop || !cartStore.tableNumber" class="h-4 w-px bg-blue-300"></div>
-              <div v-if="cartStore.tableNumber" class="flex items-center gap-2">
+              <div v-if="shopStore.currentShop || !displayTableNumber" class="h-4 w-px bg-blue-300"></div>
+              <div v-if="displayTableNumber" class="flex items-center gap-2">
                 <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
                 </svg>
-                <span class="text-sm font-medium text-blue-700">テーブル {{ cartStore.tableNumber }}</span>
+                <span class="text-sm font-medium text-blue-700">テーブル {{ displayTableNumber }}</span>
               </div>
               <div v-else class="flex items-center gap-2">
                 <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -82,6 +82,13 @@
     </header>
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <!-- /shop配下のページでナビゲーションを表示 -->
+      <div v-if="isShopPage" class="mb-6">
+        <AdminNavigation
+          :navigation-items="shopNavigationItems"
+          active-color="blue"
+        />
+      </div>
       <slot />
     </main>
 
@@ -97,6 +104,8 @@
 import { useAuthStore } from '~/stores/auth'
 import { useShopStore } from '~/stores/shop'
 import { useCartStore } from '~/stores/cart'
+import { useOrderStore } from '~/stores/order'
+import AdminNavigation from '~/components/admin/AdminNavigation.vue'
 
 interface Props {
   title?: string
@@ -113,6 +122,7 @@ withDefaults(defineProps<Props>(), {
 const authStore = useAuthStore()
 const shopStore = useShopStore()
 const cartStore = useCartStore()
+const orderStore = useOrderStore()
 const route = useRoute()
 
 // /customerページかどうかを判定
@@ -123,6 +133,28 @@ const isCustomerPage = computed(() => {
 // /shopページかどうかを判定
 const isShopPage = computed(() => {
   return route.path.startsWith('/shop')
+})
+
+// /shop配下のナビゲーションアイテム
+const { navigationItems: shopNavigationItems } = useShopNavigation()
+
+// 表示するテーブル番号（cartStoreまたは注文情報から取得）
+const displayTableNumber = computed(() => {
+  // cartStoreにテーブル番号がある場合はそれを使用
+  if (cartStore.tableNumber) {
+    return cartStore.tableNumber
+  }
+  
+  // /customer/order/[id]または/customer/status/[id]ページの場合、注文情報からテーブル番号を取得
+  if (route.path.startsWith('/customer/order/') || route.path.startsWith('/customer/status/')) {
+    const orderId = route.params.id as string
+    const order = orderStore.orders.find(o => o.id === orderId)
+    if (order && order.tableNumber) {
+      return order.tableNumber
+    }
+  }
+  
+  return null
 })
 
 // 複数店舗に所属しているかどうかを判定

@@ -1,11 +1,6 @@
 <template>
   <NuxtLayout name="default" :title="pageTitle">
     <div class="space-y-6">
-      <!-- ナビゲーション -->
-      <AdminNavigation
-        :navigation-items="navigationItems"
-        active-color="blue"
-      />
 
       <!-- 期間選択 -->
       <div class="bg-white p-6 rounded-xl shadow-lg">
@@ -163,7 +158,6 @@ const shopStore = useShopStore()
 const orderStore = useOrderStore()
 const { checkAuth } = useAuthCheck()
 
-const { navigationItems } = useShopNavigation()
 const { pageTitle } = useShopPageTitle('売上履歴')
 
 const selectedPeriod = ref('30')
