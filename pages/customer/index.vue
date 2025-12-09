@@ -87,34 +87,38 @@
       <NumberInput />
 
       <!-- カテゴリフィルター -->
-      <div v-if="isLoadingCategories" class="flex gap-2 overflow-x-auto pb-2">
-        <div class="px-5 py-2.5 rounded-xl bg-gray-100 animate-pulse">読み込み中...</div>
+      <div v-if="isLoadingCategories" class="w-full overflow-x-auto pb-2">
+        <div class="flex gap-2 min-w-max">
+          <div class="px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-gray-100 animate-pulse flex-shrink-0">読み込み中...</div>
+        </div>
       </div>
-      <div v-else class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-        <button
-          :class="[
-            'px-5 py-2.5 rounded-xl font-semibold whitespace-nowrap transition-all duration-300 touch-target',
-            menuStore.selectedCategory === null
-              ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30'
-              : 'bg-white text-gray-700 hover:bg-gray-50 hover:shadow-md border border-gray-200'
-          ]"
-          @click="menuStore.setCategory(null)"
-        >
-          すべて
-        </button>
-        <button
-          v-for="category in shopCategories"
-          :key="category.code"
-          :class="[
-            'px-5 py-2.5 rounded-xl font-semibold whitespace-nowrap transition-all duration-300 touch-target',
-            menuStore.selectedCategory === category.code
-              ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30'
-              : 'bg-white text-gray-700 hover:bg-gray-50 hover:shadow-md border border-gray-200'
-          ]"
-          @click="menuStore.setCategory(category.code)"
-        >
-          {{ category.name }}
-        </button>
+      <div v-else class="w-full overflow-x-auto pb-2 scrollbar-hide">
+        <div class="flex gap-2 min-w-max">
+          <button
+            :class="[
+              'px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl font-semibold whitespace-nowrap transition-all duration-300 touch-target flex-shrink-0',
+              menuStore.selectedCategory === null
+                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30'
+                : 'bg-white text-gray-700 hover:bg-gray-50 hover:shadow-md border border-gray-200'
+            ]"
+            @click="menuStore.setCategory(null)"
+          >
+            すべて
+          </button>
+          <button
+            v-for="category in shopCategories"
+            :key="category.code"
+            :class="[
+              'px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl font-semibold whitespace-nowrap transition-all duration-300 touch-target flex-shrink-0',
+              menuStore.selectedCategory === category.code
+                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30'
+                : 'bg-white text-gray-700 hover:bg-gray-50 hover:shadow-md border border-gray-200'
+            ]"
+            @click="menuStore.setCategory(category.code)"
+          >
+            {{ category.name }}
+          </button>
+        </div>
       </div>
 
       <!-- メニュー一覧 -->
