@@ -124,8 +124,8 @@ function getErrorLogs() {
         
         $whereClause = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
         
-        // 総件数を取得
-        $countSql = "SELECT COUNT(*) as total FROM error_logs $whereClause";
+        // 総件数を取得（COUNTクエリではテーブルエイリアスを使用）
+        $countSql = "SELECT COUNT(*) as total FROM error_logs el $whereClause";
         $countStmt = $pdo->prepare($countSql);
         $countStmt->execute($params);
         $total = $countStmt->fetch()['total'];

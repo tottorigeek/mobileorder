@@ -120,11 +120,14 @@ function getTables($shopId = null) {
         
         // shop_idが指定されている場合、その店舗がユーザーの所属店舗に含まれているかチェック
         if ($shopId) {
-            if (!in_array(intval($shopId), $userShopIds)) {
-                sendForbiddenError('You can only access tables from your own shops');
+            $requestedShopId = intval($shopId);
+            if (!in_array($requestedShopId, $userShopIds)) {
+                // デバッグ情報: ユーザーの所属店舗IDを確認
+                error_log("User {$userId} attempted to access shop_id={$requestedShopId}, but belongs to shops: " . implode(',', $userShopIds));
+                sendForbiddenError('You can only access tables from your own shop');
             }
             // 指定された店舗のテーブルのみ取得
-            $userShopIds = [intval($shopId)];
+            $userShopIds = [$requestedShopId];
         }
         
         if (empty($userShopIds)) {
@@ -209,8 +212,36 @@ function getTable($tableId) {
             sendNotFoundError('Table');
         }
         
-        // 権限チェック：自分の店舗のテーブルのみ取得可能
-        if ($userShopId && $table['shop_id'] != $userShopId) {
+        // 権限チェック：自分の店舗のテーブルのみ取得可能（複数店舗対応）
+        $userId = $auth['user_id'];
+        $userShopIds = [];
+        
+        // shop_usersテーブルが存在するか確認
+        $tableExists = false;
+        try {
+            $checkStmt = $pdo->query("SHOW TABLES LIKE 'shop_users'");
+            $tableExists = $checkStmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            // テーブルが存在しない場合は既存の方法を使用
+        }
+        
+        if ($tableExists) {
+            // 複数店舗対応: shop_usersテーブルから取得
+            $shopUsersSql = "SELECT shop_id FROM shop_users WHERE user_id = :user_id";
+            $shopUsersStmt = $pdo->prepare($shopUsersSql);
+            $shopUsersStmt->execute([':user_id' => $userId]);
+            $shopUsers = $shopUsersStmt->fetchAll(PDO::FETCH_COLUMN);
+            $userShopIds = array_map('intval', $shopUsers);
+        } else {
+            // 既存の方法: usersテーブルのshop_idから取得
+            if ($userShopId) {
+                $userShopIds = [intval($userShopId)];
+            }
+        }
+        
+        // テーブルが所属する店舗がユーザーの所属店舗に含まれているかチェック
+        if (!empty($userShopIds) && !in_array(intval($table['shop_id']), $userShopIds)) {
+            error_log("User {$userId} attempted to access table_id={$tableId} from shop_id={$table['shop_id']}, but belongs to shops: " . implode(',', $userShopIds));
             sendForbiddenError('You can only access tables from your own shop');
         }
         
