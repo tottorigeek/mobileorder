@@ -58,12 +58,13 @@
           </div>
 
           <div class="flex gap-3">
-            <NuxtLink
-              to="/shop/users"
+            <button
+              type="button"
+              @click="handleCancel"
               class="flex-1 px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-center touch-target"
             >
               キャンセル
-            </NuxtLink>
+            </button>
             <button
               type="submit"
               :disabled="isSubmitting || !isFormValid"
@@ -85,6 +86,7 @@ import { useShopStore } from '~/stores/shop'
 import type { User } from '~/types'
 
 const route = useRoute()
+const router = useRouter()
 const userStore = useUserStore()
 const authStore = useAuthStore()
 const shopStore = useShopStore()
@@ -113,6 +115,10 @@ const isFormValid = computed(() => {
   return passwordData.value.newPassword.length >= 6 &&
          passwordData.value.newPassword === confirmPassword.value
 })
+
+const handleCancel = () => {
+  router.back()
+}
 
 const handleChangePassword = async () => {
   if (!isFormValid.value) {
