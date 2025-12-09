@@ -5,7 +5,9 @@ export const useOrderStore = defineStore('order', {
   state: () => ({
     orders: [] as Order[],
     currentOrder: null as Order | null,
-    isLoading: false
+    isLoading: false,
+    pollingInterval: null as ReturnType<typeof setInterval> | null,
+    isPolling: false
   }),
 
   getters: {
@@ -128,7 +130,7 @@ export const useOrderStore = defineStore('order', {
       }
     },
 
-    async fetchOrders(status?: OrderStatus, shopCode?: string, shopIds?: string[], tableNumber?: string) {
+    async fetchOrders(status?: OrderStatus, shopCode?: string, shopIds?: string[], tableNumber?: string, visitorId?: string) {
       this.isLoading = true
       try {
         const config = useRuntimeConfig()
@@ -158,6 +160,9 @@ export const useOrderStore = defineStore('order', {
               }
               if (tableNumber) {
                 url += `&tableNumber=${tableNumber}`
+              }
+              if (visitorId) {
+                url += `&visitorId=${visitorId}`
               }
               
               const data = await $fetch<Order[]>(url, { headers })
@@ -191,6 +196,9 @@ export const useOrderStore = defineStore('order', {
           if (tableNumber) {
             params.push(`tableNumber=${tableNumber}`)
           }
+          if (visitorId) {
+            params.push(`visitorId=${visitorId}`)
+          }
           
           if (params.length > 0) {
             url += `?${params.join('&')}`
@@ -211,6 +219,55 @@ export const useOrderStore = defineStore('order', {
       } finally {
         this.isLoading = false
       }
+    },
+
+    // 注文状況の監視を開始（重複を防ぐ）
+    startPolling(options?: {
+      status?: OrderStatus
+      shopCode?: string
+      shopIds?: string[]
+      tableNumber?: string
+      visitorId?: string
+      interval?: number
+    }) {
+      // 既に監視中の場合は停止してから再開
+      if (this.pollingInterval) {
+        this.stopPolling()
+      }
+
+      const interval = options?.interval || 5000
+      const pollParams = {
+        status: options?.status,
+        shopCode: options?.shopCode,
+        shopIds: options?.shopIds,
+        tableNumber: options?.tableNumber,
+        visitorId: options?.visitorId
+      }
+
+      this.isPolling = true
+      this.pollingInterval = setInterval(async () => {
+        if (!this.isPolling) return
+        try {
+          await this.fetchOrders(
+            pollParams.status,
+            pollParams.shopCode,
+            pollParams.shopIds,
+            pollParams.tableNumber,
+            pollParams.visitorId
+          )
+        } catch (error) {
+          console.error('注文状況の監視中にエラーが発生しました:', error)
+        }
+      }, interval)
+    },
+
+    // 注文状況の監視を停止
+    stopPolling() {
+      if (this.pollingInterval) {
+        clearInterval(this.pollingInterval)
+        this.pollingInterval = null
+      }
+      this.isPolling = false
     }
   }
 })

@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-gray-50">
-    <header v-if="showHeader" class="header-navigation bg-white shadow-sm border-b border-gray-200">
+    <header v-if="showHeader && !isShopSelectPage" class="header-navigation bg-white shadow-sm border-b border-gray-200">
       <div class="header-container max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
         <!-- スマホの/visitorページ用のシンプルなヘッダー -->
         <div v-if="isCustomerPage" class="customer-header relative h-14 sm:h-16">
@@ -136,9 +136,9 @@
       </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <main :class="isShopSelectPage ? '' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6'">
       <!-- /shop配下のページでナビゲーションを表示 -->
-      <div v-if="isShopPage" class="mb-6">
+      <div v-if="isShopPage && !isShopSelectPage" class="mb-6">
         <AdminNavigation
           :navigation-items="shopNavigationItems"
           active-color="blue"
@@ -192,6 +192,11 @@ const isCustomerPage = computed(() => {
 // /shopページかどうかを判定
 const isShopPage = computed(() => {
   return route.path.startsWith('/shop')
+})
+
+// /shop-selectページかどうかを判定
+const isShopSelectPage = computed(() => {
+  return route.path === '/shop-select'
 })
 
 // /shop配下のナビゲーションアイテム

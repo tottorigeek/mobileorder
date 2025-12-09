@@ -88,7 +88,31 @@ onMounted(async () => {
       localStorage.setItem('activeVisitorId', cartStore.visitorId)
     }
   }
+  
+  // 注文状況の監視を開始（storeで管理）
+  if (order.value && shopStore.currentShop) {
+    const visitorId = cartStore.visitorId || (typeof window !== 'undefined' ? localStorage.getItem('activeVisitorId') : null)
+    orderStore.startPolling({
+      shopCode: shopStore.currentShop.code,
+      tableNumber: order.value.tableNumber,
+      visitorId: visitorId || undefined,
+      interval: 5000
+    })
+  }
 })
+
+// コンポーネントがアンマウントされたときに監視を停止
+onUnmounted(() => {
+  orderStore.stopPolling()
+})
+
+// orderStoreのordersが変更されたときに、現在の注文を更新
+watch(() => orderStore.orders, () => {
+  const updatedOrder = orderStore.orders.find(o => o.id === route.params.id as string)
+  if (updatedOrder) {
+    // orderはcomputedなので自動的に更新される
+  }
+}, { deep: true })
 
 const statusLabel = computed(() => {
   const labels: Record<OrderStatus, string> = {

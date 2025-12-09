@@ -92,7 +92,17 @@
             >
               移動
             </button>
+            <!-- 会計済みのお客様には「テーブルセット完了」ボタンを表示 -->
             <button
+              v-if="visitor.paymentStatus === 'completed'"
+              @click="showCompleteSetModal(visitor)"
+              class="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-300 shadow-md hover:shadow-lg text-xs sm:text-sm font-semibold"
+            >
+              テーブルセット完了
+            </button>
+            <!-- 未会計のお客様には「リセット」ボタンを表示 -->
+            <button
+              v-else
               @click="showResetModal(visitor)"
               class="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-300 shadow-md hover:shadow-lg text-xs sm:text-sm font-semibold"
             >
@@ -166,6 +176,42 @@
                 {{ isProcessing ? '移動中...' : '移動' }}
               </button>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- テーブルセット完了モーダル -->
+    <div
+      v-if="showCompleteSetModalFlag"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      @click.self="closeCompleteSetModal"
+    >
+      <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div class="p-4 sm:p-6">
+          <h2 class="text-lg sm:text-xl font-bold mb-4 text-green-600">テーブルセット完了</h2>
+          <p class="text-xs sm:text-sm text-gray-600 mb-4">
+            テーブル {{ completingSetVisitor?.tableNumber }} のセットを完了しますか？
+          </p>
+          <p class="text-xs sm:text-sm text-gray-600 mb-4">
+            この操作により、テーブルが空き状態に戻り、次のお客様のご案内が可能になります。
+          </p>
+
+          <div class="flex flex-col sm:flex-row gap-3 pt-4">
+            <button
+              type="button"
+              @click="closeCompleteSetModal"
+              class="w-full sm:flex-1 px-4 py-2.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm sm:text-base"
+            >
+              キャンセル
+            </button>
+            <button
+              @click="completeTableSet"
+              :disabled="isProcessing"
+              class="w-full sm:flex-1 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed text-sm sm:text-base"
+            >
+              {{ isProcessing ? '処理中...' : 'セット完了' }}
+            </button>
           </div>
         </div>
       </div>
@@ -267,9 +313,11 @@ const { checkAuth } = useAuthCheck()
 
 const showMoveTableModal = ref(false)
 const showResetTableModal = ref(false)
+const showCompleteSetModalFlag = ref(false)
 const showForceReleaseModalFlag = ref(false)
 const movingVisitor = ref<Visitor | null>(null)
 const resettingVisitor = ref<Visitor | null>(null)
+const completingSetVisitor = ref<Visitor | null>(null)
 const forceReleasingVisitor = ref<Visitor | null>(null)
 const selectedTableId = ref('')
 const isProcessing = ref(false)
@@ -489,6 +537,36 @@ const moveTable = async () => {
   }
 }
 
+// テーブルセット完了モーダル
+const showCompleteSetModal = (visitor: Visitor) => {
+  completingSetVisitor.value = visitor
+  showCompleteSetModalFlag.value = true
+}
+
+const closeCompleteSetModal = () => {
+  showCompleteSetModalFlag.value = false
+  completingSetVisitor.value = null
+}
+
+const completeTableSet = async () => {
+  if (!completingSetVisitor.value) return
+
+  isProcessing.value = true
+  try {
+    // visitorStoreのcompleteTableSetメソッドを使用
+    await visitorStore.completeTableSet(completingSetVisitor.value.id)
+
+    // データを再取得
+    await refreshData()
+    closeCompleteSetModal()
+    alert('テーブルセットを完了しました')
+  } catch (error: any) {
+    alert(error.message || 'テーブルセット完了処理に失敗しました')
+  } finally {
+    isProcessing.value = false
+  }
+}
+
 // テーブルリセットモーダル
 const showResetModal = (visitor: Visitor) => {
   resettingVisitor.value = visitor
@@ -505,24 +583,8 @@ const resetTable = async () => {
 
   isProcessing.value = true
   try {
-    const config = useRuntimeConfig()
-    const apiBase = config.public.apiBase
-    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
-    
-    if (!token) {
-      throw new Error('認証トークンが見つかりません')
-    }
-
-    // visitorを削除（またはセット完了にする）
-    // セット完了APIを使用してリセット
-    await $fetch(`${apiBase}/visitors/${resettingVisitor.value.id}/set-complete`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    })
+    // visitorStoreのcompleteTableSetメソッドを使用（機能的には同じ）
+    await visitorStore.completeTableSet(resettingVisitor.value.id)
 
     // データを再取得
     await refreshData()

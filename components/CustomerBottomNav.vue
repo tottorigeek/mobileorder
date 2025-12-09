@@ -150,21 +150,17 @@ const checkoutOrderId = computed(() => {
 const goToCheckout = () => {
   if (!canCheckout.value) return
   
-  const orderId = checkoutOrderId.value
-  if (orderId) {
-    router.push(`/visitor/status/${orderId}`)
-  } else {
-    // 注文IDが見つからない場合は注文一覧ページに遷移
-    router.push('/visitor/orders')
-  }
+  // /visitor/checkoutページに遷移
+  router.push('/visitor/checkout')
 }
 
-// visitor情報を取得
-const fetchVisitorInfo = async () => {
+// visitor情報を取得してstoreに反映
+const updateVisitorInfo = async () => {
   const visitorId = cartStore.visitorId || (typeof window !== 'undefined' ? localStorage.getItem('activeVisitorId') : null)
   if (visitorId) {
     try {
-      currentVisitor.value = await visitorStore.fetchVisitor(visitorId)
+      const visitor = await visitorStore.fetchVisitor(visitorId)
+      currentVisitor.value = visitor
     } catch (error) {
       console.error('visitor情報の取得に失敗しました:', error)
       currentVisitor.value = null
@@ -185,17 +181,13 @@ watchEffect(() => {
 onMounted(async () => {
   if (typeof window !== 'undefined') {
     activeOrderId.value = localStorage.getItem('activeOrderId')
-    await fetchVisitorInfo()
+    await updateVisitorInfo()
     
-    // 定期的にチェック（同じタブ内での変更も検知）
-    const interval = setInterval(async () => {
-      activeOrderId.value = localStorage.getItem('activeOrderId')
-      await fetchVisitorInfo()
-    }, 1000)
-    
-    onUnmounted(() => {
-      clearInterval(interval)
-    })
+    // visitor情報の監視を開始（storeで管理）
+    const visitorId = cartStore.visitorId || localStorage.getItem('activeVisitorId')
+    if (visitorId && visitorStore.pollingVisitorId !== visitorId) {
+      visitorStore.startPollingVisitor(visitorId, 1000)
+    }
   }
 })
 
@@ -203,14 +195,31 @@ onMounted(async () => {
 watch(() => route.path, async () => {
   if (typeof window !== 'undefined') {
     activeOrderId.value = localStorage.getItem('activeOrderId')
-    await fetchVisitorInfo()
+    await updateVisitorInfo()
+    
+    // visitor情報の監視を再開（visitorIdが変更された場合）
+    const visitorId = cartStore.visitorId || localStorage.getItem('activeVisitorId')
+    if (visitorId && visitorStore.pollingVisitorId !== visitorId) {
+      visitorStore.stopPollingVisitor()
+      visitorStore.startPollingVisitor(visitorId, 1000)
+    }
   }
 })
+
+// CustomerBottomNavは常に表示されるため、onUnmountedでは監視を停止しない
+// 各ページで監視を管理する
 
 // orderStoreのordersが変更されたときに再評価
 watch(() => orderStore.orders, () => {
   // 会計可能状態を再評価するために何もしない（computedが自動的に再計算される）
 }, { deep: true })
+
+// visitorStoreのcurrentVisitorが変更されたときに再評価
+watch(() => visitorStore.currentVisitor, (newVisitor) => {
+  if (newVisitor) {
+    currentVisitor.value = newVisitor
+  }
+})
 </script>
 
 <style scoped>

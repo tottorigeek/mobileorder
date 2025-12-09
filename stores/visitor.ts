@@ -5,7 +5,10 @@ export const useVisitorStore = defineStore('visitor', {
   state: () => ({
     visitors: [] as Visitor[],
     currentVisitor: null as Visitor | null,
-    isLoading: false
+    isLoading: false,
+    pollingInterval: null as ReturnType<typeof setInterval> | null,
+    isPolling: false,
+    pollingVisitorId: null as string | null
   }),
 
   getters: {
@@ -25,6 +28,7 @@ export const useVisitorStore = defineStore('visitor', {
       shopId: string
       tableNumber: string
       numberOfGuests: number
+      numberOfChildren?: number
       tableId?: string
     }) {
       this.isLoading = true
@@ -229,6 +233,35 @@ export const useVisitorStore = defineStore('visitor', {
       } finally {
         this.isLoading = false
       }
+    },
+
+    // visitor情報の監視を開始（重複を防ぐ）
+    startPollingVisitor(visitorId: string, interval: number = 1000) {
+      // 既に監視中の場合は停止してから再開
+      if (this.pollingInterval) {
+        this.stopPollingVisitor()
+      }
+
+      this.isPolling = true
+      this.pollingVisitorId = visitorId
+      this.pollingInterval = setInterval(async () => {
+        if (!this.isPolling || !this.pollingVisitorId) return
+        try {
+          await this.fetchVisitor(this.pollingVisitorId)
+        } catch (error) {
+          console.error('visitor情報の監視中にエラーが発生しました:', error)
+        }
+      }, interval)
+    },
+
+    // visitor情報の監視を停止
+    stopPollingVisitor() {
+      if (this.pollingInterval) {
+        clearInterval(this.pollingInterval)
+        this.pollingInterval = null
+      }
+      this.isPolling = false
+      this.pollingVisitorId = null
     }
   }
 })

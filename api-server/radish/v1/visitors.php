@@ -220,7 +220,7 @@ function getVisitor($visitorId) {
             }
         }
         
-        echo json_encode([
+        $response = [
             'id' => (string)$visitor['id'],
             'shopId' => (string)$visitor['shop_id'],
             'tableId' => $visitor['table_id'] ? (string)$visitor['table_id'] : null,
@@ -234,7 +234,14 @@ function getVisitor($visitorId) {
             'isSetCompleted' => (bool)$visitor['is_set_completed'],
             'createdAt' => $visitor['created_at'],
             'updatedAt' => $visitor['updated_at']
-        ], JSON_UNESCAPED_UNICODE);
+        ];
+        
+        // number_of_childrenカラムが存在する場合は追加
+        if (isset($visitor['number_of_children'])) {
+            $response['numberOfChildren'] = (int)$visitor['number_of_children'];
+        }
+        
+        echo json_encode($response, JSON_UNESCAPED_UNICODE);
         
     } catch (PDOException $e) {
         handleDatabaseError($e, 'fetching visitor');
@@ -288,19 +295,43 @@ function createVisitor() {
         }
         
         // visitorを作成
-        $stmt = $pdo->prepare("
-            INSERT INTO visitors 
-            (shop_id, table_id, table_number, number_of_guests, arrival_time)
-            VALUES 
-            (:shop_id, :table_id, :table_number, :number_of_guests, NOW())
-        ");
+        // number_of_childrenカラムが存在するか確認
+        $checkColumnStmt = $pdo->query("SHOW COLUMNS FROM visitors LIKE 'number_of_children'");
+        $columnExists = $checkColumnStmt->rowCount() > 0;
         
-        $stmt->execute([
-            ':shop_id' => (int)$input['shopId'],
-            ':table_id' => $tableId,
-            ':table_number' => $input['tableNumber'],
-            ':number_of_guests' => (int)$input['numberOfGuests']
-        ]);
+        if ($columnExists) {
+            // number_of_childrenカラムが存在する場合
+            $numberOfChildren = isset($input['numberOfChildren']) ? (int)$input['numberOfChildren'] : 0;
+            $stmt = $pdo->prepare("
+                INSERT INTO visitors 
+                (shop_id, table_id, table_number, number_of_guests, number_of_children, arrival_time)
+                VALUES 
+                (:shop_id, :table_id, :table_number, :number_of_guests, :number_of_children, NOW())
+            ");
+            
+            $stmt->execute([
+                ':shop_id' => (int)$input['shopId'],
+                ':table_id' => $tableId,
+                ':table_number' => $input['tableNumber'],
+                ':number_of_guests' => (int)$input['numberOfGuests'],
+                ':number_of_children' => $numberOfChildren
+            ]);
+        } else {
+            // number_of_childrenカラムが存在しない場合（後方互換性のため）
+            $stmt = $pdo->prepare("
+                INSERT INTO visitors 
+                (shop_id, table_id, table_number, number_of_guests, arrival_time)
+                VALUES 
+                (:shop_id, :table_id, :table_number, :number_of_guests, NOW())
+            ");
+            
+            $stmt->execute([
+                ':shop_id' => (int)$input['shopId'],
+                ':table_id' => $tableId,
+                ':table_number' => $input['tableNumber'],
+                ':number_of_guests' => (int)$input['numberOfGuests']
+            ]);
+        }
         
         $visitorId = $pdo->lastInsertId();
         

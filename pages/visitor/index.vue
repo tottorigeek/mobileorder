@@ -11,7 +11,7 @@
         <div class="space-y-6">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-3">
-              来店人数 <span class="text-red-500">*</span>
+              大人の人数 <span class="text-red-500">*</span>
             </label>
             <div class="flex items-center gap-4">
               <button
@@ -33,6 +33,37 @@
                 +
               </button>
             </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-3">
+              子どもの人数
+            </label>
+            <div class="flex items-center gap-4">
+              <button
+                @click="decreaseChildren"
+                :disabled="numberOfChildren <= 0"
+                class="w-12 h-12 rounded-xl bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-bold text-xl text-gray-700 transition-colors"
+              >
+                -
+              </button>
+              <div class="flex-1 text-center">
+                <div class="text-4xl font-bold text-blue-600">{{ numberOfChildren }}</div>
+                <div class="text-sm text-gray-500 mt-1">名様</div>
+              </div>
+              <button
+                @click="increaseChildren"
+                :disabled="numberOfChildren >= 20"
+                class="w-12 h-12 rounded-xl bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-bold text-xl text-gray-700 transition-colors"
+              >
+                +
+              </button>
+            </div>
+          </div>
+          <div v-if="numberOfChildren > 0" class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <p class="text-sm text-blue-800">
+              <span class="font-semibold">合計: {{ numberOfGuests + numberOfChildren }}名様</span>
+              <span class="text-blue-600 ml-2">（大人{{ numberOfGuests }}名、子ども{{ numberOfChildren }}名）</span>
+            </p>
           </div>
           <button
             @click="submitVisitorInfo"
@@ -126,6 +157,7 @@ const shopCategories = ref<ShopCategory[]>([])
 const isLoadingCategories = ref(false)
 const showVisitorModal = ref(false)
 const numberOfGuests = ref(2)
+const numberOfChildren = ref(0)
 const isSubmittingVisitor = ref(false)
 const currentVisitor = ref<Visitor | null>(null)
 
@@ -281,6 +313,18 @@ const increaseGuests = () => {
   }
 }
 
+const decreaseChildren = () => {
+  if (numberOfChildren.value > 0) {
+    numberOfChildren.value--
+  }
+}
+
+const increaseChildren = () => {
+  if (numberOfChildren.value < 20) {
+    numberOfChildren.value++
+  }
+}
+
 const submitVisitorInfo = async () => {
   if (!shopStore.currentShop || !cartStore.tableNumber) {
     alert('店舗またはテーブル情報が設定されていません')
@@ -293,6 +337,7 @@ const submitVisitorInfo = async () => {
       shopId: shopStore.currentShop.id,
       tableNumber: cartStore.tableNumber,
       numberOfGuests: numberOfGuests.value,
+      numberOfChildren: numberOfChildren.value,
       tableId: currentTableInfo.value?.id
     })
     

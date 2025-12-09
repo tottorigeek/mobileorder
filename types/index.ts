@@ -93,6 +93,7 @@ export interface Visitor {
   tableId?: string
   tableNumber: string
   numberOfGuests: number
+  numberOfChildren?: number
   arrivalTime: string
   checkoutTime?: string
   totalAmount: number

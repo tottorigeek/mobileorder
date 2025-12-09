@@ -124,6 +124,9 @@ const formatDate = (date: Date | string) => {
 onMounted(async () => {
   isLoading.value = true
   try {
+    // ストレージからテーブル番号を読み込む
+    cartStore.loadTableNumberFromStorage()
+    
     // visitorIdから注文を取得
     const activeVisitorId = typeof window !== 'undefined' ? localStorage.getItem('activeVisitorId') : null
     const currentVisitorId = cartStore.visitorId || activeVisitorId
@@ -147,11 +150,29 @@ onMounted(async () => {
           }
         }
         
+        // visitor情報からテーブル番号を設定（ナビゲーションバー表示用）
+        if (visitor.tableNumber && !cartStore.tableNumber) {
+          cartStore.setTableNumber(visitor.tableNumber)
+        }
+        
+        // visitorIdを設定
+        if (!cartStore.visitorId) {
+          cartStore.setVisitorId(visitor.id)
+        }
+        
         // visitorのテーブル番号で注文を取得（visitorがそのテーブルで行った注文のみ）
         const shop = shopStore.currentShop || await shopStore.fetchShopById(visitor.shopId)
         if (shop && visitor.tableNumber) {
           // visitorのテーブル番号で注文を取得
-          await orderStore.fetchOrders(undefined, shop.code, undefined, visitor.tableNumber)
+          await orderStore.fetchOrders(undefined, shop.code, undefined, visitor.tableNumber, currentVisitorId)
+          
+          // 注文状況の監視を開始（storeで管理）
+          orderStore.startPolling({
+            shopCode: shop.code,
+            tableNumber: visitor.tableNumber,
+            visitorId: currentVisitorId,
+            interval: 5000
+          })
         }
       }
     } catch (error) {
@@ -162,6 +183,11 @@ onMounted(async () => {
   } finally {
     isLoading.value = false
   }
+})
+
+// コンポーネントがアンマウントされたときに監視を停止
+onUnmounted(() => {
+  orderStore.stopPolling()
 })
 </script>
 
