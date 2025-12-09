@@ -7,15 +7,15 @@
         active-color="blue"
       />
       <!-- 今日の売上カード -->
-      <div class="bg-gradient-to-br from-blue-600 to-indigo-700 p-8 rounded-2xl shadow-xl text-white">
+      <div class="bg-gradient-to-br from-blue-600 to-indigo-700 p-6 sm:p-8 rounded-2xl shadow-xl text-white">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-2xl font-bold">今日の売上</h2>
-          <svg class="w-8 h-8 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <h2 class="text-xl sm:text-2xl font-bold">今日の売上</h2>
+          <svg class="w-6 h-6 sm:w-8 sm:h-8 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <p class="text-5xl font-bold mb-2">¥{{ todaySales.toLocaleString() }}</p>
-        <p class="text-blue-100 text-sm">{{ todayOrders }}件の注文</p>
+        <p class="text-3xl sm:text-5xl font-bold mb-2">¥{{ todaySales.toLocaleString() }}</p>
+        <p class="text-blue-100 text-xs sm:text-sm">{{ todayOrders }}件の注文</p>
       </div>
 
       <!-- ステータスカード -->
@@ -56,9 +56,9 @@
       </div>
 
       <!-- 最近の注文 -->
-      <div class="bg-white p-6 rounded-xl shadow-lg">
-        <div class="flex items-center justify-between mb-6">
-          <h3 class="text-xl font-bold text-gray-900">最近の注文</h3>
+      <div class="bg-white p-4 sm:p-6 rounded-xl shadow-lg">
+        <div class="flex items-center justify-between mb-4 sm:mb-6">
+          <h3 class="text-lg sm:text-xl font-bold text-gray-900">最近の注文</h3>
           <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
           </svg>
@@ -73,33 +73,33 @@
           <div
             v-for="order in recentOrders"
             :key="order.id"
-            class="p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200"
+            class="p-3 sm:p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200"
           >
-            <div class="flex justify-between items-start">
+            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
               <div class="flex-1">
-                <div class="flex items-center gap-2 mb-2">
-                  <p class="font-semibold text-gray-900">{{ order.orderNumber }}</p>
+                <div class="flex flex-wrap items-center gap-2 mb-2">
+                  <p class="font-semibold text-gray-900 text-sm sm:text-base">{{ order.orderNumber }}</p>
                   <span :class="getStatusClass(order.status)">
                     {{ getStatusLabel(order.status) }}
                   </span>
                 </div>
-                <div class="flex items-center gap-4 text-sm text-gray-600">
+                <div class="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-600">
                   <span class="flex items-center gap-1">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
                     テーブル {{ order.tableNumber }}
                   </span>
                   <span class="flex items-center gap-1">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     {{ formatDate(order.createdAt) }}
                   </span>
                 </div>
               </div>
-              <div class="text-right ml-4">
-                <p class="text-xl font-bold text-blue-600">¥{{ order.totalAmount.toLocaleString() }}</p>
+              <div class="text-left sm:text-right">
+                <p class="text-lg sm:text-xl font-bold text-blue-600">¥{{ order.totalAmount.toLocaleString() }}</p>
               </div>
             </div>
           </div>

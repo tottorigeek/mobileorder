@@ -58,7 +58,10 @@
             </div>
             <div class="flex items-center gap-3 flex-wrap">
               <div class="text-2xl font-bold">
-                テーブル {{ cartStore.tableNumber }}
+                テーブル {{ currentVisitor?.tableNumber || cartStore.tableNumber }}
+              </div>
+              <div v-if="currentVisitor?.id" class="text-sm text-blue-100 bg-white/20 px-3 py-1 rounded-full">
+                ID: {{ currentVisitor.id }}
               </div>
               <div v-if="currentTableInfo?.name" class="text-sm text-blue-100 bg-white/20 px-3 py-1 rounded-full">
                 {{ currentTableInfo.name }}
@@ -143,7 +146,7 @@ import { useShopStore } from '~/stores/shop'
 import { useTableStore } from '~/stores/table'
 import { useCategoryStore } from '~/stores/category'
 import { useVisitorStore } from '~/stores/visitor'
-import type { ShopTable, ShopCategory } from '~/types'
+import type { ShopTable, ShopCategory, Visitor } from '~/types'
 import MenuCard from '~/components/MenuCard.vue'
 import NumberInput from '~/components/NumberInput.vue'
 import CustomerBottomNav from '~/components/CustomerBottomNav.vue'
@@ -161,6 +164,7 @@ const isLoadingCategories = ref(false)
 const showVisitorModal = ref(false)
 const numberOfGuests = ref(2)
 const isSubmittingVisitor = ref(false)
+const currentVisitor = ref<Visitor | null>(null)
 
 onMounted(async () => {
   const route = useRoute()
@@ -210,6 +214,7 @@ onMounted(async () => {
       // アクティブな注文がある場合は、visitor情報から店舗とテーブル情報を復元を試みる
       try {
         const visitor = await visitorStore.fetchVisitor(activeVisitorId)
+        currentVisitor.value = visitor
         
         // visitor情報から店舗を取得
         if (visitor.shopId && !shopStore.currentShop) {
@@ -222,6 +227,11 @@ onMounted(async () => {
         // visitor情報からテーブル番号を設定
         if (visitor.tableNumber && !cartStore.tableNumber) {
           cartStore.setTableNumber(visitor.tableNumber)
+        }
+        
+        // visitorIdを設定
+        if (!cartStore.visitorId) {
+          cartStore.setVisitorId(visitor.id)
         }
       } catch (error) {
         console.error('visitor情報の取得に失敗しました:', error)
@@ -281,6 +291,15 @@ onMounted(async () => {
     await menuStore.fetchMenus(shopStore.currentShop.code)
   }
   
+  // visitorIdが設定されている場合はvisitor情報を取得
+  if (cartStore.visitorId) {
+    try {
+      currentVisitor.value = await visitorStore.fetchVisitor(cartStore.visitorId)
+    } catch (error) {
+      console.error('visitor情報の取得に失敗しました:', error)
+    }
+  }
+  
   // visitorIdが設定されていない場合は来店人数入力モーダルを表示
   if (!cartStore.visitorId && cartStore.tableNumber && shopStore.currentShop) {
     showVisitorModal.value = true
@@ -315,6 +334,7 @@ const submitVisitorInfo = async () => {
     })
     
     cartStore.setVisitorId(visitor.id)
+    currentVisitor.value = visitor
     showVisitorModal.value = false
   } catch (error: any) {
     alert('来店情報の登録に失敗しました: ' + (error.message || 'エラーが発生しました'))

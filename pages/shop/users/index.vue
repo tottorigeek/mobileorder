@@ -8,15 +8,15 @@
       />
 
       <!-- ヘッダー -->
-      <div class="flex justify-between items-center mb-6">
+      <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <div>
-          <h2 class="text-3xl font-bold text-gray-900 mb-1">スタッフ管理</h2>
-          <p class="text-gray-600">店舗スタッフの管理を行います</p>
+          <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">スタッフ管理</h2>
+          <p class="text-sm sm:text-base text-gray-600">店舗スタッフの管理を行います</p>
         </div>
         <button
           v-if="authStore.isManager"
           @click="showAddModal = true"
-          class="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 touch-target font-semibold flex items-center gap-2"
+          class="px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 touch-target font-semibold flex items-center justify-center gap-2 text-sm sm:text-base"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -57,14 +57,14 @@
       @click.self="showAddModal = false"
     >
       <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-        <div class="p-8">
-          <div class="flex items-center gap-3 mb-6">
-            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
-              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="p-4 sm:p-8">
+          <div class="flex items-center gap-3 mb-4 sm:mb-6">
+            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
               </svg>
             </div>
-            <h3 class="text-2xl font-bold text-gray-900">スタッフを追加</h3>
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900">スタッフを追加</h3>
           </div>
 
           <form @submit.prevent="handleAddUser" class="space-y-5">
@@ -142,18 +142,18 @@
             </div>
           </div>
 
-          <div class="flex gap-3 justify-end pt-4">
+          <div class="flex flex-col sm:flex-row gap-3 justify-end pt-4">
             <button
               type="button"
               @click="showAddModal = false"
-              class="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all duration-300 font-semibold"
+              class="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all duration-300 font-semibold text-sm sm:text-base"
             >
               キャンセル
             </button>
             <button
               type="submit"
               :disabled="isSubmitting"
-              class="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl font-semibold"
+              class="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl font-semibold text-sm sm:text-base"
             >
               {{ isSubmitting ? '追加中...' : '追加' }}
             </button>
@@ -170,8 +170,8 @@
       @click.self="showEditModal = false"
     >
       <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-        <div class="p-6">
-          <h3 class="text-lg font-semibold mb-4">スタッフ情報を編集</h3>
+        <div class="p-4 sm:p-6">
+          <h3 class="text-lg sm:text-xl font-semibold mb-4">スタッフ情報を編集</h3>
 
         <form @submit.prevent="handleUpdateUser" class="space-y-4">
           <div>
@@ -226,18 +226,18 @@
             {{ editError }}
           </div>
 
-          <div class="flex gap-3 justify-end">
+          <div class="flex flex-col sm:flex-row gap-3 justify-end">
             <button
               type="button"
               @click="showEditModal = false"
-              class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+              class="w-full sm:w-auto px-4 py-2.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm sm:text-base"
             >
               キャンセル
             </button>
             <button
               type="submit"
               :disabled="isSubmitting"
-              class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              class="w-full sm:w-auto px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-sm sm:text-base"
             >
               {{ isSubmitting ? '更新中...' : '更新' }}
             </button>

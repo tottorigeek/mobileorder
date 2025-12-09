@@ -1,8 +1,8 @@
 <template>
   <NuxtLayout name="default" :title="pageTitle">
-    <div class="max-w-md mx-auto space-y-6">
-      <div class="bg-white p-6 rounded-lg shadow">
-        <h2 class="text-xl font-bold mb-4">パスワード変更</h2>
+    <div class="max-w-md mx-auto space-y-6 px-4">
+      <div class="bg-white p-4 sm:p-6 rounded-lg shadow">
+        <h2 class="text-lg sm:text-xl font-bold mb-4">パスワード変更</h2>
 
         <form @submit.prevent="handleChangePassword" class="space-y-4">
           <div>

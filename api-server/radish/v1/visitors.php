@@ -7,7 +7,8 @@
  * PUT /api/visitors/{id} - 来店情報更新（認証必須または公開）
  * PUT /api/visitors/{id}/checkout - 会計処理（公開）
  * PUT /api/visitors/{id}/payment - 支払い処理（公開）
- * PUT /api/visitors/{id}/set-complete - テーブルセット完了（認証必須）
+ * PUT /api/visitors/{id}/set-complete - テーブルセット完了（認証必須、一般スタッフ可）
+ * DELETE /api/visitors/{id} - visitor削除（認証必須、一般スタッフ可）
  */
 
 require_once __DIR__ . '/../config.php';
@@ -57,6 +58,14 @@ if ($visitorId && $action) {
                 sendErrorResponse(405, 'Method not allowed');
             }
             exit;
+        
+        case 'force-release':
+            if ($method === 'DELETE') {
+                forceReleaseVisitor($visitorId);
+            } else {
+                sendErrorResponse(405, 'Method not allowed');
+            }
+            exit;
     }
 }
 
@@ -76,6 +85,14 @@ switch ($method) {
     case 'PUT':
         if ($visitorId) {
             updateVisitor($visitorId);
+        } else {
+            sendErrorResponse(400, 'Visitor ID is required');
+        }
+        break;
+    
+    case 'DELETE':
+        if ($visitorId) {
+            deleteVisitor($visitorId);
         } else {
             sendErrorResponse(400, 'Visitor ID is required');
         }
@@ -501,12 +518,14 @@ function processPayment($visitorId) {
 
 /**
  * テーブルセット完了（認証必須）
+ * 一般スタッフでも自分の店舗のvisitorを操作可能
  */
 function completeTableSet($visitorId) {
     try {
-        // 認証チェック
+        // 認証チェック（一般スタッフでもアクセス可能）
         $auth = checkAuth();
-        $shopId = $auth['shop_id'] ?? null;
+        $userId = $auth['user_id'];
+        $defaultShopId = $auth['shop_id'] ?? null;
         
         $pdo = getDbConnection();
         
@@ -519,8 +538,34 @@ function completeTableSet($visitorId) {
             sendNotFoundError('Visitor');
         }
         
-        // 権限チェック：自分の店舗のvisitorのみ
-        if ($shopId && $visitor['shop_id'] != $shopId) {
+        // ユーザーが所属する店舗IDのリストを取得（複数店舗対応）
+        $userShopIds = [];
+        
+        // shop_usersテーブルが存在するか確認
+        $tableExists = false;
+        try {
+            $checkStmt = $pdo->query("SHOW TABLES LIKE 'shop_users'");
+            $tableExists = $checkStmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            // テーブルが存在しない場合は既存の方法を使用
+        }
+        
+        if ($tableExists) {
+            // 複数店舗対応: shop_usersテーブルから取得
+            $shopUsersSql = "SELECT shop_id FROM shop_users WHERE user_id = :user_id";
+            $shopUsersStmt = $pdo->prepare($shopUsersSql);
+            $shopUsersStmt->execute([':user_id' => $userId]);
+            $shopUsers = $shopUsersStmt->fetchAll(PDO::FETCH_COLUMN);
+            $userShopIds = array_map('intval', $shopUsers);
+        } else {
+            // 既存の方法: usersテーブルのshop_idから取得
+            if ($defaultShopId) {
+                $userShopIds = [intval($defaultShopId)];
+            }
+        }
+        
+        // 権限チェック：自分の店舗のvisitorのみ操作可能
+        if (!empty($userShopIds) && !in_array(intval($visitor['shop_id']), $userShopIds)) {
             sendForbiddenError('You can only complete table sets for your own shop');
         }
         
@@ -550,5 +595,92 @@ function completeTableSet($visitorId) {
     } catch (PDOException $e) {
         handleDatabaseError($e, 'completing table set');
     }
+}
+
+/**
+ * visitor削除（認証必須、強制解除）
+ * 一般スタッフでも自分の店舗のvisitorを削除可能
+ */
+function deleteVisitor($visitorId) {
+    try {
+        // 認証チェック（一般スタッフでもアクセス可能）
+        $auth = checkAuth();
+        $userId = $auth['user_id'];
+        $defaultShopId = $auth['shop_id'] ?? null;
+        
+        $pdo = getDbConnection();
+        
+        // visitor情報を取得
+        $visitorStmt = $pdo->prepare("SELECT * FROM visitors WHERE id = :id");
+        $visitorStmt->execute([':id' => $visitorId]);
+        $visitor = $visitorStmt->fetch();
+        
+        if (!$visitor) {
+            sendNotFoundError('Visitor');
+        }
+        
+        // ユーザーが所属する店舗IDのリストを取得（複数店舗対応）
+        $userShopIds = [];
+        
+        // shop_usersテーブルが存在するか確認
+        $tableExists = false;
+        try {
+            $checkStmt = $pdo->query("SHOW TABLES LIKE 'shop_users'");
+            $tableExists = $checkStmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            // テーブルが存在しない場合は既存の方法を使用
+        }
+        
+        if ($tableExists) {
+            // 複数店舗対応: shop_usersテーブルから取得
+            $shopUsersSql = "SELECT shop_id FROM shop_users WHERE user_id = :user_id";
+            $shopUsersStmt = $pdo->prepare($shopUsersSql);
+            $shopUsersStmt->execute([':user_id' => $userId]);
+            $shopUsers = $shopUsersStmt->fetchAll(PDO::FETCH_COLUMN);
+            $userShopIds = array_map('intval', $shopUsers);
+        } else {
+            // 既存の方法: usersテーブルのshop_idから取得
+            if ($defaultShopId) {
+                $userShopIds = [intval($defaultShopId)];
+            }
+        }
+        
+        // 権限チェック：自分の店舗のvisitorのみ削除可能
+        if (!empty($userShopIds) && !in_array(intval($visitor['shop_id']), $userShopIds)) {
+            sendForbiddenError('You can only delete visitors from your own shop');
+        }
+        
+        // テーブルのvisitor_idをクリアし、ステータスをavailableに更新
+        if ($visitor['table_id']) {
+            $tableStmt = $pdo->prepare("
+                UPDATE shop_tables 
+                SET status = 'available', 
+                    visitor_id = NULL, 
+                    updated_at = NOW()
+                WHERE id = :table_id
+            ");
+            $tableStmt->execute([':table_id' => $visitor['table_id']]);
+        }
+        
+        // visitorを削除
+        $deleteStmt = $pdo->prepare("DELETE FROM visitors WHERE id = :id");
+        $deleteStmt->execute([':id' => $visitorId]);
+        
+        echo json_encode([
+            'success' => true,
+            'message' => 'Visitor deleted successfully'
+        ], JSON_UNESCAPED_UNICODE);
+        
+    } catch (PDOException $e) {
+        handleDatabaseError($e, 'deleting visitor');
+    }
+}
+
+/**
+ * visitor強制解除（認証必須）
+ */
+function forceReleaseVisitor($visitorId) {
+    // deleteVisitorと同じ処理
+    deleteVisitor($visitorId);
 }
 

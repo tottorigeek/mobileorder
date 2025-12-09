@@ -9,8 +9,8 @@
       <!-- ヘッダー -->
       <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <div>
-          <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">テーブル管理</h1>
-          <p class="text-sm sm:text-base text-gray-600">店舗のテーブルを管理します</p>
+          <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">カテゴリ管理</h1>
+          <p class="text-sm sm:text-base text-gray-600">メニューカテゴリを管理します</p>
         </div>
         <button
           @click="showCreateModal = true"
@@ -19,98 +19,75 @@
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
-          テーブルを追加
+          カテゴリを追加
         </button>
       </div>
 
       <!-- ローディング -->
-      <div v-if="tableStore.isLoading" class="text-center py-16">
+      <div v-if="categoryStore.isLoading" class="text-center py-16">
         <div class="inline-block animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-blue-600"></div>
         <p class="mt-4 text-gray-500 font-medium">読み込み中...</p>
       </div>
 
-      <!-- テーブル一覧 -->
-      <div v-else-if="tableStore.tables.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+      <!-- カテゴリ一覧 -->
+      <div v-else-if="categoryStore.categories.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         <div
-          v-for="table in tableStore.tables"
-          :key="table.id"
+          v-for="category in categoryStore.categories"
+          :key="category.id"
           class="bg-white p-4 sm:p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-transparent hover:border-blue-300"
         >
           <div class="flex justify-between items-start mb-4">
-            <div class="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-              <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-              </div>
-              <div class="min-w-0 flex-1">
-                <h3 class="text-lg sm:text-xl font-bold text-gray-900 truncate">
-                  テーブル {{ table.tableNumber }}
-                </h3>
-                <p v-if="table.name" class="text-xs sm:text-sm text-gray-600 mt-1 truncate">{{ table.name }}</p>
-              </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="text-lg sm:text-xl font-bold text-gray-900 mb-1 truncate">{{ category.name }}</h3>
+              <p class="text-xs sm:text-sm text-gray-600 truncate">コード: {{ category.code }}</p>
             </div>
             <span
               :class="[
                 'px-2 sm:px-3 py-1 rounded-full text-xs font-semibold flex-shrink-0 ml-2',
-                table.isActive ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-md' : 'bg-gray-200 text-gray-700'
+                category.isActive ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-md' : 'bg-gray-200 text-gray-700'
               ]"
             >
-              {{ table.isActive ? '有効' : '無効' }}
+              {{ category.isActive ? '有効' : '無効' }}
             </span>
           </div>
 
           <div class="space-y-2 mb-4 p-3 sm:p-4 bg-gray-50 rounded-xl">
             <p class="text-xs sm:text-sm text-gray-700 flex items-center gap-2">
               <svg class="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
               </svg>
-              <span class="font-medium">定員:</span> {{ table.capacity }}名
-            </p>
-            <p class="text-xs sm:text-sm text-gray-700 flex items-center gap-2">
-              <svg class="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
-              <span class="font-medium">店舗:</span> <span class="truncate">{{ table.shopName }}</span>
+              <span class="font-medium">表示順:</span> {{ category.displayOrder }}
             </p>
           </div>
 
           <div class="flex gap-2">
             <button
-              @click="editTable(table)"
+              @click="editCategory(category)"
               class="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 shadow-md hover:shadow-lg text-xs sm:text-sm font-semibold"
             >
               編集
             </button>
             <button
-              @click="deleteTable(table)"
+              @click="deleteCategory(category)"
               class="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-300 shadow-md hover:shadow-lg text-xs sm:text-sm font-semibold"
             >
               削除
             </button>
           </div>
-
-          <!-- QRコード表示 -->
-          <div class="mt-4 pt-4 border-t">
-            <QRCodeGenerator
-              :shop-code="shopStore.currentShop?.code || ''"
-              :table-number="table.tableNumber"
-            />
-          </div>
         </div>
       </div>
 
-      <!-- テーブルが存在しない場合 -->
+      <!-- カテゴリが存在しない場合 -->
       <div v-else class="text-center py-16 bg-white rounded-2xl shadow-lg">
         <svg class="w-20 h-20 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
         </svg>
-        <p class="text-gray-500 font-medium text-lg mb-6">テーブルが登録されていません</p>
+        <p class="text-gray-500 font-medium text-lg mb-6">カテゴリが登録されていません</p>
         <button
           @click="showCreateModal = true"
           class="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-semibold"
         >
-          テーブルを追加
+          カテゴリを追加
         </button>
       </div>
     </div>
@@ -124,45 +101,49 @@
       <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         <div class="p-4 sm:p-6">
           <h2 class="text-xl font-bold mb-4">
-            {{ editingTable ? 'テーブルを編集' : 'テーブルを追加' }}
+            {{ editingCategory ? 'カテゴリを編集' : 'カテゴリを追加' }}
           </h2>
 
-          <form @submit.prevent="saveTable" class="space-y-4">
+          <form @submit.prevent="saveCategory" class="space-y-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">
-                テーブル番号 <span class="text-red-500">*</span>
+                カテゴリコード <span class="text-red-500">*</span>
               </label>
               <input
-                v-model="formData.tableNumber"
+                v-model="formData.code"
                 type="text"
                 required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="例: 1, A-1"
+                :disabled="!!editingCategory"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                placeholder="例: food, drink"
               />
+              <p class="mt-1 text-xs text-gray-500">編集時は変更できません</p>
             </div>
 
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">
-                テーブル名（任意）
+                カテゴリ名 <span class="text-red-500">*</span>
               </label>
               <input
                 v-model="formData.name"
                 type="text"
+                required
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="例: 窓際席"
+                placeholder="例: フード, ドリンク"
               />
             </div>
 
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">
-                定員 <span class="text-red-500">*</span>
+                表示順 <span class="text-red-500">*</span>
               </label>
               <input
-                v-model.number="formData.capacity"
+                v-model.number="formData.displayOrder"
                 type="number"
                 required
-                min="1"
+                min="0"
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="0"
               />
             </div>
 
@@ -189,7 +170,7 @@
                 type="submit"
                 class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
-                {{ editingTable ? '更新' : '作成' }}
+                {{ editingCategory ? '更新' : '作成' }}
               </button>
             </div>
           </form>
@@ -200,27 +181,26 @@
 </template>
 
 <script setup lang="ts">
-import { useTableStore } from '~/stores/table'
+import { useCategoryStore } from '~/stores/category'
 import { useAuthStore } from '~/stores/auth'
 import { useShopStore } from '~/stores/shop'
-import QRCodeGenerator from '~/components/QRCodeGenerator.vue'
-import type { ShopTable } from '~/types'
+import type { ShopCategory } from '~/types'
 
 const { navigationItems } = useShopNavigation()
-const { pageTitle } = useShopPageTitle('テーブル管理')
+const { pageTitle } = useShopPageTitle('カテゴリ管理')
 
-const tableStore = useTableStore()
+const categoryStore = useCategoryStore()
 const authStore = useAuthStore()
 const shopStore = useShopStore()
 const { checkAuth } = useAuthCheck()
 
 const showCreateModal = ref(false)
-const editingTable = ref<ShopTable | null>(null)
+const editingCategory = ref<ShopCategory | null>(null)
 
 const formData = ref({
-  tableNumber: '',
+  code: '',
   name: '',
-  capacity: 4,
+  displayOrder: 0,
   isActive: true
 })
 
@@ -231,62 +211,62 @@ onMounted(async () => {
     return
   }
 
-  // テーブル一覧の取得
+  // カテゴリ一覧の取得
   if (shopStore.currentShop) {
-    await tableStore.fetchTables(shopStore.currentShop.id)
+    await categoryStore.fetchCategories(shopStore.currentShop.id)
   }
 })
 
-const editTable = (table: ShopTable) => {
-  editingTable.value = table
+const editCategory = (category: ShopCategory) => {
+  editingCategory.value = category
   formData.value = {
-    tableNumber: table.tableNumber,
-    name: table.name || '',
-    capacity: table.capacity,
-    isActive: table.isActive
+    code: category.code,
+    name: category.name,
+    displayOrder: category.displayOrder,
+    isActive: category.isActive
   }
   showCreateModal.value = true
 }
 
-const saveTable = async () => {
+const saveCategory = async () => {
   if (!shopStore.currentShop) {
     alert('店舗が選択されていません')
     return
   }
 
   try {
-    if (editingTable.value) {
+    if (editingCategory.value) {
       // 更新
-      await tableStore.updateTable(editingTable.value.id, formData.value)
+      await categoryStore.updateCategory(editingCategory.value.id, formData.value)
     } else {
       // 作成
-      await tableStore.createTable(shopStore.currentShop.id, formData.value)
+      await categoryStore.createCategory(shopStore.currentShop.id, formData.value)
     }
     closeModal()
   } catch (error: any) {
-    alert(error.message || 'テーブルの保存に失敗しました')
+    alert(error.message || 'カテゴリの保存に失敗しました')
   }
 }
 
-const deleteTable = async (table: ShopTable) => {
-  if (!confirm(`テーブル「${table.tableNumber}」を削除してもよろしいですか？`)) {
+const deleteCategory = async (category: ShopCategory) => {
+  if (!confirm(`カテゴリ「${category.name}」を削除してもよろしいですか？`)) {
     return
   }
 
   try {
-    await tableStore.deleteTable(table.id)
+    await categoryStore.deleteCategory(category.id)
   } catch (error: any) {
-    alert(error.message || 'テーブルの削除に失敗しました')
+    alert(error.message || 'カテゴリの削除に失敗しました')
   }
 }
 
 const closeModal = () => {
   showCreateModal.value = false
-  editingTable.value = null
+  editingCategory.value = null
   formData.value = {
-    tableNumber: '',
+    code: '',
     name: '',
-    capacity: 4,
+    displayOrder: 0,
     isActive: true
   }
 }

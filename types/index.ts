@@ -2,6 +2,7 @@
 
 export interface Menu {
   id: string
+  shopId?: string // 店舗ID（オプション）
   number: string // メニュー番号（例: "001"）
   name: string
   description?: string
