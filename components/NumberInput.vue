@@ -19,27 +19,30 @@
         />
       </div>
       
-      <!-- メニュープレビュー -->
-      <div v-if="inputValue && foundMenu" class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="font-semibold text-green-800">{{ foundMenu.number }}. {{ foundMenu.name }}</p>
-            <p class="text-sm text-green-600">¥{{ foundMenu.price.toLocaleString() }}</p>
+      <!-- メニュープレビュー・エラーメッセージ・在庫切れメッセージ用のスペース確保 -->
+      <div class="mb-4 min-h-[120px] space-y-2">
+        <!-- メニュープレビュー -->
+        <div v-if="inputValue && foundMenu" class="p-3 bg-green-50 border border-green-200 rounded-lg">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="font-semibold text-green-800">{{ foundMenu.number }}. {{ foundMenu.name }}</p>
+              <p class="text-sm text-green-600">¥{{ foundMenu.price.toLocaleString() }}</p>
+            </div>
+            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
           </div>
-          <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-          </svg>
         </div>
-      </div>
-      
-      <!-- エラーメッセージ -->
-      <div v-if="inputValue && !foundMenu && inputValue.length >= 1" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-        <p class="text-sm text-red-700">メニュー番号「{{ formatMenuNumber(inputValue) }}」が見つかりません</p>
-      </div>
-      
-      <!-- 在庫切れメッセージ -->
-      <div v-if="foundMenu && !foundMenu.isAvailable" class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-        <p class="text-sm text-yellow-700">このメニューは現在在庫切れです</p>
+        
+        <!-- エラーメッセージ -->
+        <div v-else-if="inputValue && !foundMenu && inputValue.length >= 1" class="p-3 bg-red-50 border border-red-200 rounded-lg">
+          <p class="text-sm text-red-700">メニュー番号「{{ formatMenuNumber(inputValue) }}」が見つかりません</p>
+        </div>
+        
+        <!-- 在庫切れメッセージ（メニューが見つかった場合のみ表示） -->
+        <div v-if="inputValue && foundMenu && !foundMenu.isAvailable" class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p class="text-sm text-yellow-700">このメニューは現在在庫切れです</p>
+        </div>
       </div>
       
       <button

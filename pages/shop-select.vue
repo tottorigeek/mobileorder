@@ -109,14 +109,17 @@
             </label>
             <div class="grid grid-cols-2 gap-3">
               <button
-                v-for="table in availableTables"
+                v-for="table in allTables"
                 :key="table.id"
-                @click="selectTable(table)"
+                @click="!isTableOccupied(table) && selectTable(table)"
+                :disabled="isTableOccupied(table)"
                 :class="[
-                  'p-5 rounded-xl border-2 transition-all duration-300 touch-target transform hover:scale-105',
-                  tableNumber === table.tableNumber
-                    ? 'border-blue-600 bg-gradient-to-br from-blue-50 to-indigo-50 text-blue-700 shadow-md'
-                    : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+                  'p-5 rounded-xl border-2 transition-all duration-300 touch-target transform',
+                  isTableOccupied(table)
+                    ? 'border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed opacity-60'
+                    : tableNumber === table.tableNumber
+                    ? 'border-blue-600 bg-gradient-to-br from-blue-50 to-indigo-50 text-blue-700 shadow-md hover:scale-105'
+                    : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50 hover:scale-105'
                 ]"
               >
                 <div class="font-bold text-2xl mb-1">{{ table.tableNumber }}</div>
@@ -126,6 +129,12 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
                   {{ table.capacity }}名
+                </div>
+                <div v-if="isTableOccupied(table)" class="text-xs text-red-500 mt-2 flex items-center gap-1">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  着座済み
                 </div>
               </button>
             </div>
@@ -165,8 +174,19 @@ const selectedShop = ref<Shop | null>(null)
 const tableNumber = ref('')
 const errorMessage = ref('')
 const isValidating = ref(false)
-const availableTables = ref<ShopTable[]>([])
+const allTables = ref<ShopTable[]>([])
 const isLoadingTables = ref(false)
+
+// 利用可能なテーブル（着座済みでないテーブル）
+const availableTables = computed(() => {
+  return allTables.value.filter(table => !isTableOccupied(table))
+})
+
+// テーブルが着座済みかどうかを判定
+const isTableOccupied = (table: ShopTable): boolean => {
+  // visitorIdが設定されている、またはstatusがoccupied/checkout_pending/set_pendingの場合は着座済み
+  return !!(table.visitorId || (table.status && table.status !== 'available'))
+}
 
 onMounted(async () => {
   // 精算完了前の注文がある場合は/visitorにリダイレクト
@@ -215,7 +235,7 @@ onMounted(async () => {
         isLoadingTables.value = true
         try {
           const tables = await tableStore.fetchTablesByShopCode(shopCodeFromQuery)
-          availableTables.value = tables
+          allTables.value = tables
         } catch (error) {
           console.error('テーブル一覧の取得に失敗しました:', error)
         } finally {
@@ -258,13 +278,13 @@ const selectShop = async (shop: Shop) => {
   shopStore.setCurrentShop(shop)
   tableNumber.value = ''
   errorMessage.value = ''
-  availableTables.value = []
+  allTables.value = []
   
   // テーブル一覧を取得
   isLoadingTables.value = true
   try {
     const tables = await tableStore.fetchTablesByShopCode(shop.code)
-    availableTables.value = tables
+    allTables.value = tables
   } catch (error) {
     console.error('テーブル一覧の取得に失敗しました:', error)
     errorMessage.value = 'テーブル一覧の取得に失敗しました'
@@ -274,6 +294,10 @@ const selectShop = async (shop: Shop) => {
 }
 
 const selectTable = (table: ShopTable) => {
+  // 着座済みのテーブルは選択できない
+  if (isTableOccupied(table)) {
+    return
+  }
   tableNumber.value = table.tableNumber
   errorMessage.value = ''
 }
