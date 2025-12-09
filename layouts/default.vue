@@ -2,7 +2,7 @@
   <div class="min-h-screen bg-gray-50">
     <header v-if="showHeader" class="header-navigation bg-white shadow-sm border-b border-gray-200">
       <div class="header-container max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-        <!-- スマホの/customerページ用のシンプルなヘッダー -->
+        <!-- スマホの/visitorページ用のシンプルなヘッダー -->
         <div v-if="isCustomerPage" class="customer-header relative h-14 sm:h-16">
           <!-- 左側：サービス名（スマホではアイコンのみ） -->
           <div class="header-logo-wrapper absolute left-0 top-1/2 -translate-y-1/2 pl-0 pr-2 sm:pr-3">
@@ -152,6 +152,9 @@
         <slot name="footer" />
       </div>
     </footer>
+
+    <!-- /visitor配下のページでBottom Navigationを表示 -->
+    <CustomerBottomNav v-if="isCustomerPage" />
   </div>
 </template>
 
@@ -161,6 +164,7 @@ import { useShopStore } from '~/stores/shop'
 import { useCartStore } from '~/stores/cart'
 import { useOrderStore } from '~/stores/order'
 import AdminNavigation from '~/components/admin/AdminNavigation.vue'
+import CustomerBottomNav from '~/components/CustomerBottomNav.vue'
 
 interface Props {
   title?: string
@@ -180,9 +184,9 @@ const cartStore = useCartStore()
 const orderStore = useOrderStore()
 const route = useRoute()
 
-// /customerページかどうかを判定
+// /visitorページかどうかを判定
 const isCustomerPage = computed(() => {
-  return route.path.startsWith('/customer')
+  return route.path.startsWith('/visitor')
 })
 
 // /shopページかどうかを判定
@@ -200,8 +204,8 @@ const displayTableNumber = computed(() => {
     return cartStore.tableNumber
   }
   
-  // /customer/order/[id]または/customer/status/[id]ページの場合、注文情報からテーブル番号を取得
-  if (route.path.startsWith('/customer/order/') || route.path.startsWith('/customer/status/')) {
+  // /visitor/order/[id]または/visitor/status/[id]ページの場合、注文情報からテーブル番号を取得
+  if (route.path.startsWith('/visitor/order/') || route.path.startsWith('/visitor/status/')) {
     const orderId = route.params.id as string
     const order = orderStore.orders.find(o => o.id === orderId)
     if (order && order.tableNumber) {

@@ -169,7 +169,7 @@ const availableTables = ref<ShopTable[]>([])
 const isLoadingTables = ref(false)
 
 onMounted(async () => {
-  // 精算完了前の注文がある場合は/customerにリダイレクト
+  // 精算完了前の注文がある場合は/visitorにリダイレクト
   if (typeof window !== 'undefined') {
     const activeOrderId = localStorage.getItem('activeOrderId')
     const activeVisitorId = localStorage.getItem('activeVisitorId')
@@ -180,9 +180,9 @@ onMounted(async () => {
         const visitorStore = useVisitorStore()
         const visitor = await visitorStore.fetchVisitor(activeVisitorId)
         
-        // 支払いが完了していない場合は/customerにリダイレクト
+        // 支払いが完了していない場合は/visitorにリダイレクト
         if (visitor.paymentStatus !== 'completed') {
-          await router.push('/customer')
+          await router.push('/visitor')
           return
         } else {
           // 支払いが完了している場合はセッション情報をクリア
@@ -191,8 +191,8 @@ onMounted(async () => {
         }
       } catch (error) {
         console.error('visitor情報の取得に失敗しました:', error)
-        // エラーが発生した場合は/customerにリダイレクト（安全のため）
-        await router.push('/customer')
+        // エラーが発生した場合は/visitorにリダイレクト（安全のため）
+        await router.push('/visitor')
         return
       }
     }
@@ -247,7 +247,7 @@ onMounted(async () => {
       if (mode === 'staff') {
         router.push('/staff/login')
       } else {
-        router.push('/customer')
+        router.push('/visitor')
       }
     }
   }
@@ -307,7 +307,7 @@ const confirmTable = async () => {
     if (mode === 'staff') {
       router.push('/staff/login')
     } else {
-      router.push('/customer')
+      router.push('/visitor')
     }
   } catch (error: any) {
     console.error('テーブル情報の検証に失敗しました:', error)
@@ -322,7 +322,7 @@ const confirmTable = async () => {
     if (mode === 'staff') {
       router.push('/staff/login')
     } else {
-      router.push('/customer')
+      router.push('/visitor')
     }
   } finally {
     isValidating.value = false

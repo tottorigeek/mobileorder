@@ -402,7 +402,7 @@ function createTable() {
             (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] : 
             'http://localhost:3000';
         
-        $qrCodeUrl = $baseUrl . '/customer?shop=' . urlencode($shop['code']) . '&table=' . urlencode($input['tableNumber']);
+        $qrCodeUrl = $baseUrl . '/visitor?shop=' . urlencode($shop['code']) . '&table=' . urlencode($input['tableNumber']);
         
         $stmt = $pdo->prepare("
             INSERT INTO shop_tables 
@@ -492,7 +492,7 @@ function updateTable($tableId) {
                     (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] : 
                     'http://localhost:3000';
                 
-                $qrCodeUrl = $baseUrl . '/customer?shop=' . urlencode($shop['code']) . '&table=' . urlencode($input['tableNumber']);
+                $qrCodeUrl = $baseUrl . '/visitor?shop=' . urlencode($shop['code']) . '&table=' . urlencode($input['tableNumber']);
                 $updates[] = "qr_code_url = :qr_code_url";
                 $params[':qr_code_url'] = $qrCodeUrl;
             }

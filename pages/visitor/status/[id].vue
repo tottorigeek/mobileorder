@@ -155,7 +155,7 @@
       </div>
 
       <NuxtLink
-        to="/customer"
+        to="/visitor"
         class="block w-full bg-blue-600 text-white py-3 sm:py-4 rounded-lg text-center text-base sm:text-lg font-semibold hover:bg-blue-700 transition-colors touch-target"
       >
         メニューに戻る
@@ -168,7 +168,7 @@
     <div v-else class="text-center py-8 sm:py-12 px-4">
       <p class="text-sm sm:text-base text-gray-500">注文が見つかりません</p>
       <NuxtLink
-        to="/customer"
+        to="/visitor"
         class="inline-block mt-3 sm:mt-4 px-4 sm:px-6 py-2.5 sm:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base touch-target"
       >
         メニューに戻る

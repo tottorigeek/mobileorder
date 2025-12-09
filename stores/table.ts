@@ -244,7 +244,7 @@ export const useTableStore = defineStore('table', {
       // フロントエンドのベースURLを取得
       // QRコードは直接顧客ページへのリンクとして使用
       const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'
-      return `${baseUrl}/customer?shop=${encodeURIComponent(shopCode)}&table=${encodeURIComponent(tableNumber)}`
+      return `${baseUrl}/visitor?shop=${encodeURIComponent(shopCode)}&table=${encodeURIComponent(tableNumber)}`
     }
   }
 })

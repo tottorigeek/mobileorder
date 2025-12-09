@@ -6,7 +6,7 @@
       </svg>
       <p class="text-gray-500 text-xl font-medium mb-6">カートが空です</p>
       <NuxtLink
-        to="/customer"
+        to="/visitor"
         class="inline-block px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 touch-target font-semibold text-lg"
       >
         メニューに戻る
@@ -87,16 +87,12 @@
       <!-- bottom-nav用のスペーサー -->
       <div class="h-20"></div>
     </div>
-
-    <!-- Bottom Navigation -->
-    <CustomerBottomNav />
   </NuxtLayout>
 </template>
 
 <script setup lang="ts">
 import { useCartStore } from '~/stores/cart'
 import { useOrder } from '~/composables/useOrder'
-import CustomerBottomNav from '~/components/CustomerBottomNav.vue'
 
 const cartStore = useCartStore()
 const { submitOrder } = useOrder()
@@ -120,7 +116,7 @@ const handleOrder = async () => {
     isSubmitting.value = true
     try {
       const order = await submitOrder()
-      await navigateTo(`/customer/order/${order.id}`)
+      await navigateTo(`/visitor/order/${order.id}`)
     } catch (error) {
       alert('注文に失敗しました: ' + (error as Error).message)
     } finally {

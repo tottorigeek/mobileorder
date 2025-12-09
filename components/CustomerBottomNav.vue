@@ -3,10 +3,10 @@
     <div class="flex items-center justify-around h-16 px-2">
       <!-- メニュー -->
       <NuxtLink
-        to="/customer"
+        to="/visitor"
         :class="[
           'flex flex-col items-center justify-center flex-1 h-full transition-colors',
-          isActive('/customer') ? 'text-blue-600' : 'text-gray-500'
+          isActive('/visitor') ? 'text-blue-600' : 'text-gray-500'
         ]"
       >
         <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -15,26 +15,53 @@
         <span class="text-xs font-medium">メニュー</span>
       </NuxtLink>
 
-      <!-- カート -->
+      <!-- 未発注 -->
       <NuxtLink
-        to="/customer/cart"
+        to="/visitor/cart"
         :class="[
           'flex flex-col items-center justify-center flex-1 h-full transition-colors relative',
-          isActive('/customer/cart') ? 'text-blue-600' : 'text-gray-500'
+          isActive('/visitor/cart') ? 'text-blue-600' : 'text-gray-500'
         ]"
       >
+        <!-- フワフワ動く吹き出し -->
+        <div
+          v-if="cartStore.totalItems > 0"
+          class="absolute -top-12 left-1/2 transform -translate-x-1/2 floating-bubble"
+        >
+          <div class="bg-orange-500 text-white text-xs font-medium px-3 py-1.5 rounded-lg shadow-lg whitespace-nowrap relative">
+            未注文があります
+            <!-- 吹き出しのしっぽ -->
+            <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full">
+              <div class="w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-orange-500"></div>
+            </div>
+          </div>
+        </div>
         <div class="relative">
           <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <span
             v-if="cartStore.totalItems > 0"
-            class="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
+            class="absolute -top-2 -right-2 bg-orange-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
           >
             {{ cartStore.totalItems }}
           </span>
         </div>
-        <span class="text-xs font-medium">カート</span>
+        <span class="text-xs font-medium">未発注</span>
+      </NuxtLink>
+
+      <!-- 注文一覧 -->
+      <NuxtLink
+        to="/visitor/orders"
+        :class="[
+          'flex flex-col items-center justify-center flex-1 h-full transition-colors',
+          isActive('/visitor/orders') ? 'text-blue-600' : 'text-gray-500'
+        ]"
+      >
+        <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+        </svg>
+        <span class="text-xs font-medium">注文</span>
       </NuxtLink>
 
       <!-- お会計 -->
@@ -43,7 +70,7 @@
         @click="goToCheckout"
         :class="[
           'flex flex-col items-center justify-center flex-1 h-full transition-colors',
-          isActive('/customer/status') ? 'text-blue-600' : 'text-gray-500'
+          isActive('/visitor/status') ? 'text-blue-600' : 'text-gray-500'
         ]"
       >
         <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -70,7 +97,7 @@ const isActive = (path: string) => {
 
 const goToCheckout = () => {
   if (activeOrderId.value) {
-    router.push(`/customer/status/${activeOrderId.value}`)
+    router.push(`/visitor/status/${activeOrderId.value}`)
   }
 }
 
@@ -109,5 +136,19 @@ watch(() => route.path, () => {
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom);
 }
-</style>
 
+/* フワフワ動くアニメーション */
+@keyframes float {
+  0%, 100% {
+    transform: translate(-50%, 0);
+  }
+  50% {
+    transform: translate(-50%, -8px);
+  }
+}
+
+.floating-bubble {
+  animation: float 2s ease-in-out infinite;
+  z-index: 60;
+}
+</style>

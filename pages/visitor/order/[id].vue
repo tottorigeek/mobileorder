@@ -29,18 +29,21 @@
 
       <div class="space-y-3">
         <NuxtLink
-          to="/customer"
+          to="/visitor"
           class="block w-full bg-blue-600 text-white py-4 rounded-lg text-center text-lg font-semibold hover:bg-blue-700 transition-colors touch-target"
         >
           メニューに戻る
         </NuxtLink>
         <NuxtLink
-          :to="`/customer/status/${order.id}`"
+          :to="`/visitor/status/${order.id}`"
           class="block w-full bg-gray-600 text-white py-4 rounded-lg text-center text-lg font-semibold hover:bg-gray-700 transition-colors touch-target"
         >
           注文状況を確認
         </NuxtLink>
       </div>
+
+      <!-- bottom-nav用のスペーサー -->
+      <div class="h-20"></div>
     </div>
   </NuxtLayout>
 </template>
@@ -48,6 +51,7 @@
 <script setup lang="ts">
 import { useOrderStore } from '~/stores/order'
 import { useCartStore } from '~/stores/cart'
+import { useShopStore } from '~/stores/shop'
 import type { OrderStatus } from '~/types'
 
 const route = useRoute()
@@ -76,7 +80,7 @@ onMounted(async () => {
     cartStore.setTableNumber(order.value.tableNumber)
   }
   
-  // 注文完了時にセッション情報を保存（精算完了まで/shop-selectから/customerにリダイレクトするため）
+  // 注文完了時にセッション情報を保存（精算完了まで/shop-selectから/visitorにリダイレクトするため）
   if (order.value && cartStore.visitorId) {
     // ローカルストレージにアクティブな注文IDとvisitorIdを保存
     if (typeof window !== 'undefined') {

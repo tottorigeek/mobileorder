@@ -128,7 +128,7 @@ export const useOrderStore = defineStore('order', {
       }
     },
 
-    async fetchOrders(status?: OrderStatus, shopCode?: string, shopIds?: string[]) {
+    async fetchOrders(status?: OrderStatus, shopCode?: string, shopIds?: string[], tableNumber?: string) {
       this.isLoading = true
       try {
         const config = useRuntimeConfig()
@@ -155,6 +155,9 @@ export const useOrderStore = defineStore('order', {
               let url = `${apiBase}/orders?shop=${shop.code}`
               if (status) {
                 url += `&status=${status}`
+              }
+              if (tableNumber) {
+                url += `&tableNumber=${tableNumber}`
               }
               
               const data = await $fetch<Order[]>(url, { headers })
@@ -184,6 +187,9 @@ export const useOrderStore = defineStore('order', {
           }
           if (status) {
             params.push(`status=${status}`)
+          }
+          if (tableNumber) {
+            params.push(`tableNumber=${tableNumber}`)
           }
           
           if (params.length > 0) {
