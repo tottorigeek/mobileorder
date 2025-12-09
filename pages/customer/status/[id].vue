@@ -1,82 +1,82 @@
 <template>
   <NuxtLayout name="default" title="注文状況">
-    <div v-if="isLoading" class="text-center py-12">
-      <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      <p class="mt-4 text-gray-500">読み込み中...</p>
+    <div v-if="isLoading" class="text-center py-8 sm:py-12 px-4">
+      <div class="inline-block animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-blue-600"></div>
+      <p class="mt-3 sm:mt-4 text-sm sm:text-base text-gray-500">読み込み中...</p>
     </div>
     
-    <div v-else-if="order" class="space-y-6">
-      <div class="bg-white p-6 rounded-lg shadow">
-        <h2 class="text-2xl font-bold mb-4">注文状況</h2>
-        <div class="space-y-3">
-          <div class="flex justify-between">
-            <span class="text-gray-600">注文番号:</span>
-            <span class="font-semibold">{{ order.orderNumber }}</span>
+    <div v-else-if="order" class="space-y-4 sm:space-y-6 px-4 sm:px-0">
+      <div class="bg-white p-4 sm:p-6 rounded-lg shadow">
+        <h2 class="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">注文状況</h2>
+        <div class="space-y-2 sm:space-y-3">
+          <div class="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
+            <span class="text-sm sm:text-base text-gray-600">注文番号:</span>
+            <span class="text-sm sm:text-base font-semibold break-all sm:break-normal">{{ order.orderNumber }}</span>
           </div>
-          <div class="flex justify-between">
-            <span class="text-gray-600">テーブル番号:</span>
-            <span class="font-semibold">{{ order.tableNumber }}</span>
+          <div class="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
+            <span class="text-sm sm:text-base text-gray-600">テーブル番号:</span>
+            <span class="text-sm sm:text-base font-semibold">{{ order.tableNumber }}</span>
           </div>
-          <div class="flex justify-between">
-            <span class="text-gray-600">ステータス:</span>
-            <span :class="statusClass" class="font-semibold">{{ statusLabel }}</span>
+          <div class="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
+            <span class="text-sm sm:text-base text-gray-600">ステータス:</span>
+            <span :class="statusClass" class="text-sm sm:text-base font-semibold">{{ statusLabel }}</span>
           </div>
         </div>
       </div>
 
       <!-- ステータス進行バー -->
-      <div class="bg-white p-6 rounded-lg shadow">
+      <div class="bg-white p-4 sm:p-6 rounded-lg shadow">
         <div class="space-y-4">
-          <div class="flex items-center">
-            <div :class="getStepClass('pending')" class="flex-1">
-              <div class="w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-2">
+          <div class="flex items-center overflow-x-auto pb-2">
+            <div :class="getStepClass('pending')" class="flex-1 min-w-[60px] sm:min-w-0">
+              <div class="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center mx-auto mb-1 sm:mb-2 text-xs sm:text-base">
                 <span v-if="isStepCompleted('pending')">✓</span>
                 <span v-else>1</span>
               </div>
-              <p class="text-sm text-center">受付待ち</p>
+              <p class="text-xs sm:text-sm text-center">受付待ち</p>
             </div>
-            <div :class="getLineClass('pending', 'accepted')" class="flex-1 h-1"></div>
-            <div :class="getStepClass('accepted')" class="flex-1">
-              <div class="w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-2">
+            <div :class="getLineClass('pending', 'accepted')" class="flex-1 h-0.5 sm:h-1 min-w-[20px]"></div>
+            <div :class="getStepClass('accepted')" class="flex-1 min-w-[60px] sm:min-w-0">
+              <div class="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center mx-auto mb-1 sm:mb-2 text-xs sm:text-base">
                 <span v-if="isStepCompleted('accepted')">✓</span>
                 <span v-else>2</span>
               </div>
-              <p class="text-sm text-center">受付済み</p>
+              <p class="text-xs sm:text-sm text-center">受付済み</p>
             </div>
-            <div :class="getLineClass('accepted', 'cooking')" class="flex-1 h-1"></div>
-            <div :class="getStepClass('cooking')" class="flex-1">
-              <div class="w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-2">
+            <div :class="getLineClass('accepted', 'cooking')" class="flex-1 h-0.5 sm:h-1 min-w-[20px]"></div>
+            <div :class="getStepClass('cooking')" class="flex-1 min-w-[60px] sm:min-w-0">
+              <div class="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center mx-auto mb-1 sm:mb-2 text-xs sm:text-base">
                 <span v-if="isStepCompleted('cooking')">✓</span>
                 <span v-else>3</span>
               </div>
-              <p class="text-sm text-center">調理中</p>
+              <p class="text-xs sm:text-sm text-center">調理中</p>
             </div>
-            <div :class="getLineClass('cooking', 'completed')" class="flex-1 h-1"></div>
-            <div :class="getStepClass('completed')" class="flex-1">
-              <div class="w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-2">
+            <div :class="getLineClass('cooking', 'completed')" class="flex-1 h-0.5 sm:h-1 min-w-[20px]"></div>
+            <div :class="getStepClass('completed')" class="flex-1 min-w-[60px] sm:min-w-0">
+              <div class="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center mx-auto mb-1 sm:mb-2 text-xs sm:text-base">
                 <span v-if="isStepCompleted('completed')">✓</span>
                 <span v-else>4</span>
               </div>
-              <p class="text-sm text-center">完成</p>
+              <p class="text-xs sm:text-sm text-center">完成</p>
             </div>
           </div>
         </div>
       </div>
 
       <!-- 注文内容 -->
-      <div class="bg-white p-6 rounded-lg shadow">
-        <h3 class="text-xl font-bold mb-4">注文内容</h3>
+      <div class="bg-white p-4 sm:p-6 rounded-lg shadow">
+        <h3 class="text-lg sm:text-xl font-bold mb-3 sm:mb-4">注文内容</h3>
         <div class="space-y-2">
           <div
             v-for="item in order.items"
             :key="item.menuId"
-            class="flex justify-between py-2 border-b last:border-0"
+            class="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0 py-2 border-b last:border-0"
           >
-            <span>{{ item.menuNumber }}. {{ item.menuName }} × {{ item.quantity }}</span>
-            <span>¥{{ (item.price * item.quantity).toLocaleString() }}</span>
+            <span class="text-sm sm:text-base break-words">{{ item.menuNumber }}. {{ item.menuName }} × {{ item.quantity }}</span>
+            <span class="text-sm sm:text-base font-semibold sm:font-normal">¥{{ (item.price * item.quantity).toLocaleString() }}</span>
           </div>
         </div>
-        <div class="mt-4 pt-4 border-t flex justify-between text-lg font-bold">
+        <div class="mt-4 pt-4 border-t flex justify-between text-base sm:text-lg font-bold">
           <span>合計</span>
           <span>¥{{ order.totalAmount.toLocaleString() }}</span>
         </div>
@@ -84,55 +84,55 @@
 
       <!-- 清算ボタン（注文が完成している場合） -->
       <div v-if="order.status === 'completed' && !isPaymentCompleted" class="space-y-4">
-        <div class="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-6">
-          <h3 class="text-xl font-bold text-gray-900 mb-4">お会計</h3>
-          <p class="text-gray-700 mb-4">合計金額: <span class="text-2xl font-bold text-blue-600">¥{{ order.totalAmount.toLocaleString() }}</span></p>
+        <div class="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-4 sm:p-6">
+          <h3 class="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">お会計</h3>
+          <p class="text-sm sm:text-base text-gray-700 mb-3 sm:mb-4">合計金額: <span class="text-xl sm:text-2xl font-bold text-blue-600">¥{{ order.totalAmount.toLocaleString() }}</span></p>
           
           <div v-if="!showPaymentMethod" class="space-y-3">
             <button
               @click="showPaymentMethod = true"
-              class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-xl text-lg font-bold hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl"
+              class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 sm:py-4 rounded-xl text-base sm:text-lg font-bold hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl touch-target"
             >
               清算する
             </button>
           </div>
           
           <div v-else class="space-y-3">
-            <p class="text-sm text-gray-600 mb-4">お支払い方法を選択してください</p>
+            <p class="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4">お支払い方法を選択してください</p>
             <button
               @click="processPayment('credit')"
               :disabled="isProcessingPayment"
-              class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-xl text-lg font-bold hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+              class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 sm:py-4 rounded-xl text-base sm:text-lg font-bold hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 touch-target"
             >
-              <svg v-if="!isProcessingPayment" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg v-if="!isProcessingPayment" class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
               </svg>
-              <span v-if="isProcessingPayment" class="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-white"></span>
+              <span v-if="isProcessingPayment" class="inline-block animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white"></span>
               {{ isProcessingPayment ? '処理中...' : 'クレジットカード' }}
             </button>
             <button
               @click="processPayment('paypay')"
               :disabled="isProcessingPayment"
-              class="w-full bg-gradient-to-r from-yellow-500 to-orange-500 text-white py-4 rounded-xl text-lg font-bold hover:from-yellow-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+              class="w-full bg-gradient-to-r from-yellow-500 to-orange-500 text-white py-3 sm:py-4 rounded-xl text-base sm:text-lg font-bold hover:from-yellow-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 touch-target"
             >
-              <span v-if="isProcessingPayment" class="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-white"></span>
+              <span v-if="isProcessingPayment" class="inline-block animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white"></span>
               {{ isProcessingPayment ? '処理中...' : 'PayPay' }}
             </button>
             <button
               @click="processPayment('cash')"
               :disabled="isProcessingPayment"
-              class="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 rounded-xl text-lg font-bold hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+              class="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 sm:py-4 rounded-xl text-base sm:text-lg font-bold hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 touch-target"
             >
-              <svg v-if="!isProcessingPayment" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg v-if="!isProcessingPayment" class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
-              <span v-if="isProcessingPayment" class="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-white"></span>
+              <span v-if="isProcessingPayment" class="inline-block animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white"></span>
               {{ isProcessingPayment ? '処理中...' : '現金' }}
             </button>
             <button
               @click="showPaymentMethod = false"
               :disabled="isProcessingPayment"
-              class="w-full bg-gray-200 text-gray-700 py-3 rounded-xl text-base font-semibold hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              class="w-full bg-gray-200 text-gray-700 py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-semibold hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors touch-target"
             >
               キャンセル
             </button>
@@ -141,22 +141,22 @@
       </div>
       
       <!-- 支払い完了メッセージ -->
-      <div v-if="isPaymentCompleted" class="bg-green-50 border-2 border-green-300 rounded-xl p-6 text-center">
-        <svg class="w-16 h-16 mx-auto text-green-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div v-if="isPaymentCompleted" class="bg-green-50 border-2 border-green-300 rounded-xl p-4 sm:p-6 text-center">
+        <svg class="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-green-500 mb-3 sm:mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <h3 class="text-2xl font-bold text-gray-900 mb-2">お支払いが完了しました</h3>
-        <p v-if="paymentMethod === 'cash'" class="text-gray-700 mb-4">
+        <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-2">お支払いが完了しました</h3>
+        <p v-if="paymentMethod === 'cash'" class="text-sm sm:text-base text-gray-700 mb-3 sm:mb-4">
           レジまでお越しください。スタッフがお待ちしております。
         </p>
-        <p v-else class="text-gray-700 mb-4">
+        <p v-else class="text-sm sm:text-base text-gray-700 mb-3 sm:mb-4">
           ご利用ありがとうございました。
         </p>
       </div>
 
       <NuxtLink
         to="/customer"
-        class="block w-full bg-blue-600 text-white py-4 rounded-lg text-center text-lg font-semibold hover:bg-blue-700 transition-colors touch-target"
+        class="block w-full bg-blue-600 text-white py-3 sm:py-4 rounded-lg text-center text-base sm:text-lg font-semibold hover:bg-blue-700 transition-colors touch-target"
       >
         メニューに戻る
       </NuxtLink>
@@ -165,11 +165,11 @@
       <div class="h-20"></div>
     </div>
 
-    <div v-else class="text-center py-12">
-      <p class="text-gray-500">注文が見つかりません</p>
+    <div v-else class="text-center py-8 sm:py-12 px-4">
+      <p class="text-sm sm:text-base text-gray-500">注文が見つかりません</p>
       <NuxtLink
         to="/customer"
-        class="inline-block mt-4 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        class="inline-block mt-3 sm:mt-4 px-4 sm:px-6 py-2.5 sm:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base touch-target"
       >
         メニューに戻る
       </NuxtLink>
@@ -339,6 +339,13 @@ const processPayment = async (method: PaymentMethod) => {
     // ダミー処理（2秒待機）
     await new Promise(resolve => setTimeout(resolve, 2000))
     
+    // まず会計処理を実行（total_amountとcheckout_timeを設定）
+    try {
+      await visitorStore.processCheckout(visitorId)
+    } catch (checkoutError) {
+      console.warn('会計処理の実行に失敗しました（支払い処理は続行します）:', checkoutError)
+    }
+    
     // 支払い処理を実行
     await visitorStore.processPayment(visitorId, paymentMethodForApi)
     
@@ -349,6 +356,14 @@ const processPayment = async (method: PaymentMethod) => {
     // 支払い完了時にセッション情報をクリア（精算完了したので/shop-selectに戻れるようにする）
     cartStore.clearSession()
     shopStore.setCurrentShop(null)
+    
+    // ローカルストレージからも削除
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('tableNumber')
+      localStorage.removeItem('activeOrderId')
+      localStorage.removeItem('activeVisitorId')
+      localStorage.removeItem('currentShop')
+    }
   } catch (error: any) {
     alert('支払い処理に失敗しました: ' + (error.message || 'エラーが発生しました'))
   } finally {

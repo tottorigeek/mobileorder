@@ -485,17 +485,40 @@ function processPayment($visitorId) {
             sendNotFoundError('Visitor');
         }
         
-        // visitorを更新（支払い完了）
+        // 合計額を計算（注文から、checkout_timeが設定されていない場合のみ）
+        $totalAmount = $visitor['total_amount'];
+        if (!$visitor['checkout_time']) {
+            $orderStmt = $pdo->prepare("
+                SELECT SUM(total_amount) as total 
+                FROM orders 
+                WHERE shop_id = :shop_id 
+                AND table_number = :table_number 
+                AND status != 'cancelled'
+            ");
+            $orderStmt->execute([
+                ':shop_id' => $visitor['shop_id'],
+                ':table_number' => $visitor['table_number']
+            ]);
+            $orderTotal = $orderStmt->fetch();
+            if ($orderTotal && $orderTotal['total']) {
+                $totalAmount = (int)$orderTotal['total'];
+            }
+        }
+        
+        // visitorを更新（支払い完了、total_amountとcheckout_timeも設定）
         $updateStmt = $pdo->prepare("
             UPDATE visitors 
             SET payment_method = :payment_method,
                 payment_status = 'completed',
+                total_amount = :total_amount,
+                checkout_time = COALESCE(checkout_time, NOW()),
                 updated_at = NOW()
             WHERE id = :id
         ");
         $updateStmt->execute([
             ':id' => $visitorId,
-            ':payment_method' => $input['paymentMethod']
+            ':payment_method' => $input['paymentMethod'],
+            ':total_amount' => $totalAmount
         ]);
         
         // テーブルのステータスをset_pendingに更新
