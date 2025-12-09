@@ -9,6 +9,8 @@ export const useCompanyNavigation = () => {
       { to: '/company/dashboard', label: 'ダッシュボード' },
       { to: '/company/shops', label: '店舗管理' },
       { to: '/company/users', label: 'ユーザー管理' },
+      { to: '/company/tables', label: 'テーブル管理' },
+      { to: '/company/menus', label: 'メニュー管理' },
       { to: '/company/error-logs', label: 'エラーログ' }
     ]
     
