@@ -51,6 +51,20 @@
                 <span class="text-sm font-medium text-orange-700">テーブル未設定</span>
               </div>
             </div>
+            <!-- 店舗切替（/shop配下のページで複数店舗に所属している場合のみ） -->
+            <div v-if="isShopPage && hasMultipleShops" class="flex items-center gap-2">
+              <label for="shop-select" class="text-sm font-medium text-gray-700 whitespace-nowrap">店舗切替</label>
+              <select
+                id="shop-select"
+                v-model="selectedShopId"
+                @change="handleShopChange"
+                class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option v-for="shop in shopStore.shops" :key="shop.id" :value="shop.id">
+                  {{ shop.name }}
+                </option>
+              </select>
+            </div>
             <!-- ログインユーザー情報 -->
             <div v-if="authStore.isAuthenticated && authStore.user" class="flex items-center gap-2">
               <div class="text-right">
@@ -106,10 +120,56 @@ const isCustomerPage = computed(() => {
   return route.path.startsWith('/customer')
 })
 
+// /shopページかどうかを判定
+const isShopPage = computed(() => {
+  return route.path.startsWith('/shop')
+})
+
+// 複数店舗に所属しているかどうかを判定
+const hasMultipleShops = computed(() => {
+  return shopStore.shops.length > 1
+})
+
+// 選択中の店舗ID
+const selectedShopId = computed({
+  get: () => shopStore.currentShop?.id || '',
+  set: (value) => {
+    // setterは使用しない（@changeで処理）
+  }
+})
+
+// 店舗切替処理
+const handleShopChange = async (event: Event) => {
+  const target = event.target as HTMLSelectElement
+  const shopId = target.value
+  
+  if (!shopId) return
+  
+  const selectedShop = shopStore.shops.find(s => s.id === shopId)
+  if (selectedShop) {
+    shopStore.setCurrentShop(selectedShop)
+    // ページをリロードして店舗情報を反映
+    await navigateTo(route.path)
+  }
+}
+
 // ページ読み込み時にユーザー情報と店舗情報を読み込む
-onMounted(() => {
+onMounted(async () => {
   authStore.loadUserFromStorage()
   shopStore.loadShopFromStorage()
+  
+  // /shop配下のページで、複数店舗に所属している可能性がある場合は店舗一覧を取得
+  if (isShopPage.value && authStore.isAuthenticated) {
+    await shopStore.fetchMyShops()
+    
+    // 現在の店舗が設定されていない場合、最初の店舗を設定
+    if (!shopStore.currentShop && shopStore.shops.length > 0) {
+      const primaryShop = shopStore.shops.find(s => s.isPrimary) || shopStore.shops[0]
+      if (primaryShop) {
+        shopStore.setCurrentShop(primaryShop)
+      }
+    }
+  }
 })
 
 const getRoleLabel = (role: string) => {
