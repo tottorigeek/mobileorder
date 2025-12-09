@@ -9,7 +9,7 @@ export const useOrder = () => {
 
   const submitOrder = async () => {
     if (cartStore.isEmpty || !cartStore.tableNumber) {
-      throw new Error('カートが空か、テーブル番号が設定されていません')
+      throw new Error('注文書が空か、テーブル番号が設定されていません')
     }
 
     if (!shopStore.currentShop) {
@@ -39,7 +39,7 @@ export const useOrder = () => {
 
     const order = await orderStore.createOrder(orderData)
 
-    // 注文後はカートをクリア
+    // 注文後は注文書をクリア
     cartStore.clearCart()
 
     return order

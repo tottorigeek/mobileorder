@@ -66,11 +66,16 @@
 
       <!-- お会計 -->
       <button
-        v-if="activeOrderId"
         @click="goToCheckout"
+        :disabled="!canCheckout"
         :class="[
           'flex flex-col items-center justify-center flex-1 h-full transition-colors',
-          isActive('/visitor/status') ? 'text-blue-600' : 'text-gray-500'
+          canCheckout
+            ? isActive('/visitor/status') 
+              ? 'text-blue-600' 
+              : 'text-gray-500 hover:text-blue-600'
+            : 'text-gray-300 cursor-not-allowed',
+          !canCheckout && 'opacity-50'
         ]"
       >
         <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -84,20 +89,88 @@
 
 <script setup lang="ts">
 import { useCartStore } from '~/stores/cart'
+import { useOrderStore } from '~/stores/order'
+import { useVisitorStore } from '~/stores/visitor'
+import type { Visitor } from '~/types'
 
 const cartStore = useCartStore()
+const orderStore = useOrderStore()
+const visitorStore = useVisitorStore()
 const route = useRoute()
 const router = useRouter()
 
 const activeOrderId = ref<string | null>(null)
+const currentVisitor = ref<Visitor | null>(null)
 
 const isActive = (path: string) => {
   return route.path === path || route.path.startsWith(path + '/')
 }
 
+// 会計可能かどうかを判定
+const canCheckout = computed(() => {
+  // visitorIdが存在する
+  const visitorId = cartStore.visitorId || (typeof window !== 'undefined' ? localStorage.getItem('activeVisitorId') : null)
+  if (!visitorId) return false
+  
+  // visitorのpaymentStatusが'pending'である（支払いが完了していない）
+  if (currentVisitor.value && currentVisitor.value.paymentStatus === 'completed') {
+    return false
+  }
+  
+  // 完成した注文（status='completed'）が存在する
+  const completedOrders = orderStore.orders.filter(order => order.status === 'completed')
+  if (completedOrders.length === 0) {
+    // ローカルストレージからactiveOrderIdを確認
+    const storedOrderId = typeof window !== 'undefined' ? localStorage.getItem('activeOrderId') : null
+    return !!storedOrderId
+  }
+  
+  return true
+})
+
+// 会計ページに遷移するための注文IDを取得
+const checkoutOrderId = computed(() => {
+  // 完成した注文のうち最新のものを取得
+  const completedOrders = orderStore.orders
+    .filter(order => order.status === 'completed')
+    .sort((a, b) => {
+      const dateA = typeof a.createdAt === 'string' ? new Date(a.createdAt) : a.createdAt
+      const dateB = typeof b.createdAt === 'string' ? new Date(b.createdAt) : b.createdAt
+      return dateB.getTime() - dateA.getTime()
+    })
+  
+  if (completedOrders.length > 0) {
+    return completedOrders[0].id
+  }
+  
+  // ローカルストレージからactiveOrderIdを取得
+  return typeof window !== 'undefined' ? localStorage.getItem('activeOrderId') : null
+})
+
 const goToCheckout = () => {
-  if (activeOrderId.value) {
-    router.push(`/visitor/status/${activeOrderId.value}`)
+  if (!canCheckout.value) return
+  
+  const orderId = checkoutOrderId.value
+  if (orderId) {
+    router.push(`/visitor/status/${orderId}`)
+  } else {
+    // 注文IDが見つからない場合は注文一覧ページに遷移
+    router.push('/visitor/orders')
+  }
+}
+
+// visitor情報を取得
+const fetchVisitorInfo = async () => {
+  const visitorId = cartStore.visitorId || (typeof window !== 'undefined' ? localStorage.getItem('activeVisitorId') : null)
+  if (visitorId) {
+    try {
+      currentVisitor.value = await visitorStore.fetchVisitor(visitorId)
+    } catch (error) {
+      console.error('visitor情報の取得に失敗しました:', error)
+      currentVisitor.value = null
+    }
+  } else {
+    currentVisitor.value = null
   }
 }
 
@@ -108,15 +181,17 @@ watchEffect(() => {
   }
 })
 
-// ページ遷移時と定期的にactiveOrderIdを更新
-onMounted(() => {
+// ページ遷移時と定期的にactiveOrderIdとvisitor情報を更新
+onMounted(async () => {
   if (typeof window !== 'undefined') {
     activeOrderId.value = localStorage.getItem('activeOrderId')
+    await fetchVisitorInfo()
     
     // 定期的にチェック（同じタブ内での変更も検知）
-    const interval = setInterval(() => {
+    const interval = setInterval(async () => {
       activeOrderId.value = localStorage.getItem('activeOrderId')
-    }, 500)
+      await fetchVisitorInfo()
+    }, 1000)
     
     onUnmounted(() => {
       clearInterval(interval)
@@ -124,12 +199,18 @@ onMounted(() => {
   }
 })
 
-// ページ遷移時にactiveOrderIdを更新
-watch(() => route.path, () => {
+// ページ遷移時にactiveOrderIdとvisitor情報を更新
+watch(() => route.path, async () => {
   if (typeof window !== 'undefined') {
     activeOrderId.value = localStorage.getItem('activeOrderId')
+    await fetchVisitorInfo()
   }
 })
+
+// orderStoreのordersが変更されたときに再評価
+watch(() => orderStore.orders, () => {
+  // 会計可能状態を再評価するために何もしない（computedが自動的に再計算される）
+}, { deep: true })
 </script>
 
 <style scoped>

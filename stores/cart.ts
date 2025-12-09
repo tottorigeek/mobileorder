@@ -54,7 +54,7 @@ export const useCartStore = defineStore('cart', {
     clearCart() {
       this.items = []
       this.tableNumber = ''
-      // ストレージからも削除（会計完了時以外のカートクリア時はテーブル番号は保持）
+      // ストレージからも削除（会計完了時以外の注文書クリア時はテーブル番号は保持）
       // 注意: 会計完了時は clearSession() を使用すること
     },
 

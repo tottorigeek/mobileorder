@@ -20,9 +20,34 @@ export const useMenuStore = defineStore('menu', {
       return state.menus.filter(menu => menu.isAvailable)
     },
 
-    // 番号でメニューを検索
+    // 番号でメニューを検索（ゼロパディング対応）
     getMenuByNumber: (state) => (number: string) => {
-      return state.menus.find(menu => menu.number === number)
+      if (!number) return undefined
+      
+      // まず、入力された値そのままで検索
+      let menu = state.menus.find(menu => menu.number === number)
+      
+      // 見つからない場合、ゼロパディングした値で検索
+      if (!menu) {
+        const numValue = parseInt(number, 10)
+        if (!isNaN(numValue)) {
+          const formattedNumber = numValue.toString().padStart(3, '0')
+          menu = state.menus.find(menu => menu.number === formattedNumber)
+        }
+      }
+      
+      // まだ見つからない場合、数値として比較（"001" と "1" をマッチさせる）
+      if (!menu) {
+        const numValue = parseInt(number, 10)
+        if (!isNaN(numValue)) {
+          menu = state.menus.find(menu => {
+            const menuNum = parseInt(menu.number, 10)
+            return !isNaN(menuNum) && menuNum === numValue
+          })
+        }
+      }
+      
+      return menu
     },
 
     // おすすめメニュー
