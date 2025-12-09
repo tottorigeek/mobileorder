@@ -50,6 +50,55 @@
         </div>
       </div>
 
+      <!-- 売上統計カード -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        <div class="bg-gradient-to-br from-teal-600 to-cyan-700 p-6 rounded-xl shadow-lg text-white">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-medium opacity-90">直近1時間</h3>
+            <svg class="w-6 h-6 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <p class="text-3xl font-bold">¥{{ lastHourSales.toLocaleString() }}</p>
+        </div>
+        <div class="bg-gradient-to-br from-green-600 to-emerald-700 p-6 rounded-xl shadow-lg text-white">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-medium opacity-90">本日の売上</h3>
+            <svg class="w-6 h-6 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <p class="text-3xl font-bold">¥{{ todaySales.toLocaleString() }}</p>
+        </div>
+        <div class="bg-gradient-to-br from-blue-600 to-indigo-700 p-6 rounded-xl shadow-lg text-white">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-medium opacity-90">昨日の売上</h3>
+            <svg class="w-6 h-6 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <p class="text-3xl font-bold">¥{{ yesterdaySales.toLocaleString() }}</p>
+        </div>
+        <div class="bg-gradient-to-br from-purple-600 to-pink-700 p-6 rounded-xl shadow-lg text-white">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-medium opacity-90">7日間の売上</h3>
+            <svg class="w-6 h-6 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+          <p class="text-3xl font-bold">¥{{ sevenDaysSales.toLocaleString() }}</p>
+        </div>
+        <div class="bg-gradient-to-br from-orange-600 to-red-700 p-6 rounded-xl shadow-lg text-white">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-medium opacity-90">30日間の売上</h3>
+            <svg class="w-6 h-6 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+          <p class="text-3xl font-bold">¥{{ thirtyDaysSales.toLocaleString() }}</p>
+        </div>
+      </div>
+
       <!-- 最近の店舗 -->
       <div class="bg-white p-6 rounded-xl shadow-lg">
         <div class="flex items-center justify-between mb-6">
@@ -152,9 +201,11 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth'
 import { useShopStore } from '~/stores/shop'
+import { useOrderStore } from '~/stores/order'
 
 const authStore = useAuthStore()
 const shopStore = useShopStore()
+const orderStore = useOrderStore()
 const { navigationItems } = useCompanyNavigation()
 const { handleLogout } = useAuthCheck()
 
@@ -162,6 +213,81 @@ const totalShops = ref(0)
 const activeShops = ref(0)
 const totalUsers = ref(0)
 const recentShops = ref([])
+
+// 売上計算
+const lastHourSales = computed(() => {
+  const oneHourAgo = new Date()
+  oneHourAgo.setHours(oneHourAgo.getHours() - 1)
+  const now = new Date()
+  
+  return orderStore.orders
+    .filter(order => {
+      const orderDate = new Date(order.createdAt)
+      return orderDate >= oneHourAgo && orderDate <= now && order.status === 'completed'
+    })
+    .reduce((sum, order) => sum + order.totalAmount, 0)
+})
+
+const todaySales = computed(() => {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const tomorrow = new Date(today)
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  
+  return orderStore.orders
+    .filter(order => {
+      const orderDate = new Date(order.createdAt)
+      return orderDate >= today && orderDate < tomorrow && order.status === 'completed'
+    })
+    .reduce((sum, order) => sum + order.totalAmount, 0)
+})
+
+const yesterdaySales = computed(() => {
+  const yesterday = new Date()
+  yesterday.setDate(yesterday.getDate() - 1)
+  yesterday.setHours(0, 0, 0, 0)
+  const today = new Date(yesterday)
+  today.setDate(today.getDate() + 1)
+  
+  return orderStore.orders
+    .filter(order => {
+      const orderDate = new Date(order.createdAt)
+      return orderDate >= yesterday && orderDate < today && order.status === 'completed'
+    })
+    .reduce((sum, order) => sum + order.totalAmount, 0)
+})
+
+const sevenDaysSales = computed(() => {
+  const sevenDaysAgo = new Date()
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+  sevenDaysAgo.setHours(0, 0, 0, 0)
+  const tomorrow = new Date()
+  tomorrow.setHours(0, 0, 0, 0)
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  
+  return orderStore.orders
+    .filter(order => {
+      const orderDate = new Date(order.createdAt)
+      return orderDate >= sevenDaysAgo && orderDate < tomorrow && order.status === 'completed'
+    })
+    .reduce((sum, order) => sum + order.totalAmount, 0)
+})
+
+const thirtyDaysSales = computed(() => {
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+  thirtyDaysAgo.setHours(0, 0, 0, 0)
+  const tomorrow = new Date()
+  tomorrow.setHours(0, 0, 0, 0)
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  
+  return orderStore.orders
+    .filter(order => {
+      const orderDate = new Date(order.createdAt)
+      return orderDate >= thirtyDaysAgo && orderDate < tomorrow && order.status === 'completed'
+    })
+    .reduce((sum, order) => sum + order.totalAmount, 0)
+})
 
 onMounted(async () => {
   // 認証チェック
@@ -177,8 +303,14 @@ onMounted(async () => {
     totalShops.value = shopStore.shops.length
     activeShops.value = shopStore.shops.filter(shop => shop.isActive).length
     recentShops.value = shopStore.shops.slice(0, 5)
+    
+    // 全店舗の注文を取得（売上計算用）
+    const shopIds = shopStore.shops.map(s => s.id)
+    if (shopIds.length > 0) {
+      await orderStore.fetchOrders(undefined, undefined, shopIds)
+    }
   } catch (error) {
-    console.error('店舗情報の取得に失敗しました:', error)
+    console.error('データの取得に失敗しました:', error)
   }
 
   // TODO: ユーザー数の取得（API実装が必要）

@@ -105,6 +105,38 @@
                       オーナー未設定
                     </p>
                   </div>
+                  
+                  <!-- 売上情報 -->
+                  <div class="mt-4 pt-4 border-t border-gray-200">
+                    <h4 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      売上情報
+                    </h4>
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                      <div class="bg-teal-50 p-3 rounded-lg border border-teal-200">
+                        <p class="text-xs text-gray-600 mb-1">直近1時間</p>
+                        <p class="text-lg font-bold text-teal-700">¥{{ getShopSales(shop.id, '1hour').toLocaleString() }}</p>
+                      </div>
+                      <div class="bg-green-50 p-3 rounded-lg border border-green-200">
+                        <p class="text-xs text-gray-600 mb-1">本日</p>
+                        <p class="text-lg font-bold text-green-700">¥{{ getShopSales(shop.id, 'today').toLocaleString() }}</p>
+                      </div>
+                      <div class="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                        <p class="text-xs text-gray-600 mb-1">昨日</p>
+                        <p class="text-lg font-bold text-blue-700">¥{{ getShopSales(shop.id, 'yesterday').toLocaleString() }}</p>
+                      </div>
+                      <div class="bg-purple-50 p-3 rounded-lg border border-purple-200">
+                        <p class="text-xs text-gray-600 mb-1">7日間</p>
+                        <p class="text-lg font-bold text-purple-700">¥{{ getShopSales(shop.id, '7days').toLocaleString() }}</p>
+                      </div>
+                      <div class="bg-orange-50 p-3 rounded-lg border border-orange-200">
+                        <p class="text-xs text-gray-600 mb-1">30日間</p>
+                        <p class="text-lg font-bold text-orange-700">¥{{ getShopSales(shop.id, '30days').toLocaleString() }}</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -254,6 +286,7 @@
 <script setup lang="ts">
 import { useShopStore } from '~/stores/shop'
 import { useAuthStore } from '~/stores/auth'
+import { useOrderStore } from '~/stores/order'
 import type { Shop } from '~/types/multi-shop'
 
 definePageMeta({
@@ -262,6 +295,7 @@ definePageMeta({
 
 const shopStore = useShopStore()
 const authStore = useAuthStore()
+const orderStore = useOrderStore()
 
 const showAddModal = ref(false)
 const isSubmitting = ref(false)
@@ -278,6 +312,59 @@ const newShop = ref({
 
 const { navigationItems } = useCompanyNavigation()
 const { handleLogout } = useAuthCheck()
+
+// 店舗別売上計算
+const getShopSales = (shopId: string, period: '1hour' | 'today' | 'yesterday' | '7days' | '30days'): number => {
+  const shopOrders = orderStore.orders.filter(order => order.shopId === shopId && order.status === 'completed')
+  
+  if (shopOrders.length === 0) return 0
+  
+  const now = new Date()
+  let startDate: Date
+  let endDate: Date = new Date(now)
+  
+  switch (period) {
+    case '1hour':
+      startDate = new Date(now)
+      startDate.setHours(startDate.getHours() - 1)
+      endDate = new Date(now)
+      break
+    case 'today':
+      startDate = new Date(now)
+      startDate.setHours(0, 0, 0, 0)
+      endDate = new Date(now)
+      endDate.setHours(23, 59, 59, 999)
+      break
+    case 'yesterday':
+      startDate = new Date(now)
+      startDate.setDate(startDate.getDate() - 1)
+      startDate.setHours(0, 0, 0, 0)
+      endDate = new Date(startDate)
+      endDate.setHours(23, 59, 59, 999)
+      break
+    case '7days':
+      startDate = new Date(now)
+      startDate.setDate(startDate.getDate() - 7)
+      startDate.setHours(0, 0, 0, 0)
+      endDate = new Date(now)
+      endDate.setHours(23, 59, 59, 999)
+      break
+    case '30days':
+      startDate = new Date(now)
+      startDate.setDate(startDate.getDate() - 30)
+      startDate.setHours(0, 0, 0, 0)
+      endDate = new Date(now)
+      endDate.setHours(23, 59, 59, 999)
+      break
+  }
+  
+  return shopOrders
+    .filter(order => {
+      const orderDate = new Date(order.createdAt)
+      return orderDate >= startDate && orderDate <= endDate
+    })
+    .reduce((sum, order) => sum + order.totalAmount, 0)
+}
 
 const handleAddShop = async () => {
   isSubmitting.value = true
@@ -345,7 +432,18 @@ onMounted(async () => {
     return
   }
 
+  // 店舗一覧を取得
   await shopStore.fetchShops()
+  
+  // 全店舗の注文を取得（売上計算用）
+  try {
+    const shopIds = shopStore.shops.map(s => s.id)
+    if (shopIds.length > 0) {
+      await orderStore.fetchOrders(undefined, undefined, shopIds)
+    }
+  } catch (error) {
+    console.error('注文データの取得に失敗しました:', error)
+  }
 })
 </script>
 
