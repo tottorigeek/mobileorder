@@ -327,7 +327,7 @@ onMounted(async () => {
   if (shopStore.currentShop) {
     await Promise.all([
       menuStore.fetchMenus(shopStore.currentShop.code),
-      categoryStore.fetchCategories(shopStore.currentShop.id)
+      categoryStore.fetchCategoriesByShopCode(shopStore.currentShop.code)
     ])
   }
 })

@@ -104,20 +104,23 @@ export const useVisitorStore = defineStore('visitor', {
       }
     },
 
-    async fetchVisitor(visitorId: string) {
+    async fetchVisitor(visitorId: string, requireAuth: boolean = false) {
       this.isLoading = true
       try {
         const config = useRuntimeConfig()
         const apiBase = config.public.apiBase
         
-        // 認証トークンを取得（オプション）
-        const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
-        
         const headers: Record<string, string> = {
           'Accept': 'application/json'
         }
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`
+        
+        // requireAuthがtrueの場合のみ認証トークンを送信
+        // 顧客側から呼び出す場合は認証トークンを送信しない（403エラーを防ぐため）
+        if (requireAuth) {
+          const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+          if (token) {
+            headers['Authorization'] = `Bearer ${token}`
+          }
         }
         
         const visitor = await $fetch<Visitor>(`${apiBase}/visitors/${visitorId}`, { headers })

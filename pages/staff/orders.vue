@@ -6,6 +6,18 @@
         :navigation-items="navigationItems"
         active-color="blue"
       />
+      <!-- 新規注文ボタン -->
+      <div class="flex justify-end">
+        <button
+          @click="goToNewOrder"
+          class="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl hover:from-purple-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 touch-target font-semibold flex items-center gap-2"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          新規注文
+        </button>
+      </div>
       <!-- ステータスフィルター -->
       <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
         <button
@@ -124,6 +136,7 @@ import { useShopStore } from '~/stores/shop'
 import type { OrderStatus } from '~/types'
 
 const { navigationItems } = useShopNavigation()
+const router = useRouter()
 
 const orderStore = useOrderStore()
 const selectedStatus = ref<OrderStatus | 'all'>('all')
@@ -174,6 +187,10 @@ const updateStatus = async (orderId: string, status: OrderStatus) => {
   await orderStore.updateOrderStatus(orderId, status)
   // 更新後に再取得
   await orderStore.fetchOrders(selectedStatus.value === 'all' ? undefined : selectedStatus.value as OrderStatus)
+}
+
+const goToNewOrder = () => {
+  router.push('/staff/orders/new')
 }
 
 const authStore = useAuthStore()

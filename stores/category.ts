@@ -52,15 +52,20 @@ export const useCategoryStore = defineStore('category', {
     },
 
     async fetchCategoriesByShopCode(shopCode: string) {
+      this.isLoading = true
       try {
         const config = useRuntimeConfig()
         const apiBase = config.public.apiBase
         
         const categories = await $fetch<ShopCategory[]>(`${apiBase}/categories/shop/${encodeURIComponent(shopCode)}`)
+        this.categories = categories || []
         return categories || []
       } catch (error) {
         console.error('店舗コードからのカテゴリ一覧取得に失敗しました:', error)
+        this.categories = []
         throw error
+      } finally {
+        this.isLoading = false
       }
     },
 
