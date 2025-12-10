@@ -1,6 +1,12 @@
 -- サンプルデータ（ダミーデータ）
 -- ユーザー5人、店舗8店舗、メニュー100点
 -- 既存のスキーマを実行した後に実行してください
+--
+-- 【重要】sekiユーザーについて
+-- このスクリプトは既存のsekiユーザーを保護します。
+-- sekiユーザーが既に存在する場合、削除・再作成は行わず、既存のデータ（パスワード、設定など）をそのまま保持します。
+-- sekiユーザーが存在しない場合のみ、新規作成されます。
+-- 既存のsekiユーザーのパスワードや設定を変更したい場合は、該当部分のコメントアウトを解除してください。
 
 SET NAMES utf8mb4;
 
@@ -95,23 +101,37 @@ ON DUPLICATE KEY UPDATE
 SET @user5_id = (SELECT id FROM users WHERE username = 'owner_premium' LIMIT 1);
 
 -- ユーザー6: seki（管理者、全店舗にアクセス可能）
--- 既存のsekiユーザーを削除（存在する場合）
+-- 【重要】sekiユーザーは既存のデータを保護するため、削除・再作成を行いません
+-- 既存のsekiユーザーが存在する場合はそのまま使用し、存在しない場合のみ作成します
+
+-- 既存のsekiユーザーIDを取得
 SET @existing_seki_id = (SELECT id FROM `users` WHERE `username` = 'seki' LIMIT 1);
-DELETE FROM `shop_users` WHERE `user_id` = @existing_seki_id;
-DELETE FROM `users` WHERE `username` = 'seki';
 
--- sekiユーザーを追加
+-- sekiユーザーが存在しない場合のみ作成
+-- 注意: 既存のsekiユーザーがある場合は、パスワードや設定を変更しません
 INSERT INTO `users` (`shop_id`, `username`, `password_hash`, `name`, `email`, `role`, `is_active`) 
-VALUES (@shop1_id, 'seki', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '関 力仁', 'seki_r@yamata.co.jp', 'owner', 1);
-SET @seki_id = LAST_INSERT_ID();
+SELECT @shop1_id, 'seki', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '関 力仁', 'seki_r@yamata.co.jp', 'owner', 1
+WHERE NOT EXISTS (SELECT 1 FROM `users` WHERE `username` = 'seki');
 
--- sekiユーザーのパスワードと状態を確実に設定
-UPDATE `users` 
-SET `password_hash` = '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
-    `is_active` = 1,
-    `shop_id` = COALESCE(`shop_id`, @shop1_id),
-    `updated_at` = NOW()
-WHERE `username` = 'seki';
+-- sekiユーザーIDを設定（既存の場合は既存ID、新規作成の場合はLAST_INSERT_ID）
+SET @seki_id = COALESCE(@existing_seki_id, LAST_INSERT_ID());
+
+-- 既存のsekiユーザーが存在しない場合のみ、IDを再取得
+SET @seki_id = COALESCE(@seki_id, (SELECT id FROM `users` WHERE `username` = 'seki' LIMIT 1));
+
+-- 【コメントアウト】既存のsekiユーザーを削除する処理（sekiユーザー保護のため無効化）
+-- SET @existing_seki_id = (SELECT id FROM `users` WHERE `username` = 'seki' LIMIT 1);
+-- DELETE FROM `shop_users` WHERE `user_id` = @existing_seki_id;
+-- DELETE FROM `users` WHERE `username` = 'seki';
+
+-- 【コメントアウト】sekiユーザーのパスワードと状態を強制的に設定する処理（既存データ保護のため無効化）
+-- 注意: 既存のsekiユーザーのパスワードや設定を変更したくない場合は、この処理をコメントアウトしたままにしてください
+-- UPDATE `users` 
+-- SET `password_hash` = '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+--     `is_active` = 1,
+--     `shop_id` = COALESCE(`shop_id`, @shop1_id),
+--     `updated_at` = NOW()
+-- WHERE `username` = 'seki';
 
 -- shop_usersテーブルが存在する場合は、複数店舗の関連を追加
 -- サービス管理者は全店舗にアクセス可能（shop_usersテーブルに全店舗を追加）
@@ -126,6 +146,8 @@ INSERT IGNORE INTO `shop_users` (`shop_id`, `user_id`, `role`, `is_primary`) VAL
 (@shop8_id, @admin_id, 'owner', 0);
 
 -- sekiユーザーは全店舗にアクセス可能（shop_usersテーブルに全店舗を追加）
+-- 注意: INSERT IGNOREを使用しているため、既存のshop_users関連データは保護されます
+-- 既存のsekiユーザーが存在する場合も、shop_usersへの追加は既存データを上書きしません
 INSERT IGNORE INTO `shop_users` (`shop_id`, `user_id`, `role`, `is_primary`) VALUES
 (@shop1_id, @seki_id, 'owner', 1),
 (@shop2_id, @seki_id, 'owner', 0),

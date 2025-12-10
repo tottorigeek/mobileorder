@@ -6,15 +6,11 @@
 
 ### スキーマファイル
 
-- **`schema-multi-shop.sql`** - 複数店舗対応スキーマ（推奨）
-- **`schema-multi-shop-owner.sql`** - 複数店舗オーナー対応の追加スキーマ（`shop_users`テーブル追加）
-
-### テーブル作成ファイル
-
-- **`create-error-logs-table.sql`** - エラーログテーブル作成
-- **`create-shop-categories-table.sql`** - 店舗カテゴリテーブル作成
-- **`create-shop-tables.sql`** - 店舗テーブル（座席）テーブル作成
-- **`create-visitor-table.sql`** - 来店者テーブル作成
+- **`schema-multi-shop.sql`** - 完全統合スキーマ（**推奨・必須**）
+  - 基本テーブル: shops, users, menus, orders, order_items, payments
+  - 追加テーブル: shop_tables, visitors, shop_categories, error_logs, password_reset_tokens, shop_users
+  - すべてのテーブル定義が1つのファイルに統合されています
+  - **`shop_users`テーブルも含まれています**（複数店舗オーナー対応）
 
 ### サンプルデータ
 
@@ -38,19 +34,11 @@
 ### 1. 新規セットアップ（推奨）
 
 ```sql
--- 1. 複数店舗対応スキーマを実行
+-- 1. 完全統合スキーマを実行（すべてのテーブルが作成されます）
+-- shop_usersテーブルも含まれています）
 SOURCE schema-multi-shop.sql;
 
--- 2. 複数店舗オーナー対応スキーマを実行（オプション）
-SOURCE schema-multi-shop-owner.sql;
-
--- 3. 追加テーブルを作成（必要に応じて）
-SOURCE create-error-logs-table.sql;
-SOURCE create-shop-categories-table.sql;
-SOURCE create-shop-tables.sql;
-SOURCE create-visitor-table.sql;
-
--- 4. サンプルデータを挿入（すべてのデータが含まれています）
+-- 2. サンプルデータを挿入（すべてのデータが含まれています）
 SOURCE sample-data.sql;
 ```
 

@@ -1,5 +1,13 @@
--- 複数店舗管理対応 データベーススキーマ
+-- 複数店舗管理対応 データベーススキーマ（完全統合版）
 -- エックスサーバーのphpMyAdminで実行してください
+--
+-- このファイルには以下のテーブル定義が含まれています：
+-- - 基本テーブル: shops, users, menus, orders, order_items, payments
+-- - 追加テーブル: shop_tables, visitors, shop_categories, error_logs, password_reset_tokens, shop_users
+-- 
+-- 注意: このファイルを実行すると、すべてのテーブルが作成されます。
+-- 既存のテーブルがある場合は、CREATE TABLE IF NOT EXISTSによりスキップされます。
+-- create-table系のSQLファイル（create-shop-tables.sql等）は、このファイルに統合されています。
 
 -- データベースの文字コード設定
 SET NAMES utf8mb4;
@@ -117,7 +125,167 @@ CREATE TABLE IF NOT EXISTS `payments` (
   CONSTRAINT `fk_payments_order` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='会計テーブル';
 
+-- ============================================
+-- 追加テーブル（create-table系から統合）
+-- ============================================
+
+-- 店舗テーブル（座席）管理テーブル
+-- QRコードで店舗とテーブルを一意に特定できるようにする
+CREATE TABLE IF NOT EXISTS `shop_tables` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `shop_id` INT(11) NOT NULL COMMENT '店舗ID',
+  `table_number` VARCHAR(20) NOT NULL COMMENT 'テーブル番号（例: 1, 2, A1, B2）',
+  `name` VARCHAR(255) COMMENT 'テーブル名（オプション）',
+  `capacity` INT(11) DEFAULT 4 COMMENT '定員数',
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '有効フラグ',
+  `visitor_id` INT(11) COMMENT '現在の来店者ID',
+  `status` ENUM('available', 'occupied', 'checkout_pending', 'set_pending') NOT NULL DEFAULT 'available' COMMENT 'テーブルステータス',
+  `qr_code_url` VARCHAR(500) COMMENT 'QRコードURL（自動生成）',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `shop_table_number` (`shop_id`, `table_number`),
+  KEY `shop_id` (`shop_id`),
+  KEY `is_active` (`is_active`),
+  KEY `visitor_id` (`visitor_id`),
+  KEY `idx_shop_tables_shop_active` (`shop_id`, `is_active`),
+  KEY `idx_shop_tables_status` (`shop_id`, `status`),
+  CONSTRAINT `fk_shop_tables_shop` FOREIGN KEY (`shop_id`) REFERENCES `shops` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='店舗テーブル（座席）管理';
+
+-- 来店情報管理テーブル
+CREATE TABLE IF NOT EXISTS `visitors` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `shop_id` INT(11) NOT NULL COMMENT '店舗ID',
+  `table_id` INT(11) COMMENT 'テーブルID（着座時に設定）',
+  `table_number` VARCHAR(20) NOT NULL COMMENT 'テーブル番号',
+  `number_of_guests` INT(11) NOT NULL COMMENT '来店人数',
+  `arrival_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '来店時間',
+  `checkout_time` DATETIME COMMENT '会計時刻',
+  `total_amount` INT(11) DEFAULT 0 COMMENT '合計額',
+  `payment_method` ENUM('cash', 'credit', 'paypay') COMMENT '清算方法',
+  `payment_status` ENUM('pending', 'completed') NOT NULL DEFAULT 'pending' COMMENT '支払いステータス',
+  `is_set_completed` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'テーブルセット完了フラグ',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `shop_id` (`shop_id`),
+  KEY `table_id` (`table_id`),
+  KEY `table_number` (`table_number`),
+  KEY `payment_status` (`payment_status`),
+  KEY `is_set_completed` (`is_set_completed`),
+  KEY `idx_visitors_shop_status` (`shop_id`, `payment_status`),
+  KEY `idx_visitors_table_status` (`table_id`, `payment_status`, `is_set_completed`),
+  CONSTRAINT `fk_visitors_shop` FOREIGN KEY (`shop_id`) REFERENCES `shops` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_visitors_table` FOREIGN KEY (`table_id`) REFERENCES `shop_tables` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='来店情報管理テーブル';
+
+-- 【コメントアウト】既存のshop_tablesテーブルにvisitor_idとstatusカラムを追加する処理
+-- 注意: このSQLファイルのshop_tablesテーブル定義には既にvisitor_idとstatusカラムが含まれています
+-- 既存のデータベースで、shop_tablesテーブルにvisitor_idとstatusカラムがない場合のみ、以下のコメントを解除して実行してください
+-- 
+-- ALTER TABLE `shop_tables` 
+-- ADD COLUMN `visitor_id` INT(11) COMMENT '現在の来店者ID' AFTER `is_active`,
+-- ADD COLUMN `status` ENUM('available', 'occupied', 'checkout_pending', 'set_pending') NOT NULL DEFAULT 'available' COMMENT 'テーブルステータス' AFTER `visitor_id`,
+-- ADD KEY `visitor_id` (`visitor_id`),
+-- ADD CONSTRAINT `fk_shop_tables_visitor` FOREIGN KEY (`visitor_id`) REFERENCES `visitors` (`id`) ON DELETE SET NULL;
+
+-- 店舗独自カテゴリテーブル
+-- 各店舗が独自のメニュー分類を設定できるようにする
+CREATE TABLE IF NOT EXISTS `shop_categories` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `shop_id` INT(11) NOT NULL COMMENT '店舗ID',
+  `code` VARCHAR(50) NOT NULL COMMENT 'カテゴリコード（店舗内で一意）',
+  `name` VARCHAR(255) NOT NULL COMMENT 'カテゴリ名',
+  `display_order` INT(11) DEFAULT 0 COMMENT '表示順',
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '有効フラグ',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `shop_code` (`shop_id`, `code`),
+  KEY `shop_id` (`shop_id`),
+  KEY `is_active` (`is_active`),
+  KEY `idx_shop_categories_shop_active` (`shop_id`, `is_active`),
+  CONSTRAINT `fk_shop_categories_shop` FOREIGN KEY (`shop_id`) REFERENCES `shops` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='店舗独自カテゴリ';
+
+-- エラーログテーブル（オプション）
+-- エラーログ機能を使用する場合に作成されます
+CREATE TABLE IF NOT EXISTS `error_logs` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `level` ENUM('error', 'warning', 'info', 'debug') NOT NULL DEFAULT 'error' COMMENT 'エラーレベル',
+  `environment` VARCHAR(50) COMMENT '環境（development, production等）',
+  `message` TEXT NOT NULL COMMENT 'エラーメッセージ',
+  `file` VARCHAR(500) COMMENT 'ファイルパス',
+  `line` INT(11) COMMENT '行番号',
+  `trace` JSON COMMENT 'スタックトレース（JSON形式）',
+  `user_id` INT(11) COMMENT 'ユーザーID',
+  `shop_id` INT(11) COMMENT '店舗ID',
+  `request_method` VARCHAR(10) COMMENT 'HTTPメソッド',
+  `request_uri` VARCHAR(500) COMMENT 'リクエストURI',
+  `ip_address` VARCHAR(45) COMMENT 'IPアドレス',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `level` (`level`),
+  KEY `created_at` (`created_at`),
+  KEY `user_id` (`user_id`),
+  KEY `shop_id` (`shop_id`),
+  CONSTRAINT `fk_error_logs_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_error_logs_shop` FOREIGN KEY (`shop_id`) REFERENCES `shops` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='エラーログテーブル';
+
+-- パスワードリセットトークンテーブル
+-- パスワードリセット用のトークンを管理するテーブル
+CREATE TABLE IF NOT EXISTS `password_reset_tokens` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `user_id` INT(11) NOT NULL COMMENT 'ユーザーID',
+  `token` VARCHAR(255) NOT NULL COMMENT 'リセットトークン',
+  `expires_at` DATETIME NOT NULL COMMENT '有効期限',
+  `used_at` DATETIME NULL COMMENT '使用日時',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `token` (`token`),
+  KEY `user_id` (`user_id`),
+  KEY `expires_at` (`expires_at`),
+  CONSTRAINT `fk_password_reset_tokens_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='パスワードリセットトークンテーブル';
+
+-- 店舗ユーザー関連テーブル（複数店舗オーナー対応）
+-- 1人のユーザーが複数の店舗に所属できるようにする多対多の関係テーブル
+CREATE TABLE IF NOT EXISTS `shop_users` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `shop_id` INT(11) NOT NULL COMMENT '店舗ID',
+  `user_id` INT(11) NOT NULL COMMENT 'ユーザーID',
+  `role` ENUM('owner', 'manager', 'staff') NOT NULL DEFAULT 'staff' COMMENT '店舗での役割',
+  `is_primary` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '主店舗フラグ',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `shop_user` (`shop_id`, `user_id`),
+  KEY `shop_id` (`shop_id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `fk_shop_users_shop` FOREIGN KEY (`shop_id`) REFERENCES `shops` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_shop_users_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='店舗ユーザー関連テーブル';
+
+-- 【コメントアウト】既存のusersテーブルのshop_idをNULL許可に変更（複数店舗対応）
+-- 注意: 既存データがある場合は、先にshop_usersテーブルに移行してから実行してください
+-- この変更により、usersテーブルのshop_idは主店舗IDとして扱われ、複数店舗への所属はshop_usersテーブルで管理されます
+-- 
+-- ALTER TABLE `users` MODIFY COLUMN `shop_id` INT(11) NULL COMMENT '主店舗ID（オプション）';
+
+-- 【コメントアウト】既存のユーザーをshop_usersテーブルに移行する処理
+-- 注意: 既存のusersテーブルのデータをshop_usersテーブルにコピーする場合に使用します
+-- このSQLは既存のusersテーブルのshop_idとroleをshop_usersテーブルに移行します
+-- 
+-- INSERT IGNORE INTO `shop_users` (`shop_id`, `user_id`, `role`, `is_primary`)
+-- SELECT shop_id, id, role, 1
+-- FROM users
+-- WHERE shop_id IS NOT NULL;
+
+-- ============================================
 -- サンプルデータの挿入
+-- ============================================
 -- 店舗1
 INSERT INTO `shops` (`code`, `name`, `description`, `address`, `phone`, `max_tables`) VALUES
 ('shop001', 'レストランA', '美味しいイタリアン', '東京都渋谷区1-1-1', '03-1234-5678', 20);
