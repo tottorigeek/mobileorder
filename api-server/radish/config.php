@@ -763,19 +763,32 @@ function sendEmailViaSMTP($to, $subject, $message, $from, $fromName = null) {
     $smtpUser = getEnvValue('MAIL_SMTP_USER', '');
     $smtpPass = getEnvValue('MAIL_SMTP_PASS', '');
     $smtpAuth = getEnvValue('MAIL_SMTP_AUTH', 'true') === 'true';
+    $debugMode = defined('DEBUG_MODE') && DEBUG_MODE;
+    
+    $socket = null;
     
     try {
         // SMTP接続
         $host = ($smtpSecure === 'ssl') ? 'ssl://' . $smtpHost : $smtpHost;
+        
+        if ($debugMode) {
+            error_log("SMTP: Connecting to {$host}:{$smtpPort}");
+        }
+        
         $socket = @fsockopen($host, $smtpPort, $errno, $errstr, 30);
         
         if (!$socket) {
-            error_log("SMTP connection failed: {$errstr} ({$errno})");
+            $errorMsg = "SMTP connection failed to {$host}:{$smtpPort} - {$errstr} ({$errno})";
+            error_log($errorMsg);
             return false;
         }
         
+        if ($debugMode) {
+            error_log("SMTP: Connection established");
+        }
+        
         // レスポンスを読み取る関数
-        $readResponse = function($socket, $expectedCode = null) {
+        $readResponse = function($socket, $expectedCode = null) use ($debugMode) {
             $response = '';
             while ($line = fgets($socket, 515)) {
                 $response .= $line;
@@ -783,24 +796,50 @@ function sendEmailViaSMTP($to, $subject, $message, $from, $fromName = null) {
                     break;
                 }
             }
+            
+            if ($debugMode) {
+                error_log("SMTP Response: " . trim($response));
+            }
+            
             if ($expectedCode !== null && strpos($response, $expectedCode) !== 0) {
+                if ($debugMode) {
+                    error_log("SMTP Error: Expected {$expectedCode}, got: " . trim($response));
+                }
                 return false;
             }
             return $response;
         };
         
         // SMTPコマンドを送信する関数
-        $sendCommand = function($socket, $command, $expectedCode) use ($readResponse) {
+        $sendCommand = function($socket, $command, $expectedCode, $hideSensitive = false) use ($readResponse, $debugMode) {
+            if ($debugMode && !$hideSensitive) {
+                error_log("SMTP Command: {$command}");
+            } elseif ($debugMode && $hideSensitive) {
+                error_log("SMTP Command: [AUTH credentials hidden]");
+            }
+            
             fputs($socket, $command . "\r\n");
-            return $readResponse($socket, $expectedCode);
+            $response = $readResponse($socket, $expectedCode);
+            
+            if (!$response) {
+                error_log("SMTP Command failed: {$command} - Expected {$expectedCode}");
+            }
+            
+            return $response !== false;
         };
         
         // 初期応答を読み取る
-        $readResponse($socket, '220');
+        $initialResponse = $readResponse($socket, '220');
+        if (!$initialResponse) {
+            error_log("SMTP: Failed to get initial response from server");
+            fclose($socket);
+            return false;
+        }
         
         // EHLOコマンド
         $hostname = $_SERVER['SERVER_NAME'] ?? 'localhost';
         if (!$sendCommand($socket, "EHLO {$hostname}", '250')) {
+            error_log("SMTP: EHLO command failed");
             fclose($socket);
             return false;
         }
@@ -808,18 +847,31 @@ function sendEmailViaSMTP($to, $subject, $message, $from, $fromName = null) {
         // TLS開始（tlsの場合）
         if ($smtpSecure === 'tls') {
             if (!$sendCommand($socket, 'STARTTLS', '220')) {
+                error_log("SMTP: STARTTLS command failed");
                 fclose($socket);
                 return false;
             }
             
             // TLS暗号化を開始
-            if (!stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
+            if ($debugMode) {
+                error_log("SMTP: Enabling TLS encryption");
+            }
+            
+            $cryptoResult = @stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
+            if (!$cryptoResult) {
+                $cryptoError = error_get_last();
+                error_log("SMTP: TLS encryption failed - " . ($cryptoError ? $cryptoError['message'] : 'Unknown error'));
                 fclose($socket);
                 return false;
             }
             
+            if ($debugMode) {
+                error_log("SMTP: TLS encryption enabled");
+            }
+            
             // EHLOを再送信
             if (!$sendCommand($socket, "EHLO {$hostname}", '250')) {
+                error_log("SMTP: EHLO command failed after TLS");
                 fclose($socket);
                 return false;
             }
@@ -827,37 +879,51 @@ function sendEmailViaSMTP($to, $subject, $message, $from, $fromName = null) {
         
         // 認証（必要な場合）
         if ($smtpAuth && !empty($smtpUser) && !empty($smtpPass)) {
+            if ($debugMode) {
+                error_log("SMTP: Starting authentication");
+            }
+            
             if (!$sendCommand($socket, 'AUTH LOGIN', '334')) {
+                error_log("SMTP: AUTH LOGIN command failed");
                 fclose($socket);
                 return false;
             }
             
-            if (!$sendCommand($socket, base64_encode($smtpUser), '334')) {
+            if (!$sendCommand($socket, base64_encode($smtpUser), '334', true)) {
+                error_log("SMTP: Username authentication failed");
                 fclose($socket);
                 return false;
             }
             
-            if (!$sendCommand($socket, base64_encode($smtpPass), '235')) {
+            if (!$sendCommand($socket, base64_encode($smtpPass), '235', true)) {
+                error_log("SMTP: Password authentication failed - Check username and password");
                 fclose($socket);
                 return false;
+            }
+            
+            if ($debugMode) {
+                error_log("SMTP: Authentication successful");
             }
         }
         
         // 送信元を設定
         $fromHeader = $fromName ? "{$fromName} <{$from}>" : $from;
         if (!$sendCommand($socket, "MAIL FROM: <{$from}>", '250')) {
+            error_log("SMTP: MAIL FROM command failed for {$from}");
             fclose($socket);
             return false;
         }
         
         // 送信先を設定
         if (!$sendCommand($socket, "RCPT TO: <{$to}>", '250')) {
+            error_log("SMTP: RCPT TO command failed for {$to}");
             fclose($socket);
             return false;
         }
         
         // データ送信開始
         if (!$sendCommand($socket, 'DATA', '354')) {
+            error_log("SMTP: DATA command failed");
             fclose($socket);
             return false;
         }
@@ -874,23 +940,36 @@ function sendEmailViaSMTP($to, $subject, $message, $from, $fromName = null) {
         $emailData .= chunk_split(base64_encode($message));
         $emailData .= "\r\n.\r\n";
         
+        if ($debugMode) {
+            error_log("SMTP: Sending email data (" . strlen($emailData) . " bytes)");
+        }
+        
         fputs($socket, $emailData);
         
         // 送信完了確認
-        if (!$readResponse($socket, '250')) {
+        $finalResponse = $readResponse($socket, '250');
+        if (!$finalResponse) {
+            error_log("SMTP: Email data send failed - Server did not accept the email");
             fclose($socket);
             return false;
+        }
+        
+        if ($debugMode) {
+            error_log("SMTP: Email accepted by server");
         }
         
         // QUITコマンド
         $sendCommand($socket, 'QUIT', '221');
         fclose($socket);
         
+        error_log("SMTP: Email sent successfully to {$to}");
         return true;
         
     } catch (Exception $e) {
-        error_log("SMTP send failed: " . $e->getMessage());
-        if (isset($socket)) {
+        $errorMsg = "SMTP send failed: " . $e->getMessage();
+        error_log($errorMsg);
+        error_log("SMTP Exception trace: " . $e->getTraceAsString());
+        if ($socket) {
             @fclose($socket);
         }
         return false;
@@ -928,10 +1007,21 @@ function sendEmail($to, $subject, $message, $from = null) {
     
     if ($useSMTP) {
         // SMTP経由で送信
-        $result = sendEmailViaSMTP($to, $subject, $message, $from, $fromName);
-        if (!$result && defined('DEBUG_MODE') && DEBUG_MODE) {
-            error_log("SMTP email send failed to: {$to}");
+        if (defined('DEBUG_MODE') && DEBUG_MODE) {
+            error_log("Using SMTP to send email to: {$to}");
+            error_log("  SMTP Host: " . getEnvValue('MAIL_SMTP_HOST', 'not set'));
+            error_log("  SMTP Port: " . getEnvValue('MAIL_SMTP_PORT', 'not set'));
+            error_log("  SMTP Secure: " . getEnvValue('MAIL_SMTP_SECURE', 'not set'));
         }
+        
+        $result = sendEmailViaSMTP($to, $subject, $message, $from, $fromName);
+        
+        if (!$result) {
+            error_log("SMTP email send failed to: {$to}");
+            error_log("  Check SMTP settings in .env file");
+            error_log("  Verify SMTP credentials and server accessibility");
+        }
+        
         return $result;
     } else {
         // PHPのmail()関数を使用
@@ -946,20 +1036,38 @@ function sendEmail($to, $subject, $message, $from = null) {
         $headersString = implode("\r\n", $headers);
         
         // メール送信
-        $result = mail($to, $subject, $message, $headersString);
+        // 注意: mail()関数は成功を返しても、実際にはメールが送信されない場合があります
+        // 特に共有サーバー環境では、sendmail_pathが正しく設定されていない可能性があります
+        $result = @mail($to, $subject, $message, $headersString);
+        
+        // エラー情報を取得
+        $lastError = error_get_last();
         
         if (!$result) {
-            error_log("Failed to send email via mail() to: {$to}");
+            $errorMsg = "Failed to send email via mail() to: {$to}";
+            if ($lastError && $lastError['message']) {
+                $errorMsg .= " - Error: " . $lastError['message'];
+            }
+            error_log($errorMsg);
             if (defined('DEBUG_MODE') && DEBUG_MODE) {
                 error_log("  From: {$from}");
                 error_log("  Subject: {$subject}");
                 error_log("  Headers: {$headersString}");
+                error_log("  sendmail_path: " . ini_get('sendmail_path'));
+                error_log("  SMTP: " . ini_get('SMTP'));
             }
             return false;
         }
         
+        // 成功した場合でも、警告を記録
+        if ($lastError && strpos($lastError['message'], 'mail') !== false) {
+            error_log("Warning: mail() returned true but error occurred: " . $lastError['message']);
+        }
+        
         if (defined('DEBUG_MODE') && DEBUG_MODE) {
             error_log("Email sent successfully via mail() to: {$to}");
+            error_log("  Note: mail() returned true, but actual delivery depends on server configuration");
+            error_log("  sendmail_path: " . ini_get('sendmail_path'));
         }
         
         return true;

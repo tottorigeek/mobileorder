@@ -297,6 +297,13 @@ function forgotPassword() {
         // メール送信のログを記録
         if ($emailSent) {
             error_log("Password reset email sent successfully to: {$user['email']} (username: {$user['username']})");
+            error_log("  Reset URL: " . getEnvValue('FRONTEND_BASE_URL', 'https://mameq.xsrv.jp') . $resetPath . '?token=' . urlencode($token));
+            
+            // mail()関数を使用している場合の警告
+            if (getEnvValue('MAIL_USE_SMTP', 'false') !== 'true') {
+                error_log("  WARNING: Using PHP mail() function. Email may not be delivered on shared hosting.");
+                error_log("  Recommendation: Configure SMTP settings in .env file.");
+            }
         } else {
             // メール送信に失敗した場合でも、トークンは作成済みなので成功として返す
             // （実際のメール送信エラーはログに記録される）
@@ -307,6 +314,8 @@ function forgotPassword() {
                 error_log("Mail configuration check:");
                 error_log("  MAIL_USE_SMTP: " . getEnvValue('MAIL_USE_SMTP', 'false'));
                 error_log("  MAIL_FROM: " . getEnvValue('MAIL_FROM', 'not set'));
+                error_log("  sendmail_path: " . ini_get('sendmail_path'));
+                error_log("  SMTP: " . ini_get('SMTP'));
                 if (getEnvValue('MAIL_USE_SMTP', 'false') === 'true') {
                     error_log("  MAIL_SMTP_HOST: " . getEnvValue('MAIL_SMTP_HOST', 'not set'));
                     error_log("  MAIL_SMTP_PORT: " . getEnvValue('MAIL_SMTP_PORT', 'not set'));
