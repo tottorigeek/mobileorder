@@ -2,14 +2,79 @@
 /**
  * データベース設定ファイル
  * エックスサーバーのデータベース情報を設定してください
+ * 
+ * 設定は.envファイルから読み込みます。
+ * .envファイルが存在しない場合は、デフォルト値が使用されます。
  */
 
-// データベース接続情報
-define('DB_HOST', 'localhost'); // エックスサーバーの場合は通常 'localhost'
-define('DB_NAME', 'mameq_radish'); // データベース名
-define('DB_USER', 'mameq_radish'); // データベースユーザー名
-define('DB_PASS', 'iloveradish1208'); // データベースパスワード
-define('DB_CHARSET', 'utf8mb4');
+// .envファイルのパス
+$envFile = __DIR__ . '/.env';
+
+/**
+ * .envファイルを読み込む関数
+ * 
+ * @param string $filePath .envファイルのパス
+ * @return array 環境変数の配列
+ */
+function loadEnvFile($filePath) {
+    $env = [];
+    
+    if (!file_exists($filePath)) {
+        return $env;
+    }
+    
+    $lines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    
+    foreach ($lines as $line) {
+        // コメント行をスキップ
+        if (strpos(trim($line), '#') === 0) {
+            continue;
+        }
+        
+        // KEY=VALUE形式をパース
+        if (strpos($line, '=') !== false) {
+            list($key, $value) = explode('=', $line, 2);
+            $key = trim($key);
+            $value = trim($value);
+            
+            // クォートを削除
+            $value = trim($value, '"\'');
+            
+            $env[$key] = $value;
+        }
+    }
+    
+    return $env;
+}
+
+/**
+ * 環境変数を取得（.envファイルまたはシステム環境変数から）
+ * 
+ * @param string $key 環境変数のキー
+ * @param mixed $default デフォルト値
+ * @return mixed 環境変数の値
+ */
+function getEnvValue($key, $default = null) {
+    // まずシステム環境変数をチェック
+    $value = getenv($key);
+    if ($value !== false) {
+        return $value;
+    }
+    
+    // .envファイルを読み込む（一度だけ）
+    static $envCache = null;
+    if ($envCache === null) {
+        global $envFile;
+        $envCache = loadEnvFile($envFile);
+    }
+    
+    // .envファイルから取得
+    if (isset($envCache[$key])) {
+        return $envCache[$key];
+    }
+    
+    return $default;
+}
 
 // タイムゾーン設定
 date_default_timezone_set('Asia/Tokyo');
@@ -19,19 +84,32 @@ error_reporting(E_ALL);
 ini_set('display_errors', 0); // 本番環境では0に設定
 
 // 環境設定（development/production）
-// 本番環境では 'production' に設定してください
-define('ENVIRONMENT', 'development'); // 'development' または 'production'
+// .envファイルから読み込む、デフォルトはdevelopment
+$environment = getEnvValue('ENVIRONMENT', 'development');
+define('ENVIRONMENT', $environment);
 
 // デバッグモード設定（本番環境ではfalseに設定）
 // 開発環境ではtrue、本番環境ではfalseに設定
 define('DEBUG_MODE', ENVIRONMENT === 'development');
 
-// JWT設定
+// データベース接続情報（.envファイルから読み込む）
+define('DB_HOST', getEnvValue('DB_HOST', 'localhost'));
+define('DB_NAME', getEnvValue('DB_NAME', 'mameq_radish'));
+define('DB_USER', getEnvValue('DB_USER', 'mameq_radish'));
+define('DB_PASS', getEnvValue('DB_PASS', ''));
+define('DB_CHARSET', getEnvValue('DB_CHARSET', 'utf8mb4'));
+
+// JWT設定（.envファイルから読み込む）
 // 注意: 本番環境では必ず強力な秘密鍵に変更してください
 // この秘密鍵は以下のコマンドで生成できます: openssl rand -base64 32
-define('JWT_SECRET', 'mameq_radish_jwt_secret_2024_' . hash('sha256', 'mameq_radish_restaurant_order_system' . DB_PASS)); // 本番環境ではより強力な秘密鍵に変更してください
-define('JWT_ALGORITHM', 'HS256');
-define('JWT_EXPIRATION', 86400 * 7); // 7日間
+$jwtSecret = getEnvValue('JWT_SECRET');
+if (empty($jwtSecret)) {
+    // デフォルト値（後方互換性のため）
+    $jwtSecret = 'mameq_radish_jwt_secret_2024_' . hash('sha256', 'mameq_radish_restaurant_order_system' . DB_PASS);
+}
+define('JWT_SECRET', $jwtSecret);
+define('JWT_ALGORITHM', getEnvValue('JWT_ALGORITHM', 'HS256'));
+define('JWT_EXPIRATION', (int)getEnvValue('JWT_EXPIRATION', 86400 * 7)); // 7日間
 
 /**
  * JWTトークンを生成
@@ -666,5 +744,263 @@ function logErrorToDatabase($level = 'error', $message = '', $exception = null, 
         // エラーログの記録に失敗した場合は、通常のerror_logに記録
         error_log("Failed to log error to database: " . $e->getMessage());
     }
+}
+
+/**
+ * SMTP経由でメールを送信
+ * 
+ * @param string $to 送信先メールアドレス
+ * @param string $subject 件名
+ * @param string $message メッセージ本文
+ * @param string $from 送信元メールアドレス
+ * @param string $fromName 送信元名（オプション）
+ * @return bool 送信成功時true、失敗時false
+ */
+function sendEmailViaSMTP($to, $subject, $message, $from, $fromName = null) {
+    $smtpHost = getEnvValue('MAIL_SMTP_HOST', 'localhost');
+    $smtpPort = (int)getEnvValue('MAIL_SMTP_PORT', 587);
+    $smtpSecure = getEnvValue('MAIL_SMTP_SECURE', 'tls');
+    $smtpUser = getEnvValue('MAIL_SMTP_USER', '');
+    $smtpPass = getEnvValue('MAIL_SMTP_PASS', '');
+    $smtpAuth = getEnvValue('MAIL_SMTP_AUTH', 'true') === 'true';
+    
+    try {
+        // SMTP接続
+        $host = ($smtpSecure === 'ssl') ? 'ssl://' . $smtpHost : $smtpHost;
+        $socket = @fsockopen($host, $smtpPort, $errno, $errstr, 30);
+        
+        if (!$socket) {
+            error_log("SMTP connection failed: {$errstr} ({$errno})");
+            return false;
+        }
+        
+        // レスポンスを読み取る関数
+        $readResponse = function($socket, $expectedCode = null) {
+            $response = '';
+            while ($line = fgets($socket, 515)) {
+                $response .= $line;
+                if (substr($line, 3, 1) === ' ') {
+                    break;
+                }
+            }
+            if ($expectedCode !== null && strpos($response, $expectedCode) !== 0) {
+                return false;
+            }
+            return $response;
+        };
+        
+        // SMTPコマンドを送信する関数
+        $sendCommand = function($socket, $command, $expectedCode) use ($readResponse) {
+            fputs($socket, $command . "\r\n");
+            return $readResponse($socket, $expectedCode);
+        };
+        
+        // 初期応答を読み取る
+        $readResponse($socket, '220');
+        
+        // EHLOコマンド
+        $hostname = $_SERVER['SERVER_NAME'] ?? 'localhost';
+        if (!$sendCommand($socket, "EHLO {$hostname}", '250')) {
+            fclose($socket);
+            return false;
+        }
+        
+        // TLS開始（tlsの場合）
+        if ($smtpSecure === 'tls') {
+            if (!$sendCommand($socket, 'STARTTLS', '220')) {
+                fclose($socket);
+                return false;
+            }
+            
+            // TLS暗号化を開始
+            if (!stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
+                fclose($socket);
+                return false;
+            }
+            
+            // EHLOを再送信
+            if (!$sendCommand($socket, "EHLO {$hostname}", '250')) {
+                fclose($socket);
+                return false;
+            }
+        }
+        
+        // 認証（必要な場合）
+        if ($smtpAuth && !empty($smtpUser) && !empty($smtpPass)) {
+            if (!$sendCommand($socket, 'AUTH LOGIN', '334')) {
+                fclose($socket);
+                return false;
+            }
+            
+            if (!$sendCommand($socket, base64_encode($smtpUser), '334')) {
+                fclose($socket);
+                return false;
+            }
+            
+            if (!$sendCommand($socket, base64_encode($smtpPass), '235')) {
+                fclose($socket);
+                return false;
+            }
+        }
+        
+        // 送信元を設定
+        $fromHeader = $fromName ? "{$fromName} <{$from}>" : $from;
+        if (!$sendCommand($socket, "MAIL FROM: <{$from}>", '250')) {
+            fclose($socket);
+            return false;
+        }
+        
+        // 送信先を設定
+        if (!$sendCommand($socket, "RCPT TO: <{$to}>", '250')) {
+            fclose($socket);
+            return false;
+        }
+        
+        // データ送信開始
+        if (!$sendCommand($socket, 'DATA', '354')) {
+            fclose($socket);
+            return false;
+        }
+        
+        // メールヘッダーと本文を送信
+        $emailData = "From: {$fromHeader}\r\n";
+        $emailData .= "To: <{$to}>\r\n";
+        $emailData .= "Subject: =?UTF-8?B?" . base64_encode($subject) . "?=\r\n";
+        $emailData .= "MIME-Version: 1.0\r\n";
+        $emailData .= "Content-Type: text/html; charset=UTF-8\r\n";
+        $emailData .= "Content-Transfer-Encoding: base64\r\n";
+        $emailData .= "X-Mailer: PHP/" . phpversion() . "\r\n";
+        $emailData .= "\r\n";
+        $emailData .= chunk_split(base64_encode($message));
+        $emailData .= "\r\n.\r\n";
+        
+        fputs($socket, $emailData);
+        
+        // 送信完了確認
+        if (!$readResponse($socket, '250')) {
+            fclose($socket);
+            return false;
+        }
+        
+        // QUITコマンド
+        $sendCommand($socket, 'QUIT', '221');
+        fclose($socket);
+        
+        return true;
+        
+    } catch (Exception $e) {
+        error_log("SMTP send failed: " . $e->getMessage());
+        if (isset($socket)) {
+            @fclose($socket);
+        }
+        return false;
+    }
+}
+
+/**
+ * メール送信関数
+ * SMTP設定がある場合はSMTP経由、ない場合はPHPのmail()関数を使用
+ * 
+ * @param string $to 送信先メールアドレス
+ * @param string $subject 件名
+ * @param string $message メッセージ本文
+ * @param string $from 送信元メールアドレス（オプション）
+ * @return bool 送信成功時true、失敗時false
+ */
+function sendEmail($to, $subject, $message, $from = null) {
+    // 送信元メールアドレスの設定（.envファイルから読み込む）
+    if ($from === null) {
+        $from = getEnvValue('MAIL_FROM', 'noreply@towndx.com');
+    }
+    
+    $fromName = getEnvValue('MAIL_FROM_NAME', 'Radish System');
+    
+    // SMTPを使用するかどうかを確認
+    $useSMTP = getEnvValue('MAIL_USE_SMTP', 'false') === 'true';
+    
+    if ($useSMTP) {
+        // SMTP経由で送信
+        return sendEmailViaSMTP($to, $subject, $message, $from, $fromName);
+    } else {
+        // PHPのmail()関数を使用
+        $headers = [
+            'From: ' . ($fromName ? "{$fromName} <{$from}>" : $from),
+            'Reply-To: ' . $from,
+            'X-Mailer: PHP/' . phpversion(),
+            'MIME-Version: 1.0',
+            'Content-Type: text/html; charset=UTF-8'
+        ];
+        
+        $headersString = implode("\r\n", $headers);
+        
+        // メール送信
+        $result = mail($to, $subject, $message, $headersString);
+        
+        if (!$result) {
+            error_log("Failed to send email to: {$to}");
+            return false;
+        }
+        
+        return true;
+    }
+}
+
+/**
+ * パスワードリセットメールを送信
+ * 
+ * @param string $email 送信先メールアドレス
+ * @param string $username ユーザー名
+ * @param string $name ユーザー名（表示名）
+ * @param string $resetToken リセットトークン
+ * @return bool 送信成功時true、失敗時false
+ */
+function sendPasswordResetEmail($email, $username, $name, $resetToken) {
+    // フロントエンドのベースURLを取得（.envファイルから読み込む）
+    $frontendBaseUrl = getEnvValue('FRONTEND_BASE_URL', 'https://mameq.xsrv.jp');
+    
+    // リセットURL
+    $resetUrl = $frontendBaseUrl . '/staff/reset-password?token=' . urlencode($resetToken);
+    
+    // メール件名
+    $subject = 'パスワードリセットのお知らせ';
+    
+    // メール本文（HTML形式）
+    $message = "
+    <!DOCTYPE html>
+    <html lang='ja'>
+    <head>
+        <meta charset='UTF-8'>
+        <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+        <title>パスワードリセット</title>
+    </head>
+    <body style='font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;'>
+        <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;'>
+            <h1 style='color: white; margin: 0; font-size: 24px;'>パスワードリセット</h1>
+        </div>
+        <div style='background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;'>
+            <p style='font-size: 16px; margin-bottom: 20px;'>{$name} 様</p>
+            <p style='font-size: 16px; margin-bottom: 20px;'>
+                パスワードリセットのリクエストを受け付けました。<br>
+                以下のリンクをクリックして、新しいパスワードを設定してください。
+            </p>
+            <div style='text-align: center; margin: 30px 0;'>
+                <a href='{$resetUrl}' style='display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px;'>
+                    パスワードをリセット
+                </a>
+            </div>
+            <p style='font-size: 14px; color: #666; margin-top: 30px;'>
+                このリンクは24時間有効です。<br>
+                もしこのリクエストを送信していない場合は、このメールを無視してください。
+            </p>
+            <p style='font-size: 12px; color: #999; margin-top: 30px; border-top: 1px solid #ddd; padding-top: 20px;'>
+                リンクがクリックできない場合は、以下のURLをブラウザにコピー＆ペーストしてください：<br>
+                <a href='{$resetUrl}' style='color: #667eea; word-break: break-all;'>{$resetUrl}</a>
+            </p>
+        </div>
+    </body>
+    </html>
+    ";
+    
+    return sendEmail($email, $subject, $message);
 }
 

@@ -4,6 +4,8 @@
  * POST /api/auth/login - ログイン
  * POST /api/auth/logout - ログアウト
  * GET /api/auth/me - 現在のユーザー情報取得
+ * POST /api/auth/forgot-password - パスワードリセットメール送信
+ * POST /api/auth/reset-password - パスワードリセット実行
  */
 
 require_once __DIR__ . '/../config.php';
@@ -36,6 +38,22 @@ switch ($path) {
     case 'me':
         if ($method === 'GET') {
             getCurrentUser();
+        } else {
+            sendErrorResponse(405, 'Method not allowed');
+        }
+        break;
+    
+    case 'forgot-password':
+        if ($method === 'POST') {
+            forgotPassword();
+        } else {
+            sendErrorResponse(405, 'Method not allowed');
+        }
+        break;
+    
+    case 'reset-password':
+        if ($method === 'POST') {
+            resetPassword();
         } else {
             sendErrorResponse(405, 'Method not allowed');
         }
@@ -74,10 +92,11 @@ function login() {
         
         // ユーザーが存在しない場合、無効化されている場合、店舗が無効化されている場合、パスワードが一致しない場合
         // セキュリティ上の理由で、すべて同じエラーメッセージを返す
+        // shop_activeがNULLの場合は店舗が存在しないことを意味するため、ログインを拒否
         if (!$userCheck || 
             !$userCheck['is_active'] || 
             !$userCheck['shop_id'] || 
-            !$userCheck['shop_active'] || 
+            ($userCheck['shop_active'] === null || !$userCheck['shop_active']) || 
             !password_verify($input['password'], $userCheck['password_hash'])) {
             sendUnauthorizedError('Invalid credentials');
         }
@@ -181,6 +200,178 @@ function getCurrentUser() {
         
     } catch (PDOException $e) {
         handleDatabaseError($e, 'getting user');
+    }
+}
+
+/**
+ * パスワードリセットメール送信
+ */
+function forgotPassword() {
+    try {
+        $pdo = getDbConnection();
+        
+        $input = json_decode(file_get_contents('php://input'), true);
+        
+        if (!$input || !isset($input['username']) && !isset($input['email'])) {
+            sendValidationError([
+                'username' => 'Username or email is required'
+            ]);
+        }
+        
+        // ユーザー名またはメールアドレスでユーザーを検索
+        if (isset($input['username'])) {
+            $stmt = $pdo->prepare("
+                SELECT u.*, s.is_active as shop_active
+                FROM users u
+                LEFT JOIN shops s ON u.shop_id = s.id
+                WHERE u.username = :search_value
+                AND u.is_active = 1
+            ");
+            $stmt->execute([':search_value' => $input['username']]);
+        } else {
+            $stmt = $pdo->prepare("
+                SELECT u.*, s.is_active as shop_active
+                FROM users u
+                LEFT JOIN shops s ON u.shop_id = s.id
+                WHERE u.email = :search_value
+                AND u.is_active = 1
+            ");
+            $stmt->execute([':search_value' => $input['email']]);
+        }
+        $user = $stmt->fetch();
+        
+        // セキュリティ上の理由で、ユーザーが存在しない場合でも成功メッセージを返す
+        if (!$user || !$user['shop_active'] || !$user['email']) {
+            // ユーザーが存在しない、またはメールアドレスが登録されていない場合でも
+            // 成功メッセージを返す（ユーザー列挙攻撃を防ぐため）
+            echo json_encode([
+                'success' => true,
+                'message' => 'パスワードリセットメールを送信しました。メールが届かない場合は、登録されているメールアドレスを確認してください。'
+            ], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+        
+        // 既存の未使用トークンを無効化
+        $invalidateStmt = $pdo->prepare("
+            UPDATE password_reset_tokens 
+            SET used_at = NOW() 
+            WHERE user_id = :user_id 
+            AND used_at IS NULL 
+            AND expires_at > NOW()
+        ");
+        $invalidateStmt->execute([':user_id' => $user['id']]);
+        
+        // 新しいリセットトークンを生成
+        $token = bin2hex(random_bytes(32));
+        $expiresAt = date('Y-m-d H:i:s', strtotime('+24 hours'));
+        
+        // トークンをデータベースに保存
+        $tokenStmt = $pdo->prepare("
+            INSERT INTO password_reset_tokens (user_id, token, expires_at)
+            VALUES (:user_id, :token, :expires_at)
+        ");
+        $tokenStmt->execute([
+            ':user_id' => $user['id'],
+            ':token' => $token,
+            ':expires_at' => $expiresAt
+        ]);
+        
+        // メール送信
+        $emailSent = sendPasswordResetEmail(
+            $user['email'],
+            $user['username'],
+            $user['name'],
+            $token
+        );
+        
+        if (!$emailSent) {
+            // メール送信に失敗した場合でも、トークンは作成済みなので成功として返す
+            // （実際のメール送信エラーはログに記録される）
+            error_log("Failed to send password reset email to: {$user['email']}");
+        }
+        
+        echo json_encode([
+            'success' => true,
+            'message' => 'パスワードリセットメールを送信しました。メールが届かない場合は、登録されているメールアドレスを確認してください。'
+        ], JSON_UNESCAPED_UNICODE);
+        
+    } catch (PDOException $e) {
+        handleDatabaseError($e, 'forgot password');
+    }
+}
+
+/**
+ * パスワードリセット実行
+ */
+function resetPassword() {
+    try {
+        $pdo = getDbConnection();
+        
+        $input = json_decode(file_get_contents('php://input'), true);
+        
+        if (!$input || !isset($input['token']) || !isset($input['password'])) {
+            sendValidationError([
+                'token' => 'Token is required',
+                'password' => 'Password is required'
+            ]);
+        }
+        
+        $token = $input['token'];
+        $newPassword = $input['password'];
+        
+        // パスワードの長さチェック
+        if (strlen($newPassword) < 6) {
+            sendValidationError([
+                'password' => 'Password must be at least 6 characters'
+            ]);
+        }
+        
+        // トークンの検証
+        $tokenStmt = $pdo->prepare("
+            SELECT prt.*, u.id as user_id, u.username, u.email, u.name
+            FROM password_reset_tokens prt
+            INNER JOIN users u ON prt.user_id = u.id
+            WHERE prt.token = :token
+            AND prt.used_at IS NULL
+            AND prt.expires_at > NOW()
+        ");
+        $tokenStmt->execute([':token' => $token]);
+        $tokenData = $tokenStmt->fetch();
+        
+        if (!$tokenData) {
+            sendUnauthorizedError('Invalid or expired token');
+        }
+        
+        // パスワードをハッシュ化
+        $passwordHash = password_hash($newPassword, PASSWORD_DEFAULT);
+        
+        // パスワードを更新
+        $updateStmt = $pdo->prepare("
+            UPDATE users 
+            SET password_hash = :password_hash, 
+                updated_at = NOW()
+            WHERE id = :user_id
+        ");
+        $updateStmt->execute([
+            ':password_hash' => $passwordHash,
+            ':user_id' => $tokenData['user_id']
+        ]);
+        
+        // トークンを無効化
+        $markUsedStmt = $pdo->prepare("
+            UPDATE password_reset_tokens 
+            SET used_at = NOW() 
+            WHERE token = :token
+        ");
+        $markUsedStmt->execute([':token' => $token]);
+        
+        echo json_encode([
+            'success' => true,
+            'message' => 'パスワードが正常にリセットされました。'
+        ], JSON_UNESCAPED_UNICODE);
+        
+    } catch (PDOException $e) {
+        handleDatabaseError($e, 'reset password');
     }
 }
 

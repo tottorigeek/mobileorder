@@ -59,6 +59,15 @@
               {{ isLoading ? 'ログイン中...' : 'ログイン' }}
             </button>
           </form>
+
+          <div class="mt-6 text-center">
+            <NuxtLink
+              to="/staff/forgot-password"
+              class="text-purple-600 hover:text-purple-700 font-medium transition-colors text-sm"
+            >
+              パスワードをお忘れの方はこちら
+            </NuxtLink>
+          </div>
         </div>
 
         <div class="mt-6 text-center">

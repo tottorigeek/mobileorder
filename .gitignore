@@ -23,3 +23,7 @@ logs
 .env.*
 !.env.example
 
+# API server env files
+api-server/radish/.env
+api-server/radish/.env.*
+
