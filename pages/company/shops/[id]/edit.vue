@@ -1,5 +1,5 @@
 <template>
-  <NuxtLayout name="default" title="店舗編集">
+  <NuxtLayout name="company" title="店舗編集">
     <div class="space-y-6">
       <!-- ナビゲーション -->
       <div class="flex gap-3 overflow-x-auto pb-2">

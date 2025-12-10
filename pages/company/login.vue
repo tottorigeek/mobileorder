@@ -1,5 +1,5 @@
 <template>
-  <NuxtLayout name="default" title="弊社向け管理ログイン" :show-header="false">
+  <NuxtLayout name="company" title="弊社向け管理ログイン" :show-header="false">
     <div class="flex flex-col items-center justify-center min-h-screen p-6 bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50">
       <div class="w-full max-w-md">
         <div class="text-center mb-8">

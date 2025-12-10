@@ -1,5 +1,5 @@
 <template>
-  <NuxtLayout name="default" title="テーブル管理">
+  <NuxtLayout name="company" title="テーブル管理">
     <div class="space-y-6">
       <!-- ナビゲーション -->
       <AdminNavigation

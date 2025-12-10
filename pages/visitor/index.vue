@@ -1,5 +1,5 @@
 <template>
-  <NuxtLayout name="default" title="メニュー一覧">
+  <NuxtLayout name="visitor" title="メニュー一覧">
     <!-- 来店人数入力モーダル -->
     <div
       v-if="showVisitorModal"

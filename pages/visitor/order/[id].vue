@@ -1,5 +1,5 @@
 <template>
-  <NuxtLayout name="default" title="注文確認">
+  <NuxtLayout name="visitor" title="注文確認">
     <div v-if="order" class="space-y-6">
       <div class="bg-white p-6 rounded-lg shadow">
         <h2 class="text-2xl font-bold mb-4">注文が完了しました</h2>

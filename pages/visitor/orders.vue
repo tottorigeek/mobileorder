@@ -1,5 +1,5 @@
 <template>
-  <NuxtLayout name="default" title="注文一覧">
+  <NuxtLayout name="visitor" title="注文一覧">
     <div class="space-y-4 sm:space-y-6 px-4 sm:px-0">
       <div v-if="isLoading" class="text-center py-8 sm:py-12">
         <div class="inline-block animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-blue-600"></div>

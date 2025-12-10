@@ -1,5 +1,5 @@
 <template>
-  <NuxtLayout name="default" title="弊社向け管理ダッシュボード">
+  <NuxtLayout name="company" title="弊社向け管理ダッシュボード">
     <div class="space-y-6">
       <!-- ナビゲーション -->
       <AdminNavigation

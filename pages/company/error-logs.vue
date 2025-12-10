@@ -1,5 +1,5 @@
 <template>
-  <NuxtLayout name="default" title="エラーログ">
+  <NuxtLayout name="company" title="エラーログ">
     <div class="space-y-6">
       <!-- ナビゲーション -->
       <AdminNavigation
