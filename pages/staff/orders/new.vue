@@ -229,7 +229,6 @@ import { useShopStore } from '~/stores/shop'
 import type { Menu, ShopTable, ShopCategory } from '~/types'
 
 const { navigationItems } = useShopNavigation()
-const { checkAuth } = useAuthCheck()
 
 const menuStore = useMenuStore()
 const categoryStore = useCategoryStore()
@@ -399,32 +398,38 @@ const submitOrder = async () => {
 }
 
 onMounted(async () => {
-  // 認証チェック
-  const isAuthenticated = await checkAuth()
-  if (!isAuthenticated) {
-    return
-  }
-
-  authStore.loadUserFromStorage()
-  shopStore.loadShopFromStorage()
-
-  // 店舗が選択されていない場合は店舗選択画面にリダイレクト
-  if (!shopStore.currentShop) {
-    if (authStore.user?.shop) {
-      shopStore.setCurrentShop(authStore.user.shop)
-    } else {
-      await navigateTo('/staff/shop-select')
+  try {
+    // 認証チェック
+    authStore.loadUserFromStorage()
+    if (!authStore.isAuthenticated) {
+      await navigateTo('/staff/login')
       return
     }
-  }
 
-  // データの取得
-  if (shopStore.currentShop) {
-    await Promise.all([
-      menuStore.fetchMenus(shopStore.currentShop.code),
-      categoryStore.fetchCategoriesByShopCode(shopStore.currentShop.code),
-      tableStore.fetchTables(shopStore.currentShop.id)
-    ])
+    // 店舗情報の読み込み
+    shopStore.loadShopFromStorage()
+
+    // 店舗が選択されていない場合は店舗選択画面にリダイレクト
+    if (!shopStore.currentShop) {
+      if (authStore.user?.shop) {
+        shopStore.setCurrentShop(authStore.user.shop)
+      } else {
+        await navigateTo('/staff/shop-select')
+        return
+      }
+    }
+
+    // データの取得
+    if (shopStore.currentShop) {
+      await Promise.all([
+        menuStore.fetchMenus(shopStore.currentShop.code),
+        categoryStore.fetchCategoriesByShopCode(shopStore.currentShop.code),
+        tableStore.fetchTables(shopStore.currentShop.id)
+      ])
+    }
+  } catch (error) {
+    console.error('ページの初期化に失敗しました:', error)
+    alert('ページの読み込みに失敗しました。ページをリロードしてください。')
   }
 })
 </script>

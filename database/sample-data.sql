@@ -86,8 +86,32 @@ SET @user4_id = LAST_INSERT_ID();
 
 -- ユーザー5: shop006, shop007, shop008のオーナー（複数店舗）
 INSERT INTO `users` (`shop_id`, `username`, `password_hash`, `name`, `email`, `role`, `is_active`) 
-VALUES (@shop6_id, 'owner_premium', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '伊藤 三郎', 'ito@example.com', 'owner', 1);
-SET @user5_id = LAST_INSERT_ID();
+VALUES (@shop6_id, 'owner_premium', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '伊藤 三郎', 'ito@example.com', 'owner', 1)
+ON DUPLICATE KEY UPDATE 
+  `name` = VALUES(`name`),
+  `email` = VALUES(`email`),
+  `role` = VALUES(`role`),
+  `is_active` = VALUES(`is_active`);
+SET @user5_id = (SELECT id FROM users WHERE username = 'owner_premium' LIMIT 1);
+
+-- ユーザー6: seki（管理者、全店舗にアクセス可能）
+-- 既存のsekiユーザーを削除（存在する場合）
+SET @existing_seki_id = (SELECT id FROM `users` WHERE `username` = 'seki' LIMIT 1);
+DELETE FROM `shop_users` WHERE `user_id` = @existing_seki_id;
+DELETE FROM `users` WHERE `username` = 'seki';
+
+-- sekiユーザーを追加
+INSERT INTO `users` (`shop_id`, `username`, `password_hash`, `name`, `email`, `role`, `is_active`) 
+VALUES (@shop1_id, 'seki', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '関 力仁', 'seki_r@yamata.co.jp', 'owner', 1);
+SET @seki_id = LAST_INSERT_ID();
+
+-- sekiユーザーのパスワードと状態を確実に設定
+UPDATE `users` 
+SET `password_hash` = '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+    `is_active` = 1,
+    `shop_id` = COALESCE(`shop_id`, @shop1_id),
+    `updated_at` = NOW()
+WHERE `username` = 'seki';
 
 -- shop_usersテーブルが存在する場合は、複数店舗の関連を追加
 -- サービス管理者は全店舗にアクセス可能（shop_usersテーブルに全店舗を追加）
@@ -100,6 +124,17 @@ INSERT IGNORE INTO `shop_users` (`shop_id`, `user_id`, `role`, `is_primary`) VAL
 (@shop6_id, @admin_id, 'owner', 0),
 (@shop7_id, @admin_id, 'owner', 0),
 (@shop8_id, @admin_id, 'owner', 0);
+
+-- sekiユーザーは全店舗にアクセス可能（shop_usersテーブルに全店舗を追加）
+INSERT IGNORE INTO `shop_users` (`shop_id`, `user_id`, `role`, `is_primary`) VALUES
+(@shop1_id, @seki_id, 'owner', 1),
+(@shop2_id, @seki_id, 'owner', 0),
+(@shop3_id, @seki_id, 'owner', 0),
+(@shop4_id, @seki_id, 'owner', 0),
+(@shop5_id, @seki_id, 'owner', 0),
+(@shop6_id, @seki_id, 'owner', 0),
+(@shop7_id, @seki_id, 'owner', 0),
+(@shop8_id, @seki_id, 'owner', 0);
 
 -- shop_usersテーブルが存在する場合は、複数店舗の関連を追加
 -- ユーザー1: shop001（主店舗）, shop002
@@ -304,7 +339,8 @@ INSERT INTO `shop_categories` (`shop_id`, `code`, `name`, `display_order`, `is_a
 SELECT 
     'サンプルデータの挿入が完了しました！' AS message,
     (SELECT COUNT(*) FROM shops WHERE code IN ('shop001', 'shop002', 'shop003', 'shop004', 'shop005', 'shop006', 'shop007', 'shop008')) AS shop_count,
-    (SELECT COUNT(*) FROM users WHERE username IN ('admin', 'owner_multi', 'owner_sakura', 'manager_beef', 'staff_mamma', 'owner_premium')) AS user_count,
+    (SELECT COUNT(*) FROM users WHERE username IN ('admin', 'owner_multi', 'owner_sakura', 'manager_beef', 'staff_mamma', 'owner_premium', 'seki')) AS user_count,
     (SELECT COUNT(*) FROM menus) AS menu_count,
-    'サービス管理者アカウント: admin / password123' AS admin_account;
+    'サービス管理者アカウント: admin / password123' AS admin_account,
+    '管理者アカウント: seki / password123' AS seki_account;
 
