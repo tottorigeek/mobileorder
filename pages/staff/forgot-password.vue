@@ -110,8 +110,14 @@ const handleSubmit = async () => {
     // ユーザー名かメールアドレスかを判定
     const isEmail = identifier.value.includes('@')
     const requestBody = isEmail 
-      ? { email: identifier.value }
-      : { username: identifier.value }
+      ? { 
+          email: identifier.value,
+          reset_path: '/staff/reset-password'
+        }
+      : { 
+          username: identifier.value,
+          reset_path: '/staff/reset-password'
+        }
     
     const response = await $fetch<{ success: boolean; message: string }>(
       buildUrl('auth/forgot-password'),

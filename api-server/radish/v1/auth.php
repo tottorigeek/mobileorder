@@ -276,23 +276,49 @@ function forgotPassword() {
             ':expires_at' => $expiresAt
         ]);
         
+        // リセットパスの決定（リクエストボディから取得、デフォルトは/staff/reset-password）
+        $resetPath = $input['reset_path'] ?? '/staff/reset-password';
+        
+        // セキュリティ: 許可されたパスのみ受け付ける
+        $allowedPaths = ['/staff/reset-password', '/company/reset-password'];
+        if (!in_array($resetPath, $allowedPaths)) {
+            $resetPath = '/staff/reset-password'; // デフォルトにフォールバック
+        }
+        
         // メール送信
         $emailSent = sendPasswordResetEmail(
             $user['email'],
             $user['username'],
             $user['name'],
-            $token
+            $token,
+            $resetPath
         );
         
-        if (!$emailSent) {
+        // メール送信のログを記録
+        if ($emailSent) {
+            error_log("Password reset email sent successfully to: {$user['email']} (username: {$user['username']})");
+        } else {
             // メール送信に失敗した場合でも、トークンは作成済みなので成功として返す
             // （実際のメール送信エラーはログに記録される）
-            error_log("Failed to send password reset email to: {$user['email']}");
+            error_log("Failed to send password reset email to: {$user['email']} (username: {$user['username']})");
+            
+            // デバッグモードの場合は詳細情報を返す
+            if (defined('DEBUG_MODE') && DEBUG_MODE) {
+                error_log("Mail configuration check:");
+                error_log("  MAIL_USE_SMTP: " . getEnvValue('MAIL_USE_SMTP', 'false'));
+                error_log("  MAIL_FROM: " . getEnvValue('MAIL_FROM', 'not set'));
+                if (getEnvValue('MAIL_USE_SMTP', 'false') === 'true') {
+                    error_log("  MAIL_SMTP_HOST: " . getEnvValue('MAIL_SMTP_HOST', 'not set'));
+                    error_log("  MAIL_SMTP_PORT: " . getEnvValue('MAIL_SMTP_PORT', 'not set'));
+                    error_log("  MAIL_SMTP_USER: " . (getEnvValue('MAIL_SMTP_USER', '') ? 'set' : 'not set'));
+                }
+            }
         }
         
         echo json_encode([
             'success' => true,
-            'message' => 'パスワードリセットメールを送信しました。メールが届かない場合は、登録されているメールアドレスを確認してください。'
+            'message' => 'パスワードリセットメールを送信しました。メールが届かない場合は、登録されているメールアドレスを確認してください。',
+            'email_sent' => $emailSent // デバッグ用（本番環境では削除推奨）
         ], JSON_UNESCAPED_UNICODE);
         
     } catch (PDOException $e) {

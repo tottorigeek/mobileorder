@@ -918,9 +918,21 @@ function sendEmail($to, $subject, $message, $from = null) {
     // SMTPを使用するかどうかを確認
     $useSMTP = getEnvValue('MAIL_USE_SMTP', 'false') === 'true';
     
+    // デバッグログ
+    if (defined('DEBUG_MODE') && DEBUG_MODE) {
+        error_log("Sending email to: {$to}");
+        error_log("  From: {$fromName} <{$from}>");
+        error_log("  Subject: {$subject}");
+        error_log("  Method: " . ($useSMTP ? 'SMTP' : 'mail()'));
+    }
+    
     if ($useSMTP) {
         // SMTP経由で送信
-        return sendEmailViaSMTP($to, $subject, $message, $from, $fromName);
+        $result = sendEmailViaSMTP($to, $subject, $message, $from, $fromName);
+        if (!$result && defined('DEBUG_MODE') && DEBUG_MODE) {
+            error_log("SMTP email send failed to: {$to}");
+        }
+        return $result;
     } else {
         // PHPのmail()関数を使用
         $headers = [
@@ -937,8 +949,17 @@ function sendEmail($to, $subject, $message, $from = null) {
         $result = mail($to, $subject, $message, $headersString);
         
         if (!$result) {
-            error_log("Failed to send email to: {$to}");
+            error_log("Failed to send email via mail() to: {$to}");
+            if (defined('DEBUG_MODE') && DEBUG_MODE) {
+                error_log("  From: {$from}");
+                error_log("  Subject: {$subject}");
+                error_log("  Headers: {$headersString}");
+            }
             return false;
+        }
+        
+        if (defined('DEBUG_MODE') && DEBUG_MODE) {
+            error_log("Email sent successfully via mail() to: {$to}");
         }
         
         return true;
@@ -952,14 +973,15 @@ function sendEmail($to, $subject, $message, $from = null) {
  * @param string $username ユーザー名
  * @param string $name ユーザー名（表示名）
  * @param string $resetToken リセットトークン
+ * @param string $resetPath リセットページのパス（デフォルト: /staff/reset-password）
  * @return bool 送信成功時true、失敗時false
  */
-function sendPasswordResetEmail($email, $username, $name, $resetToken) {
+function sendPasswordResetEmail($email, $username, $name, $resetToken, $resetPath = '/staff/reset-password') {
     // フロントエンドのベースURLを取得（.envファイルから読み込む）
     $frontendBaseUrl = getEnvValue('FRONTEND_BASE_URL', 'https://mameq.xsrv.jp');
     
     // リセットURL
-    $resetUrl = $frontendBaseUrl . '/staff/reset-password?token=' . urlencode($resetToken);
+    $resetUrl = $frontendBaseUrl . $resetPath . '?token=' . urlencode($resetToken);
     
     // メール件名
     $subject = 'パスワードリセットのお知らせ';
