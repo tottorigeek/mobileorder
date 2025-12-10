@@ -149,6 +149,71 @@ INSERT IGNORE INTO `shop_users` (`shop_id`, `user_id`, `role`, `is_primary`) VAL
 (@shop8_id, @user5_id, 'owner', 0);
 
 -- ============================================
+-- ダミースタッフデータ（19人）
+-- ============================================
+
+-- shop001: レストラン イタリアン（スタッフ3人）
+INSERT INTO `users` (`shop_id`, `username`, `password_hash`, `name`, `email`, `role`, `is_active`) VALUES
+(@shop1_id, 'staff_italian_01', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '佐々木 健太', 'sasaki@example.com', 'staff', 1),
+(@shop1_id, 'staff_italian_02', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '高橋 美咲', 'takahashi@example.com', 'staff', 1),
+(@shop1_id, 'staff_italian_03', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '中村 翔太', 'nakamura@example.com', 'staff', 1)
+ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
+
+-- shop002: カフェ モカ（スタッフ2人）
+INSERT INTO `users` (`shop_id`, `username`, `password_hash`, `name`, `email`, `role`, `is_active`) VALUES
+(@shop2_id, 'staff_moka_01', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '渡辺 さくら', 'watanabe@example.com', 'staff', 1),
+(@shop2_id, 'staff_moka_02', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '伊藤 大輔', 'ito@example.com', 'staff', 1)
+ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
+
+-- shop003: 和食 さくら（スタッフ3人）
+INSERT INTO `users` (`shop_id`, `username`, `password_hash`, `name`, `email`, `role`, `is_active`) VALUES
+(@shop3_id, 'staff_sakura_01', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '山本 優香', 'yamamoto@example.com', 'staff', 1),
+(@shop3_id, 'staff_sakura_02', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '松本 健一', 'matsumoto@example.com', 'staff', 1),
+(@shop3_id, 'staff_sakura_03', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '井上 麻衣', 'inoue@example.com', 'staff', 1)
+ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
+
+-- shop004: バーガーショップ ビーフ（スタッフ2人）
+INSERT INTO `users` (`shop_id`, `username`, `password_hash`, `name`, `email`, `role`, `is_active`) VALUES
+(@shop4_id, 'staff_beef_01', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '木村 拓也', 'kimura@example.com', 'staff', 1),
+(@shop4_id, 'staff_beef_02', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '林 由美', 'hayashi@example.com', 'staff', 1)
+ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
+
+-- shop005: パスタハウス マンマ（スタッフ2人）
+INSERT INTO `users` (`shop_id`, `username`, `password_hash`, `name`, `email`, `role`, `is_active`) VALUES
+(@shop5_id, 'staff_mamma_01', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '斎藤 真一', 'saito@example.com', 'staff', 1),
+(@shop5_id, 'staff_mamma_02', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '加藤 愛美', 'kato@example.com', 'staff', 1)
+ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
+
+-- shop006: ステーキハウス プレミアム（スタッフ3人）
+INSERT INTO `users` (`shop_id`, `username`, `password_hash`, `name`, `email`, `role`, `is_active`) VALUES
+(@shop6_id, 'staff_premium_01', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '吉田 雄一', 'yoshida@example.com', 'staff', 1),
+(@shop6_id, 'staff_premium_02', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '後藤 美穂', 'goto@example.com', 'staff', 1),
+(@shop6_id, 'staff_premium_03', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '近藤 翔', 'kondo@example.com', 'staff', 1)
+ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
+
+-- shop007: ラーメン屋 こだわり（スタッフ2人）
+INSERT INTO `users` (`shop_id`, `username`, `password_hash`, `name`, `email`, `role`, `is_active`) VALUES
+(@shop7_id, 'staff_ramen_01', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '長谷川 誠', 'hasegawa@example.com', 'staff', 1),
+(@shop7_id, 'staff_ramen_02', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '橋本 彩', 'hashimoto@example.com', 'staff', 1)
+ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
+
+-- shop008: スイーツカフェ スイート（スタッフ2人）
+INSERT INTO `users` (`shop_id`, `username`, `password_hash`, `name`, `email`, `role`, `is_active`) VALUES
+(@shop8_id, 'staff_sweet_01', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '石川 美咲', 'ishikawa@example.com', 'staff', 1),
+(@shop8_id, 'staff_sweet_02', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '前田 健太', 'maeda@example.com', 'staff', 1)
+ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
+
+-- shop_usersテーブルに追加（shop_usersテーブルが存在する場合）
+INSERT IGNORE INTO `shop_users` (`shop_id`, `user_id`, `role`, `is_primary`)
+SELECT u.shop_id, u.id, u.role, 0
+FROM users u
+WHERE u.username LIKE 'staff_%'
+AND NOT EXISTS (
+    SELECT 1 FROM shop_users su 
+    WHERE su.shop_id = u.shop_id AND su.user_id = u.id
+);
+
+-- ============================================
 -- メニューデータ（100点）
 -- ============================================
 
@@ -333,14 +398,442 @@ INSERT INTO `shop_categories` (`shop_id`, `code`, `name`, `display_order`, `is_a
 (@shop8_id, 'drink', 'ドリンク', 2, 1);
 
 -- ============================================
+-- 営業時間・定休日データ
+-- ============================================
+
+-- shop001: レストラン イタリアン（毎週月曜日 + 毎月第1火曜日が定休日）
+UPDATE `shops` 
+SET `settings` = JSON_OBJECT(
+    'regularHolidays', JSON_ARRAY(
+        'monday',
+        JSON_OBJECT('type', 'monthly', 'day', 'tuesday', 'week', 1)
+    ),
+    'temporaryHolidays', JSON_ARRAY('2024-12-25', '2025-01-01'),
+    'businessHours', JSON_OBJECT(
+        'monday', JSON_OBJECT('open', '11:00', 'close', '15:00', 'isClosed', true),
+        'tuesday', JSON_OBJECT('open', '11:30', 'close', '22:00', 'isClosed', false),
+        'wednesday', JSON_OBJECT('open', '11:30', 'close', '22:00', 'isClosed', false),
+        'thursday', JSON_OBJECT('open', '11:30', 'close', '22:00', 'isClosed', false),
+        'friday', JSON_OBJECT('open', '11:30', 'close', '23:00', 'isClosed', false),
+        'saturday', JSON_OBJECT('open', '11:30', 'close', '23:00', 'isClosed', false),
+        'sunday', JSON_OBJECT('open', '11:30', 'close', '22:00', 'isClosed', false)
+    )
+)
+WHERE `code` = 'shop001';
+
+-- shop002: カフェ モカ
+UPDATE `shops` 
+SET `settings` = JSON_OBJECT(
+    'regularHolidays', JSON_ARRAY(),
+    'temporaryHolidays', JSON_ARRAY('2024-12-31', '2025-01-01'),
+    'businessHours', JSON_OBJECT(
+        'monday', JSON_OBJECT('open', '07:00', 'close', '20:00', 'isClosed', false),
+        'tuesday', JSON_OBJECT('open', '07:00', 'close', '20:00', 'isClosed', false),
+        'wednesday', JSON_OBJECT('open', '07:00', 'close', '20:00', 'isClosed', false),
+        'thursday', JSON_OBJECT('open', '07:00', 'close', '20:00', 'isClosed', false),
+        'friday', JSON_OBJECT('open', '07:00', 'close', '21:00', 'isClosed', false),
+        'saturday', JSON_OBJECT('open', '08:00', 'close', '21:00', 'isClosed', false),
+        'sunday', JSON_OBJECT('open', '08:00', 'close', '20:00', 'isClosed', false)
+    )
+)
+WHERE `code` = 'shop002';
+
+-- shop003: 和食 さくら（毎週火曜日 + 毎月最終金曜日が定休日）
+UPDATE `shops` 
+SET `settings` = JSON_OBJECT(
+    'regularHolidays', JSON_ARRAY(
+        'tuesday',
+        JSON_OBJECT('type', 'monthly', 'day', 'friday', 'week', -1)
+    ),
+    'temporaryHolidays', JSON_ARRAY('2024-12-30', '2024-12-31', '2025-01-01', '2025-01-02', '2025-01-03'),
+    'businessHours', JSON_OBJECT(
+        'monday', JSON_OBJECT('open', '11:30', 'close', '14:30', 'isClosed', false),
+        'tuesday', JSON_OBJECT('open', '11:30', 'close', '14:30', 'isClosed', true),
+        'wednesday', JSON_OBJECT('open', '11:30', 'close', '14:30', 'isClosed', false),
+        'thursday', JSON_OBJECT('open', '11:30', 'close', '14:30', 'isClosed', false),
+        'friday', JSON_OBJECT('open', '11:30', 'close', '14:30', 'isClosed', false),
+        'saturday', JSON_OBJECT('open', '11:30', 'close', '14:30', 'isClosed', false),
+        'sunday', JSON_OBJECT('open', '11:30', 'close', '14:30', 'isClosed', false)
+    )
+)
+WHERE `code` = 'shop003';
+
+-- shop004: バーガーショップ ビーフ
+UPDATE `shops` 
+SET `settings` = JSON_OBJECT(
+    'regularHolidays', JSON_ARRAY(),
+    'temporaryHolidays', JSON_ARRAY('2025-01-01'),
+    'businessHours', JSON_OBJECT(
+        'monday', JSON_OBJECT('open', '10:00', 'close', '22:00', 'isClosed', false),
+        'tuesday', JSON_OBJECT('open', '10:00', 'close', '22:00', 'isClosed', false),
+        'wednesday', JSON_OBJECT('open', '10:00', 'close', '22:00', 'isClosed', false),
+        'thursday', JSON_OBJECT('open', '10:00', 'close', '22:00', 'isClosed', false),
+        'friday', JSON_OBJECT('open', '10:00', 'close', '23:00', 'isClosed', false),
+        'saturday', JSON_OBJECT('open', '10:00', 'close', '23:00', 'isClosed', false),
+        'sunday', JSON_OBJECT('open', '10:00', 'close', '22:00', 'isClosed', false)
+    )
+)
+WHERE `code` = 'shop004';
+
+-- shop005: パスタハウス マンマ
+UPDATE `shops` 
+SET `settings` = JSON_OBJECT(
+    'regularHolidays', JSON_ARRAY('monday'),
+    'temporaryHolidays', JSON_ARRAY('2024-12-25', '2024-12-31', '2025-01-01'),
+    'businessHours', JSON_OBJECT(
+        'monday', JSON_OBJECT('open', '11:30', 'close', '15:00', 'isClosed', true),
+        'tuesday', JSON_OBJECT('open', '11:30', 'close', '15:00', 'isClosed', false),
+        'wednesday', JSON_OBJECT('open', '11:30', 'close', '15:00', 'isClosed', false),
+        'thursday', JSON_OBJECT('open', '11:30', 'close', '15:00', 'isClosed', false),
+        'friday', JSON_OBJECT('open', '11:30', 'close', '15:00', 'isClosed', false),
+        'saturday', JSON_OBJECT('open', '11:30', 'close', '15:00', 'isClosed', false),
+        'sunday', JSON_OBJECT('open', '11:30', 'close', '15:00', 'isClosed', false)
+    )
+)
+WHERE `code` = 'shop005';
+
+-- shop006: ステーキハウス プレミアム（毎週月・火曜日 + 毎月第2水曜日が定休日）
+UPDATE `shops` 
+SET `settings` = JSON_OBJECT(
+    'regularHolidays', JSON_ARRAY(
+        'monday',
+        'tuesday',
+        JSON_OBJECT('type', 'monthly', 'day', 'wednesday', 'week', 2)
+    ),
+    'temporaryHolidays', JSON_ARRAY('2024-12-25', '2024-12-31', '2025-01-01', '2025-01-02'),
+    'businessHours', JSON_OBJECT(
+        'monday', JSON_OBJECT('open', '17:00', 'close', '23:00', 'isClosed', true),
+        'tuesday', JSON_OBJECT('open', '17:00', 'close', '23:00', 'isClosed', true),
+        'wednesday', JSON_OBJECT('open', '17:00', 'close', '23:00', 'isClosed', false),
+        'thursday', JSON_OBJECT('open', '17:00', 'close', '23:00', 'isClosed', false),
+        'friday', JSON_OBJECT('open', '17:00', 'close', '23:30', 'isClosed', false),
+        'saturday', JSON_OBJECT('open', '17:00', 'close', '23:30', 'isClosed', false),
+        'sunday', JSON_OBJECT('open', '17:00', 'close', '23:00', 'isClosed', false)
+    )
+)
+WHERE `code` = 'shop006';
+
+-- shop007: ラーメン屋 こだわり
+UPDATE `shops` 
+SET `settings` = JSON_OBJECT(
+    'regularHolidays', JSON_ARRAY('wednesday'),
+    'temporaryHolidays', JSON_ARRAY('2024-12-31', '2025-01-01'),
+    'businessHours', JSON_OBJECT(
+        'monday', JSON_OBJECT('open', '11:00', 'close', '15:00', 'isClosed', false),
+        'tuesday', JSON_OBJECT('open', '11:00', 'close', '15:00', 'isClosed', false),
+        'wednesday', JSON_OBJECT('open', '11:00', 'close', '15:00', 'isClosed', true),
+        'thursday', JSON_OBJECT('open', '11:00', 'close', '15:00', 'isClosed', false),
+        'friday', JSON_OBJECT('open', '11:00', 'close', '15:00', 'isClosed', false),
+        'saturday', JSON_OBJECT('open', '11:00', 'close', '15:00', 'isClosed', false),
+        'sunday', JSON_OBJECT('open', '11:00', 'close', '15:00', 'isClosed', false)
+    )
+)
+WHERE `code` = 'shop007';
+
+-- shop008: スイーツカフェ スイート
+UPDATE `shops` 
+SET `settings` = JSON_OBJECT(
+    'regularHolidays', JSON_ARRAY('tuesday'),
+    'temporaryHolidays', JSON_ARRAY('2024-12-25', '2024-12-31', '2025-01-01'),
+    'businessHours', JSON_OBJECT(
+        'monday', JSON_OBJECT('open', '10:00', 'close', '20:00', 'isClosed', false),
+        'tuesday', JSON_OBJECT('open', '10:00', 'close', '20:00', 'isClosed', true),
+        'wednesday', JSON_OBJECT('open', '10:00', 'close', '20:00', 'isClosed', false),
+        'thursday', JSON_OBJECT('open', '10:00', 'close', '20:00', 'isClosed', false),
+        'friday', JSON_OBJECT('open', '10:00', 'close', '21:00', 'isClosed', false),
+        'saturday', JSON_OBJECT('open', '10:00', 'close', '21:00', 'isClosed', false),
+        'sunday', JSON_OBJECT('open', '10:00', 'close', '20:00', 'isClosed', false)
+    )
+)
+WHERE `code` = 'shop008';
+
+-- ============================================
+-- 店舗テーブル（座席）データ
+-- ============================================
+
+-- 既存のテーブルデータを削除（重複を避けるため）
+DELETE st FROM `shop_tables` st
+INNER JOIN `shops` s ON st.shop_id = s.id
+WHERE s.code IN ('shop001', 'shop002', 'shop003', 'shop004', 'shop005', 'shop006', 'shop007', 'shop008');
+
+-- QRコードURLのベースURL（環境に応じて変更してください）
+SET @base_url = 'http://localhost:3000';
+
+-- shop001: レストラン イタリアン（15テーブル）
+INSERT INTO `shop_tables` (`shop_id`, `table_number`, `name`, `capacity`, `is_active`, `qr_code_url`) VALUES
+(@shop1_id, '1', '窓際席', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop001&table=1')),
+(@shop1_id, '2', '窓際席', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop001&table=2')),
+(@shop1_id, '3', '中央席', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop001&table=3')),
+(@shop1_id, '4', '中央席', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop001&table=4')),
+(@shop1_id, '5', '中央席', 6, 1, CONCAT(@base_url, '/shop-select?shop=shop001&table=5')),
+(@shop1_id, '6', '中央席', 6, 1, CONCAT(@base_url, '/shop-select?shop=shop001&table=6')),
+(@shop1_id, '7', '個室', 8, 1, CONCAT(@base_url, '/shop-select?shop=shop001&table=7')),
+(@shop1_id, '8', '個室', 8, 1, CONCAT(@base_url, '/shop-select?shop=shop001&table=8')),
+(@shop1_id, '9', 'カウンター', 2, 1, CONCAT(@base_url, '/shop-select?shop=shop001&table=9')),
+(@shop1_id, '10', 'カウンター', 2, 1, CONCAT(@base_url, '/shop-select?shop=shop001&table=10')),
+(@shop1_id, '11', 'テラス席', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop001&table=11')),
+(@shop1_id, '12', 'テラス席', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop001&table=12')),
+(@shop1_id, '13', 'テラス席', 2, 1, CONCAT(@base_url, '/shop-select?shop=shop001&table=13')),
+(@shop1_id, '14', 'VIP席', 6, 1, CONCAT(@base_url, '/shop-select?shop=shop001&table=14')),
+(@shop1_id, '15', 'VIP席', 6, 1, CONCAT(@base_url, '/shop-select?shop=shop001&table=15'));
+
+-- shop002: カフェ モカ（12テーブル）
+INSERT INTO `shop_tables` (`shop_id`, `table_number`, `name`, `capacity`, `is_active`, `qr_code_url`) VALUES
+(@shop2_id, '1', '窓際席', 2, 1, CONCAT(@base_url, '/shop-select?shop=shop002&table=1')),
+(@shop2_id, '2', '窓際席', 2, 1, CONCAT(@base_url, '/shop-select?shop=shop002&table=2')),
+(@shop2_id, '3', '窓際席', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop002&table=3')),
+(@shop2_id, '4', '中央席', 2, 1, CONCAT(@base_url, '/shop-select?shop=shop002&table=4')),
+(@shop2_id, '5', '中央席', 2, 1, CONCAT(@base_url, '/shop-select?shop=shop002&table=5')),
+(@shop2_id, '6', '中央席', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop002&table=6')),
+(@shop2_id, '7', '中央席', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop002&table=7')),
+(@shop2_id, '8', 'ソファ席', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop002&table=8')),
+(@shop2_id, '9', 'ソファ席', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop002&table=9')),
+(@shop2_id, '10', 'カウンター', 1, 1, CONCAT(@base_url, '/shop-select?shop=shop002&table=10')),
+(@shop2_id, '11', 'カウンター', 1, 1, CONCAT(@base_url, '/shop-select?shop=shop002&table=11')),
+(@shop2_id, '12', 'テラス席', 2, 1, CONCAT(@base_url, '/shop-select?shop=shop002&table=12'));
+
+-- shop003: 和食 さくら（18テーブル）
+INSERT INTO `shop_tables` (`shop_id`, `table_number`, `name`, `capacity`, `is_active`, `qr_code_url`) VALUES
+(@shop3_id, '1', '個室A', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop003&table=1')),
+(@shop3_id, '2', '個室A', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop003&table=2')),
+(@shop3_id, '3', '個室B', 6, 1, CONCAT(@base_url, '/shop-select?shop=shop003&table=3')),
+(@shop3_id, '4', '個室B', 6, 1, CONCAT(@base_url, '/shop-select?shop=shop003&table=4')),
+(@shop3_id, '5', '個室C', 8, 1, CONCAT(@base_url, '/shop-select?shop=shop003&table=5')),
+(@shop3_id, '6', '個室C', 8, 1, CONCAT(@base_url, '/shop-select?shop=shop003&table=6')),
+(@shop3_id, '7', '座敷', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop003&table=7')),
+(@shop3_id, '8', '座敷', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop003&table=8')),
+(@shop3_id, '9', '座敷', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop003&table=9')),
+(@shop3_id, '10', '座敷', 6, 1, CONCAT(@base_url, '/shop-select?shop=shop003&table=10')),
+(@shop3_id, '11', '座敷', 6, 1, CONCAT(@base_url, '/shop-select?shop=shop003&table=11')),
+(@shop3_id, '12', 'テーブル席', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop003&table=12')),
+(@shop3_id, '13', 'テーブル席', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop003&table=13')),
+(@shop3_id, '14', 'テーブル席', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop003&table=14')),
+(@shop3_id, '15', 'カウンター', 2, 1, CONCAT(@base_url, '/shop-select?shop=shop003&table=15')),
+(@shop3_id, '16', 'カウンター', 2, 1, CONCAT(@base_url, '/shop-select?shop=shop003&table=16')),
+(@shop3_id, '17', 'カウンター', 2, 1, CONCAT(@base_url, '/shop-select?shop=shop003&table=17')),
+(@shop3_id, '18', 'VIP個室', 10, 1, CONCAT(@base_url, '/shop-select?shop=shop003&table=18'));
+
+-- shop004: バーガーショップ ビーフ（10テーブル）
+INSERT INTO `shop_tables` (`shop_id`, `table_number`, `name`, `capacity`, `is_active`, `qr_code_url`) VALUES
+(@shop4_id, '1', 'テーブル席', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop004&table=1')),
+(@shop4_id, '2', 'テーブル席', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop004&table=2')),
+(@shop4_id, '3', 'テーブル席', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop004&table=3')),
+(@shop4_id, '4', 'テーブル席', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop004&table=4')),
+(@shop4_id, '5', 'テーブル席', 6, 1, CONCAT(@base_url, '/shop-select?shop=shop004&table=5')),
+(@shop4_id, '6', 'テーブル席', 6, 1, CONCAT(@base_url, '/shop-select?shop=shop004&table=6')),
+(@shop4_id, '7', 'カウンター', 2, 1, CONCAT(@base_url, '/shop-select?shop=shop004&table=7')),
+(@shop4_id, '8', 'カウンター', 2, 1, CONCAT(@base_url, '/shop-select?shop=shop004&table=8')),
+(@shop4_id, '9', 'カウンター', 2, 1, CONCAT(@base_url, '/shop-select?shop=shop004&table=9')),
+(@shop4_id, '10', 'テラス席', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop004&table=10'));
+
+-- shop005: パスタハウス マンマ（12テーブル）
+INSERT INTO `shop_tables` (`shop_id`, `table_number`, `name`, `capacity`, `is_active`, `qr_code_url`) VALUES
+(@shop5_id, '1', '窓際席', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop005&table=1')),
+(@shop5_id, '2', '窓際席', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop005&table=2')),
+(@shop5_id, '3', '中央席', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop005&table=3')),
+(@shop5_id, '4', '中央席', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop005&table=4')),
+(@shop5_id, '5', '中央席', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop005&table=5')),
+(@shop5_id, '6', '中央席', 6, 1, CONCAT(@base_url, '/shop-select?shop=shop005&table=6')),
+(@shop5_id, '7', '中央席', 6, 1, CONCAT(@base_url, '/shop-select?shop=shop005&table=7')),
+(@shop5_id, '8', '個室', 8, 1, CONCAT(@base_url, '/shop-select?shop=shop005&table=8')),
+(@shop5_id, '9', 'カウンター', 2, 1, CONCAT(@base_url, '/shop-select?shop=shop005&table=9')),
+(@shop5_id, '10', 'カウンター', 2, 1, CONCAT(@base_url, '/shop-select?shop=shop005&table=10')),
+(@shop5_id, '11', 'テラス席', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop005&table=11')),
+(@shop5_id, '12', 'テラス席', 2, 1, CONCAT(@base_url, '/shop-select?shop=shop005&table=12'));
+
+-- shop006: ステーキハウス プレミアム（10テーブル）
+INSERT INTO `shop_tables` (`shop_id`, `table_number`, `name`, `capacity`, `is_active`, `qr_code_url`) VALUES
+(@shop6_id, '1', 'VIP席', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop006&table=1')),
+(@shop6_id, '2', 'VIP席', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop006&table=2')),
+(@shop6_id, '3', 'VIP席', 6, 1, CONCAT(@base_url, '/shop-select?shop=shop006&table=3')),
+(@shop6_id, '4', '個室A', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop006&table=4')),
+(@shop6_id, '5', '個室A', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop006&table=5')),
+(@shop6_id, '6', '個室B', 6, 1, CONCAT(@base_url, '/shop-select?shop=shop006&table=6')),
+(@shop6_id, '7', '個室B', 6, 1, CONCAT(@base_url, '/shop-select?shop=shop006&table=7')),
+(@shop6_id, '8', '中央席', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop006&table=8')),
+(@shop6_id, '9', '中央席', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop006&table=9')),
+(@shop6_id, '10', '特別室', 8, 1, CONCAT(@base_url, '/shop-select?shop=shop006&table=10'));
+
+-- shop007: ラーメン屋 こだわり（8テーブル）
+INSERT INTO `shop_tables` (`shop_id`, `table_number`, `name`, `capacity`, `is_active`, `qr_code_url`) VALUES
+(@shop7_id, '1', 'カウンター', 1, 1, CONCAT(@base_url, '/shop-select?shop=shop007&table=1')),
+(@shop7_id, '2', 'カウンター', 1, 1, CONCAT(@base_url, '/shop-select?shop=shop007&table=2')),
+(@shop7_id, '3', 'カウンター', 1, 1, CONCAT(@base_url, '/shop-select?shop=shop007&table=3')),
+(@shop7_id, '4', 'カウンター', 1, 1, CONCAT(@base_url, '/shop-select?shop=shop007&table=4')),
+(@shop7_id, '5', 'テーブル席', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop007&table=5')),
+(@shop7_id, '6', 'テーブル席', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop007&table=6')),
+(@shop7_id, '7', 'テーブル席', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop007&table=7')),
+(@shop7_id, '8', 'テーブル席', 6, 1, CONCAT(@base_url, '/shop-select?shop=shop007&table=8'));
+
+-- shop008: スイーツカフェ スイート（10テーブル）
+INSERT INTO `shop_tables` (`shop_id`, `table_number`, `name`, `capacity`, `is_active`, `qr_code_url`) VALUES
+(@shop8_id, '1', '窓際席', 2, 1, CONCAT(@base_url, '/shop-select?shop=shop008&table=1')),
+(@shop8_id, '2', '窓際席', 2, 1, CONCAT(@base_url, '/shop-select?shop=shop008&table=2')),
+(@shop8_id, '3', '窓際席', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop008&table=3')),
+(@shop8_id, '4', '中央席', 2, 1, CONCAT(@base_url, '/shop-select?shop=shop008&table=4')),
+(@shop8_id, '5', '中央席', 2, 1, CONCAT(@base_url, '/shop-select?shop=shop008&table=5')),
+(@shop8_id, '6', '中央席', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop008&table=6')),
+(@shop8_id, '7', 'ソファ席', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop008&table=7')),
+(@shop8_id, '8', 'ソファ席', 4, 1, CONCAT(@base_url, '/shop-select?shop=shop008&table=8')),
+(@shop8_id, '9', 'カウンター', 1, 1, CONCAT(@base_url, '/shop-select?shop=shop008&table=9')),
+(@shop8_id, '10', 'テラス席', 2, 1, CONCAT(@base_url, '/shop-select?shop=shop008&table=10'));
+
+-- ============================================
+-- 来店者（visitors）データ
+-- ============================================
+
+-- 既存の来店者データを削除（重複を避けるため）
+DELETE v FROM `visitors` v
+INNER JOIN `shops` s ON v.shop_id = s.id
+WHERE s.code IN ('shop001', 'shop002', 'shop003', 'shop004', 'shop005', 'shop006', 'shop007', 'shop008');
+
+-- テーブルIDを取得（各店舗の最初のテーブルを使用）
+SET @shop1_table1_id = (SELECT id FROM shop_tables WHERE shop_id = @shop1_id AND table_number = '1' LIMIT 1);
+SET @shop2_table1_id = (SELECT id FROM shop_tables WHERE shop_id = @shop2_id AND table_number = '1' LIMIT 1);
+SET @shop3_table1_id = (SELECT id FROM shop_tables WHERE shop_id = @shop3_id AND table_number = '1' LIMIT 1);
+SET @shop4_table1_id = (SELECT id FROM shop_tables WHERE shop_id = @shop4_id AND table_number = '1' LIMIT 1);
+
+-- shop001: レストラン イタリアン - 来店者1（支払い完了）
+INSERT INTO `visitors` (`shop_id`, `table_id`, `table_number`, `number_of_guests`, `arrival_time`, `checkout_time`, `total_amount`, `payment_method`, `payment_status`, `is_set_completed`) VALUES
+(@shop1_id, @shop1_table1_id, '1', 2, DATE_SUB(NOW(), INTERVAL 2 HOUR), DATE_SUB(NOW(), INTERVAL 30 MINUTE), 3500, 'cash', 'completed', 1);
+SET @visitor1_id = LAST_INSERT_ID();
+
+-- shop001: レストラン イタリアン - 来店者2（支払い待ち）
+INSERT INTO `visitors` (`shop_id`, `table_id`, `table_number`, `number_of_guests`, `arrival_time`, `total_amount`, `payment_status`, `is_set_completed`) VALUES
+(@shop1_id, (SELECT id FROM shop_tables WHERE shop_id = @shop1_id AND table_number = '2' LIMIT 1), '2', 4, DATE_SUB(NOW(), INTERVAL 1 HOUR), 0, 'pending', 1);
+SET @visitor2_id = LAST_INSERT_ID();
+
+-- shop002: カフェ モカ - 来店者3（支払い完了）
+INSERT INTO `visitors` (`shop_id`, `table_id`, `table_number`, `number_of_guests`, `arrival_time`, `checkout_time`, `total_amount`, `payment_method`, `payment_status`, `is_set_completed`) VALUES
+(@shop2_id, @shop2_table1_id, '1', 2, DATE_SUB(NOW(), INTERVAL 3 HOUR), DATE_SUB(NOW(), INTERVAL 1 HOUR), 1200, 'credit', 'completed', 1);
+SET @visitor3_id = LAST_INSERT_ID();
+
+-- shop003: 和食 さくら - 来店者4（支払い待ち）
+INSERT INTO `visitors` (`shop_id`, `table_id`, `table_number`, `number_of_guests`, `arrival_time`, `total_amount`, `payment_status`, `is_set_completed`) VALUES
+(@shop3_id, @shop3_table1_id, '1', 3, DATE_SUB(NOW(), INTERVAL 30 MINUTE), 0, 'pending', 1);
+SET @visitor4_id = LAST_INSERT_ID();
+
+-- shop_tablesテーブルのvisitor_idとstatusを更新
+UPDATE `shop_tables` SET `visitor_id` = @visitor2_id, `status` = 'occupied' WHERE shop_id = @shop1_id AND table_number = '2';
+UPDATE `shop_tables` SET `visitor_id` = @visitor4_id, `status` = 'occupied' WHERE shop_id = @shop3_id AND table_number = '1';
+
+-- ============================================
+-- 注文（orders）データ
+-- ============================================
+
+-- 既存の注文データを削除（重複を避けるため）
+DELETE o FROM `orders` o
+INNER JOIN `shops` s ON o.shop_id = s.id
+WHERE s.code IN ('shop001', 'shop002', 'shop003', 'shop004', 'shop005', 'shop006', 'shop007', 'shop008');
+
+-- shop001: テーブル2の注文1（調理中）
+INSERT INTO `orders` (`shop_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
+(@shop1_id, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-001'), '2', 'cooking', 3500, DATE_SUB(NOW(), INTERVAL 45 MINUTE));
+SET @order1_id = LAST_INSERT_ID();
+
+-- shop001: テーブル2の注文2（受付済み）
+INSERT INTO `orders` (`shop_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
+(@shop1_id, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-002'), '2', 'accepted', 2400, DATE_SUB(NOW(), INTERVAL 20 MINUTE));
+SET @order2_id = LAST_INSERT_ID();
+
+-- shop003: テーブル1の注文3（受付済み）
+INSERT INTO `orders` (`shop_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
+(@shop3_id, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-003'), '1', 'accepted', 2800, DATE_SUB(NOW(), INTERVAL 15 MINUTE));
+SET @order3_id = LAST_INSERT_ID();
+
+-- ============================================
+-- 注文アイテム（order_items）データ
+-- ============================================
+
+-- 既存の注文アイテムデータを削除（重複を避けるため）
+DELETE oi FROM `order_items` oi
+INNER JOIN `orders` o ON oi.order_id = o.id
+INNER JOIN `shops` s ON o.shop_id = s.id
+WHERE s.code IN ('shop001', 'shop002', 'shop003', 'shop004', 'shop005', 'shop006', 'shop007', 'shop008');
+
+-- メニューIDを取得
+SET @shop1_menu1_id = (SELECT id FROM menus WHERE shop_id = @shop1_id AND number = '001' LIMIT 1);
+SET @shop1_menu2_id = (SELECT id FROM menus WHERE shop_id = @shop1_id AND number = '002' LIMIT 1);
+SET @shop1_menu3_id = (SELECT id FROM menus WHERE shop_id = @shop1_id AND number = '011' LIMIT 1);
+SET @shop1_menu4_id = (SELECT id FROM menus WHERE shop_id = @shop1_id AND number = '012' LIMIT 1);
+SET @shop3_menu1_id = (SELECT id FROM menus WHERE shop_id = @shop3_id AND number = '001' LIMIT 1);
+SET @shop3_menu2_id = (SELECT id FROM menus WHERE shop_id = @shop3_id AND number = '002' LIMIT 1);
+
+-- 注文1のアイテム（マルゲリータピザ、ワイン、ティラミス）
+INSERT INTO `order_items` (`order_id`, `menu_id`, `menu_number`, `menu_name`, `quantity`, `price`) VALUES
+(@order1_id, @shop1_menu1_id, '001', 'マルゲリータピザ', 2, 1200),
+(@order1_id, @shop1_menu3_id, '011', 'ワイン（グラス）', 2, 600),
+(@order1_id, @shop1_menu4_id, '012', 'ティラミス', 1, 700);
+
+-- 注文2のアイテム（カルボナーラ、シーザーサラダ）
+INSERT INTO `order_items` (`order_id`, `menu_id`, `menu_number`, `menu_name`, `quantity`, `price`) VALUES
+(@order2_id, (SELECT id FROM menus WHERE shop_id = @shop1_id AND number = '002' LIMIT 1), '002', 'カルボナーラ', 2, 1100),
+(@order2_id, (SELECT id FROM menus WHERE shop_id = @shop1_id AND number = '005' LIMIT 1), '005', 'シーザーサラダ', 1, 800);
+
+-- 注文3のアイテム（刺身盛り合わせ、天ぷら定食）
+INSERT INTO `order_items` (`order_id`, `menu_id`, `menu_number`, `menu_name`, `quantity`, `price`) VALUES
+(@order3_id, @shop3_menu1_id, '001', '刺身盛り合わせ', 1, 1800),
+(@order3_id, @shop3_menu2_id, '002', '天ぷら定食', 1, 1200);
+
+-- ============================================
+-- 会計（payments）データ
+-- ============================================
+
+-- 既存の会計データを削除（重複を避けるため）
+DELETE p FROM `payments` p
+INNER JOIN `orders` o ON p.order_id = o.id
+INNER JOIN `shops` s ON o.shop_id = s.id
+WHERE s.code IN ('shop001', 'shop002', 'shop003', 'shop004', 'shop005', 'shop006', 'shop007', 'shop008');
+
+-- 注文1の会計（現金）
+-- 注: 注文1は既に支払い済みのvisitor1に関連付けられているため、会計データは追加しない
+
+-- 注文2と注文3はまだ支払い待ちのため、会計データは追加しない
+
+-- ============================================
+-- エラーログサンプルデータ（テスト用）
+-- ============================================
+
+-- 既存のエラーログサンプルデータを削除（重複を避けるため）
+-- 注意: error_logsテーブルが存在する場合のみ実行される
+DELETE el FROM `error_logs` el
+WHERE el.id > 0
+AND EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'error_logs');
+
+-- ユーザーIDを取得（スタッフユーザーを使用）
+SET @staff_user1_id = (SELECT id FROM users WHERE username = 'staff_italian_01' LIMIT 1);
+SET @staff_user2_id = (SELECT id FROM users WHERE username = 'staff_moka_01' LIMIT 1);
+SET @staff_user3_id = (SELECT id FROM users WHERE username = 'staff_sakura_01' LIMIT 1);
+
+-- エラーログサンプルデータの挿入（error_logsテーブルが存在する場合のみ）
+-- 注意: テーブルが存在しない場合はエラーにならないように条件付きで実行
+INSERT INTO `error_logs` (`level`, `environment`, `message`, `file`, `line`, `trace`, `user_id`, `shop_id`, `request_method`, `request_uri`, `ip_address`, `created_at`)
+SELECT * FROM (
+    SELECT 'error' as level, 'development' as environment, 'データベース接続エラー: Connection refused' as message, '/api-server/config.php' as file, 45 as line, JSON_OBJECT('frames', JSON_ARRAY(JSON_OBJECT('file', '/api-server/config.php', 'line', 45, 'function', 'getDbConnection', 'class', NULL))) as trace, @staff_user1_id as user_id, @shop1_id as shop_id, 'GET' as request_method, '/api/menus' as request_uri, '192.168.1.100' as ip_address, DATE_SUB(NOW(), INTERVAL 2 DAY) as created_at
+    UNION ALL
+    SELECT 'warning', 'production', 'リクエストパラメータが不正です: limit=abc', '/api-server/api/menus.php', 45, NULL, NULL, @shop1_id, 'GET', '/api/menus?limit=abc', '192.168.1.104', DATE_SUB(NOW(), INTERVAL 4 HOUR)
+    UNION ALL
+    SELECT 'info', 'production', 'ユーザーログイン成功', '/api-server/api/auth.php', 45, NULL, @staff_user1_id, @shop1_id, 'POST', '/api/auth/login', '192.168.1.100', DATE_SUB(NOW(), INTERVAL 1 DAY)
+    UNION ALL
+    SELECT 'error', 'production', '認証トークンが無効です', '/api-server/config.php', 123, JSON_OBJECT('frames', JSON_ARRAY(JSON_OBJECT('file', '/api-server/config.php', 'line', 123, 'function', 'checkAuth', 'class', NULL))), NULL, @shop1_id, 'POST', '/api/orders', '203.0.113.45', DATE_SUB(NOW(), INTERVAL 29 HOUR)
+    UNION ALL
+    SELECT 'debug', 'development', 'SQLクエリ実行: SELECT * FROM menus WHERE shop_id = 1', '/api-server/api/menus.php', 67, NULL, NULL, @shop1_id, 'GET', '/api/menus', '192.168.1.100', DATE_SUB(NOW(), INTERVAL 5 HOUR)
+) AS error_logs_data
+WHERE EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'error_logs');
+
+-- ============================================
 -- 完了メッセージ
 -- ============================================
 
 SELECT 
     'サンプルデータの挿入が完了しました！' AS message,
     (SELECT COUNT(*) FROM shops WHERE code IN ('shop001', 'shop002', 'shop003', 'shop004', 'shop005', 'shop006', 'shop007', 'shop008')) AS shop_count,
-    (SELECT COUNT(*) FROM users WHERE username IN ('admin', 'owner_multi', 'owner_sakura', 'manager_beef', 'staff_mamma', 'owner_premium', 'seki')) AS user_count,
+    (SELECT COUNT(*) FROM users WHERE username IN ('admin', 'owner_multi', 'owner_sakura', 'manager_beef', 'staff_mamma', 'owner_premium', 'seki') OR username LIKE 'staff_%') AS user_count,
     (SELECT COUNT(*) FROM menus) AS menu_count,
+    (SELECT COUNT(*) FROM shop_tables WHERE shop_id IN (@shop1_id, @shop2_id, @shop3_id, @shop4_id, @shop5_id, @shop6_id, @shop7_id, @shop8_id)) AS table_count,
+    (SELECT COUNT(*) FROM visitors WHERE shop_id IN (@shop1_id, @shop2_id, @shop3_id, @shop4_id, @shop5_id, @shop6_id, @shop7_id, @shop8_id)) AS visitor_count,
+    (SELECT COUNT(*) FROM orders WHERE shop_id IN (@shop1_id, @shop2_id, @shop3_id, @shop4_id, @shop5_id, @shop6_id, @shop7_id, @shop8_id)) AS order_count,
     'サービス管理者アカウント: admin / password123' AS admin_account,
-    '管理者アカウント: seki / password123' AS seki_account;
+    '管理者アカウント: seki / password123' AS seki_account,
+    '全スタッフのパスワード: password123' AS staff_password;
 

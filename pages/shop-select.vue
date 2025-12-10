@@ -96,11 +96,12 @@
             <p class="mt-4 text-gray-500 font-medium">テーブル一覧を読み込み中...</p>
           </div>
 
-          <div v-else-if="availableTables.length === 0" class="bg-white p-8 rounded-2xl shadow-lg text-center">
+          <div v-else-if="allTables.length === 0" class="bg-white p-8 rounded-2xl shadow-lg text-center">
             <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
             </svg>
-            <p class="text-gray-500 font-medium">利用可能なテーブルがありません</p>
+            <p class="text-gray-500 font-medium">テーブルが見つかりません</p>
+            <p v-if="errorMessage" class="mt-2 text-sm text-red-500">{{ errorMessage }}</p>
           </div>
 
           <div v-else class="bg-white p-6 rounded-2xl shadow-lg">
@@ -233,11 +234,17 @@ onMounted(async () => {
         
         // テーブル一覧を取得
         isLoadingTables.value = true
+        errorMessage.value = ''
         try {
           const tables = await tableStore.fetchTablesByShopCode(shopCodeFromQuery)
-          allTables.value = tables
-        } catch (error) {
+          allTables.value = tables || []
+          if (allTables.value.length === 0) {
+            errorMessage.value = 'この店舗にはテーブルが登録されていません'
+          }
+        } catch (error: any) {
           console.error('テーブル一覧の取得に失敗しました:', error)
+          errorMessage.value = error?.message || 'テーブル一覧の取得に失敗しました'
+          allTables.value = []
         } finally {
           isLoadingTables.value = false
         }
@@ -282,12 +289,17 @@ const selectShop = async (shop: Shop) => {
   
   // テーブル一覧を取得
   isLoadingTables.value = true
+  errorMessage.value = ''
   try {
     const tables = await tableStore.fetchTablesByShopCode(shop.code)
-    allTables.value = tables
-  } catch (error) {
+    allTables.value = tables || []
+    if (allTables.value.length === 0) {
+      errorMessage.value = 'この店舗にはテーブルが登録されていません'
+    }
+  } catch (error: any) {
     console.error('テーブル一覧の取得に失敗しました:', error)
-    errorMessage.value = 'テーブル一覧の取得に失敗しました'
+    errorMessage.value = error?.message || 'テーブル一覧の取得に失敗しました'
+    allTables.value = []
   } finally {
     isLoadingTables.value = false
   }

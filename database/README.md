@@ -18,28 +18,20 @@
 
 ### サンプルデータ
 
-- **`sample-data.sql`** - 最新のサンプルデータ（**推奨**）
-  - ユーザー: 7人（admin, owner_multi, owner_sakura, manager_beef, staff_mamma, owner_premium, seki）
-  - 店舗: 8店舗
-  - メニュー: 100点
-  - カテゴリ: 日本語ラベル付き
-
-### 追加データ
-
-- **`add-dummy-staff.sql`** - ダミースタッフ追加スクリプト
-  - 各店舗に2-3人のスタッフを追加
-  - 合計19人のスタッフを追加
-  - パスワード: `password123`
-
-- **`add-dummy-tables.sql`** - 店舗テーブル（座席）データ追加
-  - 各店舗に8-18席のテーブルを追加
-  - QRコードURLを含む
-
-- **`add-shop-business-hours.sql`** - 営業時間・定休日データ追加
-  - 各店舗の営業時間と定休日を設定
-
-- **`add-error-logs-sample.sql`** - エラーログサンプルデータ追加
-  - テスト用のエラーログサンプルデータ
+- **`sample-data.sql`** - 完全統合サンプルデータ（**推奨・必須**）
+  - **ユーザー**: 7人（admin, owner_multi, owner_sakura, manager_beef, staff_mamma, owner_premium, seki）
+  - **ダミースタッフ**: 19人（各店舗に2-3人のスタッフ）
+  - **店舗**: 8店舗
+  - **メニュー**: 100点
+  - **カテゴリ**: 日本語ラベル付き
+  - **テーブル（座席）**: 95テーブル（各店舗に8-18席、QRコードURL付き）
+  - **営業時間・定休日**: 各店舗の営業時間と定休日設定
+  - **来店者データ**: 4件（支払い完了/待ちのサンプル）
+  - **注文データ**: 3件（各種ステータスのサンプル）
+  - **注文アイテム**: 7件
+  - **エラーログサンプル**: テスト用のエラーログデータ（error_logsテーブルが存在する場合のみ）
+  
+  **全ユーザー・スタッフのパスワード**: `password123`
 
 ## セットアップ手順
 
@@ -58,14 +50,8 @@ SOURCE create-shop-categories-table.sql;
 SOURCE create-shop-tables.sql;
 SOURCE create-visitor-table.sql;
 
--- 4. サンプルデータを挿入
+-- 4. サンプルデータを挿入（すべてのデータが含まれています）
 SOURCE sample-data.sql;
-
--- 5. 追加データを挿入（オプション）
-SOURCE add-dummy-staff.sql;
-SOURCE add-dummy-tables.sql;
-SOURCE add-shop-business-hours.sql;
-SOURCE add-error-logs-sample.sql;
 ```
 
 ### 2. 既存データベースからの移行
@@ -88,7 +74,7 @@ SOURCE add-error-logs-sample.sql;
 
 ### ダミースタッフ（19人）
 
-`add-dummy-staff.sql`を実行すると、各店舗に以下のスタッフが追加されます：
+`sample-data.sql`には、各店舗に以下のスタッフが含まれています：
 
 - **shop001**: 3人（佐々木 健太、高橋 美咲、中村 翔太）
 - **shop002**: 2人（渡辺 さくら、伊藤 大輔）
