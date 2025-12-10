@@ -802,24 +802,28 @@ AND EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = DATABAS
 
 -- ユーザーIDを取得（スタッフユーザーを使用）
 SET @staff_user1_id = (SELECT id FROM users WHERE username = 'staff_italian_01' LIMIT 1);
-SET @staff_user2_id = (SELECT id FROM users WHERE username = 'staff_moka_01' LIMIT 1);
-SET @staff_user3_id = (SELECT id FROM users WHERE username = 'staff_sakura_01' LIMIT 1);
 
 -- エラーログサンプルデータの挿入（error_logsテーブルが存在する場合のみ）
--- 注意: テーブルが存在しない場合はエラーにならないように条件付きで実行
+-- 注意: テーブルが存在しない場合はスキップされる
+SET @error_logs_table_exists = (SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'error_logs');
+
+-- エラーログサンプルデータ（5件）
+-- 注意: error_logsテーブルが存在する場合のみ実行
 INSERT INTO `error_logs` (`level`, `environment`, `message`, `file`, `line`, `trace`, `user_id`, `shop_id`, `request_method`, `request_uri`, `ip_address`, `created_at`)
-SELECT * FROM (
-    SELECT 'error' as level, 'development' as environment, 'データベース接続エラー: Connection refused' as message, '/api-server/config.php' as file, 45 as line, JSON_OBJECT('frames', JSON_ARRAY(JSON_OBJECT('file', '/api-server/config.php', 'line', 45, 'function', 'getDbConnection', 'class', NULL))) as trace, @staff_user1_id as user_id, @shop1_id as shop_id, 'GET' as request_method, '/api/menus' as request_uri, '192.168.1.100' as ip_address, DATE_SUB(NOW(), INTERVAL 2 DAY) as created_at
-    UNION ALL
-    SELECT 'warning', 'production', 'リクエストパラメータが不正です: limit=abc', '/api-server/api/menus.php', 45, NULL, NULL, @shop1_id, 'GET', '/api/menus?limit=abc', '192.168.1.104', DATE_SUB(NOW(), INTERVAL 4 HOUR)
-    UNION ALL
-    SELECT 'info', 'production', 'ユーザーログイン成功', '/api-server/api/auth.php', 45, NULL, @staff_user1_id, @shop1_id, 'POST', '/api/auth/login', '192.168.1.100', DATE_SUB(NOW(), INTERVAL 1 DAY)
-    UNION ALL
-    SELECT 'error', 'production', '認証トークンが無効です', '/api-server/config.php', 123, JSON_OBJECT('frames', JSON_ARRAY(JSON_OBJECT('file', '/api-server/config.php', 'line', 123, 'function', 'checkAuth', 'class', NULL))), NULL, @shop1_id, 'POST', '/api/orders', '203.0.113.45', DATE_SUB(NOW(), INTERVAL 29 HOUR)
-    UNION ALL
-    SELECT 'debug', 'development', 'SQLクエリ実行: SELECT * FROM menus WHERE shop_id = 1', '/api-server/api/menus.php', 67, NULL, NULL, @shop1_id, 'GET', '/api/menus', '192.168.1.100', DATE_SUB(NOW(), INTERVAL 5 HOUR)
-) AS error_logs_data
-WHERE EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'error_logs');
+SELECT 'error', 'development', 'データベース接続エラー: Connection refused', '/api-server/config.php', 45, JSON_OBJECT('frames', JSON_ARRAY(JSON_OBJECT('file', '/api-server/config.php', 'line', 45, 'function', 'getDbConnection', 'class', NULL))), @staff_user1_id, @shop1_id, 'GET', '/api/menus', '192.168.1.100', DATE_SUB(NOW(), INTERVAL 2 DAY)
+WHERE @error_logs_table_exists > 0
+UNION ALL
+SELECT 'warning', 'production', 'リクエストパラメータが不正です: limit=abc', '/api-server/api/menus.php', 45, NULL, NULL, @shop1_id, 'GET', '/api/menus?limit=abc', '192.168.1.104', DATE_SUB(NOW(), INTERVAL 4 HOUR)
+WHERE @error_logs_table_exists > 0
+UNION ALL
+SELECT 'info', 'production', 'ユーザーログイン成功', '/api-server/api/auth.php', 45, NULL, @staff_user1_id, @shop1_id, 'POST', '/api/auth/login', '192.168.1.100', DATE_SUB(NOW(), INTERVAL 1 DAY)
+WHERE @error_logs_table_exists > 0
+UNION ALL
+SELECT 'error', 'production', '認証トークンが無効です', '/api-server/config.php', 123, JSON_OBJECT('frames', JSON_ARRAY(JSON_OBJECT('file', '/api-server/config.php', 'line', 123, 'function', 'checkAuth', 'class', NULL))), NULL, @shop1_id, 'POST', '/api/orders', '203.0.113.45', DATE_SUB(NOW(), INTERVAL 29 HOUR)
+WHERE @error_logs_table_exists > 0
+UNION ALL
+SELECT 'debug', 'development', 'SQLクエリ実行: SELECT * FROM menus WHERE shop_id = 1', '/api-server/api/menus.php', 67, NULL, NULL, @shop1_id, 'GET', '/api/menus', '192.168.1.100', DATE_SUB(NOW(), INTERVAL 5 HOUR)
+WHERE @error_logs_table_exists > 0;
 
 -- ============================================
 -- 完了メッセージ
