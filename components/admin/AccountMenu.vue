@@ -72,6 +72,7 @@
         </div>
       </div>
     </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -101,21 +102,30 @@ const menuStyle = computed(() => {
   
   const rect = menuButton.value.getBoundingClientRect()
   const menuWidth = 224 // w-56 = 14rem = 224px
-  const menuHeight = 200 // おおよその高さ
   const spacing = 8 // mt-2 = 0.5rem = 8px
+  const margin = 16 // 画面端からのマージン
+  
+  const top = rect.bottom + spacing
   
   // 画面の右端からの距離を計算
   const right = window.innerWidth - rect.right
-  const top = rect.bottom + spacing
   
-  // スマホでは右端に寄せるが、画面外に出ないように調整
-  const maxRight = Math.max(16, right) // 最小16pxのマージン
-  const adjustedRight = Math.min(maxRight, window.innerWidth - menuWidth - 16)
+  // メニューが画面外に出ないように調整
+  // ボタンの右端を基準に、メニューの右端が画面内に収まるようにする
+  let adjustedRight = right
+  
+  // メニューが画面外に出る場合は、左側にシフト
+  if (right + menuWidth > window.innerWidth - margin) {
+    adjustedRight = Math.max(margin, window.innerWidth - rect.right - menuWidth)
+  }
+  
+  // 最小マージンを確保
+  adjustedRight = Math.max(margin, adjustedRight)
   
   return {
     top: `${top}px`,
     right: `${adjustedRight}px`,
-    width: `${Math.min(menuWidth, window.innerWidth - 32)}px`,
+    width: `${Math.min(menuWidth, window.innerWidth - margin * 2)}px`,
     maxWidth: 'calc(100vw - 2rem)'
   }
 })
