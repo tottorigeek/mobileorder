@@ -22,14 +22,14 @@ export const useAuthStore = defineStore('auth', {
   },
 
   actions: {
-    async login(username: string, password: string) {
+    async login(username: string, password: string, companyLogin: boolean = false) {
       this.isLoading = true
       try {
         const { buildUrl } = useApiBase()
         
         const response = await $fetch<{ success: boolean; token: string; user: User }>(buildUrl('auth/login'), {
           method: 'POST',
-          body: { username, password },
+          body: { username, password, company_login: companyLogin },
           credentials: 'include' // クッキーを含める（後方互換性のため）
         })
         

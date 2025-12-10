@@ -204,7 +204,7 @@ const handleLogin = async () => {
   errorMessage.value = ''
   
   try {
-    const success = await authStore.login(username.value, password.value)
+    const success = await authStore.login(username.value, password.value, true) // companyLoginフラグをtrueに設定
     
     if (success && authStore.user) {
       // 弊社向け管理ページにリダイレクト

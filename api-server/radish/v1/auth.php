@@ -90,26 +90,158 @@ function login() {
         $checkStmt->execute([':username' => $input['username']]);
         $userCheck = $checkStmt->fetch();
         
-        // ユーザーが存在しない場合、無効化されている場合、店舗が無効化されている場合、パスワードが一致しない場合
-        // セキュリティ上の理由で、すべて同じエラーメッセージを返す
-        // shop_activeがNULLの場合は店舗が存在しないことを意味するため、ログインを拒否
-        if (!$userCheck || 
-            !$userCheck['is_active'] || 
-            !$userCheck['shop_id'] || 
-            ($userCheck['shop_active'] === null || !$userCheck['shop_active']) || 
-            !password_verify($input['password'], $userCheck['password_hash'])) {
+        // デバッグログ
+        if (defined('DEBUG_MODE') && DEBUG_MODE) {
+            error_log("Login attempt - Username: {$input['username']}");
+            if ($userCheck) {
+                error_log("  User found: yes");
+                error_log("  User ID: {$userCheck['id']}");
+                error_log("  Is active: " . ($userCheck['is_active'] ? 'yes' : 'no'));
+                error_log("  Shop ID: " . ($userCheck['shop_id'] ?? 'not set'));
+                error_log("  Shop active: " . ($userCheck['shop_active'] ? 'yes' : ($userCheck['shop_active'] === null ? 'null' : 'no')));
+                
+                // パスワード検証テスト
+                $passwordMatch = password_verify($input['password'], $userCheck['password_hash']);
+                error_log("  Password match: " . ($passwordMatch ? 'yes' : 'no'));
+                
+                if (!$passwordMatch) {
+                    error_log("  Password verification failed");
+                    error_log("  Input password length: " . strlen($input['password']));
+                    error_log("  Stored hash preview: " . substr($userCheck['password_hash'], 0, 20) . "...");
+                }
+            } else {
+                error_log("  User found: no");
+            }
+        }
+        
+        /**
+         * ログインタイプの判定
+         * 
+         * 【重要】弊社向け管理ログイン（/company/login）の判定
+         * - company_loginフラグがtrueの場合、弊社向け管理ログインとして扱う
+         * - 弊社向け管理ログインの場合は店舗の状態チェックをスキップする
+         * - 理由: 弊社向け管理画面は店舗の状態に関係なくアクセスできる必要がある
+         * 
+         * 【注意】将来の変更時:
+         * - この判定ロジックを変更する場合は、/company/loginと/staff/loginの両方の動作を確認すること
+         * - 店舗チェックを追加する場合は、弊社向け管理ログインの場合はスキップする条件を維持すること
+         */
+        $isCompanyLogin = isset($input['company_login']) && $input['company_login'] === true;
+        
+        if (defined('DEBUG_MODE') && DEBUG_MODE) {
+            error_log("  Company login mode: " . ($isCompanyLogin ? 'yes' : 'no'));
+        }
+        
+        /**
+         * ログイン条件の検証
+         * 
+         * 【共通チェック項目】
+         * 1. ユーザーの存在確認
+         * 2. ユーザーの有効性（is_active）
+         * 3. パスワードの一致確認
+         * 
+         * 【通常ログイン（/staff/login）のみのチェック項目】
+         * 4. 店舗IDの存在確認（shop_id）
+         * 5. 店舗の有効性（shop_active）
+         * 
+         * 【弊社向け管理ログイン（/company/login）の場合】
+         * - 上記の4と5をスキップする
+         * - 理由: 弊社向け管理画面は店舗の状態に関係なくアクセスできる必要がある
+         * 
+         * 【セキュリティ】
+         * - すべての失敗理由に対して同じエラーメッセージを返す
+         * - ユーザー列挙攻撃を防ぐため
+         */
+        $loginCheckFailed = false;
+        $failureReasons = [];
+        
+        // 1. ユーザーの存在確認
+        if (!$userCheck) {
+            $loginCheckFailed = true;
+            $failureReasons[] = 'user_not_found';
+        }
+        // 2. ユーザーの有効性確認
+        elseif (!$userCheck['is_active']) {
+            $loginCheckFailed = true;
+            $failureReasons[] = 'user_inactive';
+        }
+        // 3. 通常ログインの場合のみ店舗チェックを実行
+        elseif (!$isCompanyLogin) {
+            /**
+             * 【重要】通常ログイン（/staff/login）の場合のみ店舗チェックを実行
+             * 
+             * 弊社向け管理ログイン（/company/login）の場合はこのブロックをスキップする
+             * - 理由: 弊社向け管理画面は店舗の状態に関係なくアクセスできる必要がある
+             * 
+             * 【注意】将来の変更時:
+             * - この条件分岐を削除したり変更したりしないこと
+             * - 店舗チェックを追加する場合は、$isCompanyLoginの条件を維持すること
+             */
+            // 4. 店舗IDの存在確認
+            if (!$userCheck['shop_id']) {
+                $loginCheckFailed = true;
+                $failureReasons[] = 'no_shop_id';
+            }
+            // 5. 店舗の有効性確認
+            elseif ($userCheck['shop_active'] === null || !$userCheck['shop_active']) {
+                $loginCheckFailed = true;
+                $failureReasons[] = 'shop_inactive';
+            }
+        }
+        
+        // 3. パスワード検証（すべてのログインタイプで共通）
+        if ($userCheck && !password_verify($input['password'], $userCheck['password_hash'])) {
+            $loginCheckFailed = true;
+            $failureReasons[] = 'password_mismatch';
+        }
+        
+        if ($loginCheckFailed) {
+            if (defined('DEBUG_MODE') && DEBUG_MODE) {
+                error_log("Login failed - Reasons: " . implode(', ', $failureReasons));
+            }
             sendUnauthorizedError('Invalid credentials');
         }
         
-        // ログイン成功 - ユーザー情報を取得
-        $stmt = $pdo->prepare("
-            SELECT u.*, s.code as shop_code, s.name as shop_name 
-            FROM users u
-            INNER JOIN shops s ON u.shop_id = s.id
-            WHERE u.username = :username 
-            AND u.is_active = 1 
-            AND s.is_active = 1
-        ");
+        /**
+         * ログイン成功 - ユーザー情報の取得
+         * 
+         * 【重要】ログインタイプに応じて異なるSQLクエリを使用
+         * 
+         * 【弊社向け管理ログイン（/company/login）の場合】
+         * - LEFT JOINを使用して店舗が無効でも取得可能
+         * - shop_activeの条件を追加しない
+         * - 理由: 弊社向け管理画面は店舗の状態に関係なくアクセスできる必要がある
+         * 
+         * 【通常ログイン（/staff/login）の場合】
+         * - INNER JOINを使用して店舗が有効な場合のみ取得
+         * - shop_active = 1の条件を追加
+         * - 理由: 通常のログインは店舗が有効である必要がある
+         * 
+         * 【注意】将来の変更時:
+         * - この条件分岐を削除したり変更したりしないこと
+         * - 弊社向け管理ログインの場合はLEFT JOINとshop_active条件なしを維持すること
+         * - 通常ログインの場合はINNER JOINとshop_active = 1条件を維持すること
+         */
+        if ($isCompanyLogin) {
+            // 弊社向け管理ログイン: 店舗の状態に関係なく取得
+            $stmt = $pdo->prepare("
+                SELECT u.*, s.code as shop_code, s.name as shop_name 
+                FROM users u
+                LEFT JOIN shops s ON u.shop_id = s.id
+                WHERE u.username = :username 
+                AND u.is_active = 1
+            ");
+        } else {
+            // 通常ログイン: 店舗が有効な場合のみ取得
+            $stmt = $pdo->prepare("
+                SELECT u.*, s.code as shop_code, s.name as shop_name 
+                FROM users u
+                INNER JOIN shops s ON u.shop_id = s.id
+                WHERE u.username = :username 
+                AND u.is_active = 1 
+                AND s.is_active = 1
+            ");
+        }
         $stmt->execute([':username' => $input['username']]);
         $user = $stmt->fetch();
         
@@ -240,15 +372,80 @@ function forgotPassword() {
         }
         $user = $stmt->fetch();
         
-        // セキュリティ上の理由で、ユーザーが存在しない場合でも成功メッセージを返す
-        if (!$user || !$user['shop_active'] || !$user['email']) {
+        // デバッグログ
+        if (defined('DEBUG_MODE') && DEBUG_MODE) {
+            error_log("Password reset request - User search result:");
+            error_log("  Search value: " . (isset($input['username']) ? $input['username'] : $input['email']));
+            error_log("  User found: " . ($user ? 'yes' : 'no'));
+            if ($user) {
+                error_log("  User ID: " . $user['id']);
+                error_log("  Username: " . $user['username']);
+                error_log("  Email: " . ($user['email'] ?? 'not set'));
+                error_log("  Is active: " . ($user['is_active'] ? 'yes' : 'no'));
+                error_log("  Shop ID: " . ($user['shop_id'] ?? 'not set'));
+                error_log("  Shop active: " . ($user['shop_active'] ? 'yes' : ($user['shop_active'] === null ? 'null' : 'no')));
+            }
+        }
+        
+        /**
+         * パスワードリセットのユーザー検証
+         * 
+         * 【重要】セキュリティ上の理由で、ユーザーが存在しない場合でも成功メッセージを返す
+         * （ユーザー列挙攻撃を防ぐため）
+         * 
+         * 【重要】パスワードリセットは店舗の状態に関係なく送信できる
+         * - 理由: ログインできない状況を解決するための機能であるため
+         * - 店舗が無効化されていても、ユーザーがパスワードを忘れた場合にリセットできる必要がある
+         * - ログイン時は店舗が有効である必要があるが、パスワードリセットはその前段階の機能
+         * 
+         * 【注意】将来の変更時:
+         * - この部分で店舗の状態チェック（shop_active）を追加しないこと
+         * - 店舗が無効でもメールを送信する必要がある
+         * - ユーザーが存在しない、またはメールアドレスが未設定の場合のみ早期リターン
+         */
+        if (!$user || !$user['email']) {
             // ユーザーが存在しない、またはメールアドレスが登録されていない場合でも
             // 成功メッセージを返す（ユーザー列挙攻撃を防ぐため）
-            echo json_encode([
+            $reason = [];
+            if (!$user) {
+                $reason[] = 'user_not_found';
+                error_log("Password reset: User not found");
+            } elseif (!$user['email']) {
+                $reason[] = 'email_not_set';
+                error_log("Password reset: User email not set");
+            }
+            
+            $response = [
                 'success' => true,
-                'message' => 'パスワードリセットメールを送信しました。メールが届かない場合は、登録されているメールアドレスを確認してください。'
-            ], JSON_UNESCAPED_UNICODE);
+                'message' => 'パスワードリセットメールを送信しました。メールが届かない場合は、登録されているメールアドレスを確認してください。',
+                'email_sent' => false
+            ];
+            
+            if (defined('DEBUG_MODE') && DEBUG_MODE) {
+                $response['debug'] = [
+                    'user_found' => $user !== false,
+                    'reason' => $reason,
+                    'user_exists' => $user !== false,
+                    'user_has_email' => $user && !empty($user['email']),
+                    'shop_active' => $user && $user['shop_active'],
+                    'note' => 'パスワードリセットは店舗の状態に関係なく送信されます'
+                ];
+            }
+            
+            echo json_encode($response, JSON_UNESCAPED_UNICODE);
             return;
+        }
+        
+        /**
+         * 店舗が無効化されている場合の警告ログ
+         * 
+         * 【重要】メール送信は続行する
+         * - パスワードリセットは店舗の状態に関係なく実行される
+         * - ログインできない状況を解決するための機能であるため
+         * - この警告は情報提供のためのみ（処理を停止しない）
+         */
+        if (!$user['shop_active']) {
+            error_log("Password reset: Shop is inactive for user {$user['username']}, but password reset email will be sent anyway");
         }
         
         // 既存の未使用トークンを無効化
@@ -324,11 +521,31 @@ function forgotPassword() {
             }
         }
         
-        echo json_encode([
+        $response = [
             'success' => true,
             'message' => 'パスワードリセットメールを送信しました。メールが届かない場合は、登録されているメールアドレスを確認してください。',
-            'email_sent' => $emailSent // デバッグ用（本番環境では削除推奨）
-        ], JSON_UNESCAPED_UNICODE);
+            'email_sent' => $emailSent
+        ];
+        
+        // デバッグモードの場合は詳細情報を追加
+        if (defined('DEBUG_MODE') && DEBUG_MODE) {
+            $response['debug'] = [
+                'user_found' => true,
+                'user_email' => $user['email'],
+                'user_username' => $user['username'],
+                'token_created' => true,
+                'reset_path' => $resetPath,
+                'reset_url' => getEnvValue('FRONTEND_BASE_URL', 'https://mameq.xsrv.jp') . $resetPath . '?token=' . urlencode($token),
+                'mail_config' => [
+                    'use_smtp' => getEnvValue('MAIL_USE_SMTP', 'false') === 'true',
+                    'smtp_host' => getEnvValue('MAIL_SMTP_HOST', 'not set'),
+                    'smtp_port' => getEnvValue('MAIL_SMTP_PORT', 'not set'),
+                    'mail_from' => getEnvValue('MAIL_FROM', 'not set')
+                ]
+            ];
+        }
+        
+        echo json_encode($response, JSON_UNESCAPED_UNICODE);
         
     } catch (PDOException $e) {
         handleDatabaseError($e, 'forgot password');
@@ -380,6 +597,13 @@ function resetPassword() {
         // パスワードをハッシュ化
         $passwordHash = password_hash($newPassword, PASSWORD_DEFAULT);
         
+        if (defined('DEBUG_MODE') && DEBUG_MODE) {
+            error_log("Password reset - Updating password for user ID: {$tokenData['user_id']}");
+            error_log("  Username: {$tokenData['username']}");
+            error_log("  Password length: " . strlen($newPassword));
+            error_log("  Hash generated: " . substr($passwordHash, 0, 20) . "...");
+        }
+        
         // パスワードを更新
         $updateStmt = $pdo->prepare("
             UPDATE users 
@@ -391,6 +615,31 @@ function resetPassword() {
             ':password_hash' => $passwordHash,
             ':user_id' => $tokenData['user_id']
         ]);
+        
+        $affectedRows = $updateStmt->rowCount();
+        
+        if (defined('DEBUG_MODE') && DEBUG_MODE) {
+            error_log("Password reset - Update affected rows: {$affectedRows}");
+        }
+        
+        if ($affectedRows === 0) {
+            error_log("Password reset - Failed to update password for user ID: {$tokenData['user_id']}");
+            sendServerError('Failed to update password');
+        }
+        
+        // 更新後のパスワード検証（デバッグ用）
+        if (defined('DEBUG_MODE') && DEBUG_MODE) {
+            $verifyStmt = $pdo->prepare("SELECT password_hash FROM users WHERE id = :user_id");
+            $verifyStmt->execute([':user_id' => $tokenData['user_id']]);
+            $updatedUser = $verifyStmt->fetch();
+            if ($updatedUser) {
+                $verifyResult = password_verify($newPassword, $updatedUser['password_hash']);
+                error_log("Password reset - Password verification test: " . ($verifyResult ? 'SUCCESS' : 'FAILED'));
+                if (!$verifyResult) {
+                    error_log("Password reset - WARNING: Password verification failed after update!");
+                }
+            }
+        }
         
         // トークンを無効化
         $markUsedStmt = $pdo->prepare("
