@@ -5,7 +5,7 @@
  */
 
 // config.phpから設定を読み込む
-require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/../config.php';
 
 header('Content-Type: text/html; charset=utf-8');
 ?>
