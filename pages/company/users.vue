@@ -1,12 +1,6 @@
 <template>
   <NuxtLayout name="company" title="ユーザー管理">
     <div class="space-y-6">
-      <!-- ナビゲーション -->
-      <AdminNavigation
-        :navigation-items="navigationItems"
-        active-color="green"
-      />
-
       <!-- ヘッダー -->
       <div class="mb-6">
         <h2 class="text-3xl font-bold text-gray-900 mb-1">ユーザー管理</h2>
@@ -275,14 +269,11 @@
 import { useUserStore, type UpdateUserInput } from '~/stores/user'
 import { useAuthStore } from '~/stores/auth'
 import { useShopStore } from '~/stores/shop'
-import AdminNavigation from '~/components/admin/AdminNavigation.vue'
 import type { User } from '~/types'
 
 const userStore = useUserStore()
 const authStore = useAuthStore()
 const shopStore = useShopStore()
-
-const { navigationItems } = useCompanyNavigation()
 
 const showEditModal = ref(false)
 const isSubmitting = ref(false)

@@ -1,12 +1,6 @@
 <template>
   <NuxtLayout name="company" title="メニュー管理">
     <div class="space-y-6">
-      <!-- ナビゲーション -->
-      <AdminNavigation
-        :navigation-items="navigationItems"
-        active-color="green"
-      />
-
       <!-- ヘッダー -->
       <div class="flex justify-between items-center mb-6">
         <div>
@@ -116,7 +110,6 @@ const authStore = useAuthStore()
 const shopStore = useShopStore()
 const menuStore = useMenuStore()
 
-const { navigationItems } = useCompanyNavigation()
 const { handleLogout } = useAuthCheck()
 
 const allShops = ref<Shop[]>([])

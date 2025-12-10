@@ -1,12 +1,6 @@
 <template>
   <NuxtLayout name="company" title="テーブル管理">
     <div class="space-y-6">
-      <!-- ナビゲーション -->
-      <AdminNavigation
-        :navigation-items="navigationItems"
-        active-color="green"
-      />
-
       <!-- ヘッダー -->
       <div class="flex justify-between items-center mb-6">
         <div>
@@ -234,7 +228,6 @@ import { useShopStore } from '~/stores/shop'
 import QRCodeGenerator from '~/components/QRCodeGenerator.vue'
 import type { ShopTable, Shop } from '~/types'
 
-const { navigationItems } = useCompanyNavigation()
 const { handleLogout } = useAuthCheck()
 
 const tableStore = useTableStore()

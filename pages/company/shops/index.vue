@@ -1,12 +1,6 @@
 <template>
   <NuxtLayout name="company" title="店舗管理">
     <div class="space-y-6">
-      <!-- ナビゲーション -->
-      <AdminNavigation
-        :navigation-items="navigationItems"
-        active-color="green"
-      />
-
       <!-- ヘッダー -->
       <div class="flex justify-between items-center mb-6">
         <div>
@@ -310,7 +304,6 @@ const newShop = ref({
   maxTables: 20
 })
 
-const { navigationItems } = useCompanyNavigation()
 const { handleLogout } = useAuthCheck()
 
 // 店舗別売上計算

@@ -1,40 +1,6 @@
 <template>
   <NuxtLayout name="company" title="店舗編集">
     <div class="space-y-6">
-      <!-- ナビゲーション -->
-      <div class="flex gap-3 overflow-x-auto pb-2">
-        <NuxtLink
-          to="/company/dashboard"
-          class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium whitespace-nowrap hover:bg-gray-100"
-        >
-          ダッシュボード
-        </NuxtLink>
-        <NuxtLink
-          to="/company/shops"
-          class="px-4 py-2 bg-green-600 text-white rounded-lg font-medium whitespace-nowrap"
-        >
-          店舗管理
-        </NuxtLink>
-        <NuxtLink
-          to="/company/users"
-          class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium whitespace-nowrap hover:bg-gray-100"
-        >
-          ユーザー管理
-        </NuxtLink>
-        <NuxtLink
-          to="/company/error-logs"
-          class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium whitespace-nowrap hover:bg-gray-100"
-        >
-          エラーログ
-        </NuxtLink>
-        <button
-          @click="handleLogout"
-          class="px-4 py-2 bg-red-100 text-red-700 rounded-lg font-medium whitespace-nowrap hover:bg-red-200 ml-auto"
-        >
-          ログアウト
-        </button>
-      </div>
-
       <!-- ヘッダー -->
       <div class="flex justify-between items-center">
         <h2 class="text-2xl font-bold">店舗編集</h2>
@@ -655,7 +621,6 @@ const handleOwnerInputBlur = () => {
   }, 200)
 }
 
-const { navigationItems } = useCompanyNavigation()
 const { handleLogout } = useAuthCheck()
 
 const handleUpdateShop = async () => {

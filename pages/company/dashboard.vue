@@ -1,12 +1,6 @@
 <template>
   <NuxtLayout name="company" title="弊社向け管理ダッシュボード">
     <div class="space-y-6">
-      <!-- ナビゲーション -->
-      <AdminNavigation
-        :navigation-items="navigationItems"
-        active-color="green"
-      />
-
       <!-- ヘッダー -->
       <div class="bg-gradient-to-br from-green-600 to-emerald-700 p-8 rounded-2xl shadow-xl text-white">
         <h2 class="text-3xl font-bold mb-2">弊社向け管理ダッシュボード</h2>
@@ -206,8 +200,6 @@ import { useOrderStore } from '~/stores/order'
 const authStore = useAuthStore()
 const shopStore = useShopStore()
 const orderStore = useOrderStore()
-const { navigationItems } = useCompanyNavigation()
-const { handleLogout } = useAuthCheck()
 
 const totalShops = ref(0)
 const activeShops = ref(0)

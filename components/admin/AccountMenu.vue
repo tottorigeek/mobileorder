@@ -2,6 +2,7 @@
   <div class="relative account-menu-container">
     <!-- アカウント情報ボタン -->
     <button
+      ref="menuButton"
       @click="toggleMenu"
       class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors touch-target"
       :class="{ 'bg-gray-100': isMenuOpen }"
@@ -25,18 +26,21 @@
     </button>
 
     <!-- ドロップダウンメニュー -->
-    <Transition
-      enter-active-class="transition ease-out duration-100"
-      enter-from-class="opacity-0 scale-95"
-      enter-to-class="opacity-100 scale-100"
-      leave-active-class="transition ease-in duration-75"
-      leave-from-class="opacity-100 scale-100"
-      leave-to-class="opacity-0 scale-95"
-    >
-      <div
-        v-if="isMenuOpen"
-        class="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50"
+    <Teleport to="body">
+      <Transition
+        enter-active-class="transition ease-out duration-100"
+        enter-from-class="opacity-0 scale-95"
+        enter-to-class="opacity-100 scale-100"
+        leave-active-class="transition ease-in duration-75"
+        leave-from-class="opacity-100 scale-100"
+        leave-to-class="opacity-0 scale-95"
       >
+        <div
+          v-if="isMenuOpen"
+          ref="menuDropdown"
+          class="fixed bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-[9999]"
+          :style="menuStyle"
+        >
         <!-- ユーザー情報セクション -->
         <div class="px-4 py-3 border-b border-gray-200">
           <p class="text-sm font-semibold text-gray-900">{{ authStore.user?.name }}</p>
@@ -87,6 +91,34 @@ const authStore = useAuthStore()
 const { handleLogout } = useAuthCheck()
 
 const isMenuOpen = ref(false)
+const menuButton = ref<HTMLElement | null>(null)
+const menuDropdown = ref<HTMLElement | null>(null)
+
+const menuStyle = computed(() => {
+  if (!menuButton.value || !isMenuOpen.value) {
+    return {}
+  }
+  
+  const rect = menuButton.value.getBoundingClientRect()
+  const menuWidth = 224 // w-56 = 14rem = 224px
+  const menuHeight = 200 // おおよその高さ
+  const spacing = 8 // mt-2 = 0.5rem = 8px
+  
+  // 画面の右端からの距離を計算
+  const right = window.innerWidth - rect.right
+  const top = rect.bottom + spacing
+  
+  // スマホでは右端に寄せるが、画面外に出ないように調整
+  const maxRight = Math.max(16, right) // 最小16pxのマージン
+  const adjustedRight = Math.min(maxRight, window.innerWidth - menuWidth - 16)
+  
+  return {
+    top: `${top}px`,
+    right: `${adjustedRight}px`,
+    width: `${Math.min(menuWidth, window.innerWidth - 32)}px`,
+    maxWidth: 'calc(100vw - 2rem)'
+  }
+})
 
 const userInitials = computed(() => {
   if (!authStore.user?.name) return '?'
@@ -122,10 +154,14 @@ const handleLogoutClick = async () => {
 }
 
 // クリックアウトサイド処理
-const handleClickOutside = (event: MouseEvent) => {
+const handleClickOutside = (event: MouseEvent | TouchEvent) => {
   const target = event.target as HTMLElement
-  const menuElement = document.querySelector('.account-menu-container')
-  if (menuElement && !menuElement.contains(target)) {
+  if (
+    menuButton.value && 
+    menuDropdown.value &&
+    !menuButton.value.contains(target) &&
+    !menuDropdown.value.contains(target)
+  ) {
     closeMenu()
   }
 }
@@ -133,15 +169,19 @@ const handleClickOutside = (event: MouseEvent) => {
 watch(isMenuOpen, (newValue) => {
   if (newValue) {
     nextTick(() => {
-      document.addEventListener('click', handleClickOutside)
+      // タッチイベントとクリックイベントの両方を監視
+      document.addEventListener('click', handleClickOutside, true)
+      document.addEventListener('touchstart', handleClickOutside, true)
     })
   } else {
-    document.removeEventListener('click', handleClickOutside)
+    document.removeEventListener('click', handleClickOutside, true)
+    document.removeEventListener('touchstart', handleClickOutside, true)
   }
 })
 
 onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside)
+  document.removeEventListener('click', handleClickOutside, true)
+  document.removeEventListener('touchstart', handleClickOutside, true)
 })
 </script>
 

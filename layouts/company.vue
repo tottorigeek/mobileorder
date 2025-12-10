@@ -39,8 +39,8 @@
     </header>
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <!-- ナビゲーション -->
-      <div class="mb-6">
+      <!-- ナビゲーション（ログインページを除く） -->
+      <div v-if="!isLoginPage" class="mb-6">
         <AdminNavigation
           :navigation-items="navigationItems"
           active-color="green"
@@ -76,7 +76,13 @@ withDefaults(defineProps<Props>(), {
 })
 
 const authStore = useAuthStore()
+const route = useRoute()
 const { navigationItems } = useCompanyNavigation()
+
+// ログインページかどうかを判定
+const isLoginPage = computed(() => {
+  return route.path.includes('/login')
+})
 
 // ページ読み込み時にユーザー情報を読み込む
 onMounted(() => {

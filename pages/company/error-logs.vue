@@ -1,12 +1,6 @@
 <template>
   <NuxtLayout name="company" title="エラーログ">
     <div class="space-y-6">
-      <!-- ナビゲーション -->
-      <AdminNavigation
-        :navigation-items="navigationItems"
-        active-color="green"
-      />
-
       <!-- ヘッダー -->
       <div class="flex justify-between items-center">
         <h2 class="text-2xl font-bold">エラーログ</h2>
@@ -413,7 +407,6 @@ const filters = ref({
   requestUri: ''
 })
 
-const { navigationItems } = useCompanyNavigation()
 const { handleLogout } = useAuthCheck()
 
 const getLevelLabel = (level: string) => {

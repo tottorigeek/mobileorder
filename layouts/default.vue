@@ -65,8 +65,8 @@
     </header>
 
     <main :class="isShopSelectPage ? '' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6'">
-      <!-- /shop配下のページでナビゲーションを表示 -->
-      <div v-if="isShopPage && !isShopSelectPage" class="mb-6">
+      <!-- /shop配下のページでナビゲーションを表示（ログインページを除く） -->
+      <div v-if="isShopPage && !isShopSelectPage && !isLoginPage" class="mb-6">
         <AdminNavigation
           :navigation-items="shopNavigationItems"
           active-color="blue"
@@ -119,6 +119,11 @@ const isStaffPage = computed(() => {
 // /shop-selectページかどうかを判定
 const isShopSelectPage = computed(() => {
   return route.path === '/shop-select'
+})
+
+// ログインページかどうかを判定
+const isLoginPage = computed(() => {
+  return route.path.includes('/login')
 })
 
 // /shop配下のナビゲーションアイテム

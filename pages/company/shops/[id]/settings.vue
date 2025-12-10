@@ -1,12 +1,6 @@
 <template>
   <NuxtLayout name="company" title="店舗詳細設定">
     <div class="space-y-6">
-      <!-- ナビゲーション -->
-      <AdminNavigation
-        :navigation-items="navigationItems"
-        active-color="green"
-      />
-
       <!-- ヘッダー -->
       <div class="flex justify-between items-center">
         <div>
@@ -227,7 +221,6 @@ const formatDate = (dateString: string) => {
   return `${year}年${month}月${day}日（${weekday}）`
 }
 
-const { navigationItems } = useCompanyNavigation()
 const { handleLogout } = useAuthCheck()
 
 onMounted(async () => {
