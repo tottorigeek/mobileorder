@@ -164,7 +164,7 @@
       <!-- bottom-nav用のスペーサー -->
       <div class="h-20"></div>
     </div>
-
+    
     <div v-else class="text-center py-8 sm:py-12 px-4">
       <p class="text-sm sm:text-base text-gray-500">注文が見つかりません</p>
       <NuxtLink
@@ -173,13 +173,10 @@
       >
         メニューに戻る
       </NuxtLink>
-
+      
       <!-- bottom-nav用のスペーサー -->
       <div class="h-20"></div>
     </div>
-
-    <!-- Bottom Navigation -->
-    <CustomerBottomNav />
   </NuxtLayout>
 </template>
 
@@ -189,7 +186,6 @@ import { useVisitorStore } from '~/stores/visitor'
 import { useCartStore } from '~/stores/cart'
 import { useShopStore } from '~/stores/shop'
 import type { OrderStatus, Order, PaymentMethod } from '~/types'
-import CustomerBottomNav from '~/components/CustomerBottomNav.vue'
 
 const route = useRoute()
 const orderStore = useOrderStore()

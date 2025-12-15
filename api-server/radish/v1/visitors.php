@@ -347,6 +347,20 @@ function createVisitor() {
                 ':table_id' => $tableId
             ]);
         }
+
+        // デバッグ用: 成功ログを記録
+        logErrorToDatabase(
+            'info',
+            sprintf(
+                'Visitor created successfully (id=%d, shop_id=%d, table_id=%s, table_number=%s, guests=%d, children=%d)',
+                $visitorId,
+                (int)$input['shopId'],
+                $tableId !== null ? (string)$tableId : 'null',
+                $input['tableNumber'],
+                (int)$input['numberOfGuests'],
+                isset($numberOfChildren) ? (int)$numberOfChildren : 0
+            )
+        );
         
         // 作成したvisitor情報を返す
         getVisitor($visitorId);
@@ -420,6 +434,16 @@ function updateVisitor($visitorId) {
         $sql = "UPDATE visitors SET " . implode(', ', $updates) . " WHERE id = :id";
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
+
+        // デバッグ用: 成功ログを記録
+        logErrorToDatabase(
+            'info',
+            sprintf(
+                'Visitor updated successfully (id=%d) with fields: %s',
+                $visitorId,
+                implode(', ', array_keys($params))
+            )
+        );
         
         // 更新したvisitor情報を返す
         getVisitor($visitorId);
@@ -475,6 +499,16 @@ function processCheckout($visitorId) {
             ':id' => $visitorId,
             ':total_amount' => $totalAmount
         ]);
+
+        // デバッグ用: 成功ログを記録
+        logErrorToDatabase(
+            'info',
+            sprintf(
+                'Checkout processed successfully for visitor (id=%d, total_amount=%d)',
+                $visitorId,
+                $totalAmount
+            )
+        );
         
         // テーブルのステータスをcheckout_pendingに更新
         if ($visitor['table_id']) {
@@ -551,6 +585,17 @@ function processPayment($visitorId) {
             ':payment_method' => $input['paymentMethod'],
             ':total_amount' => $totalAmount
         ]);
+
+        // デバッグ用: 成功ログを記録
+        logErrorToDatabase(
+            'info',
+            sprintf(
+                'Payment processed successfully for visitor (id=%d, method=%s, total_amount=%d)',
+                $visitorId,
+                $input['paymentMethod'],
+                $totalAmount
+            )
+        );
         
         // テーブルのステータスをset_pendingに更新
         if ($visitor['table_id']) {
@@ -642,6 +687,17 @@ function completeTableSet($visitorId) {
             ");
             $tableStmt->execute([':table_id' => $visitor['table_id']]);
         }
+
+        // デバッグ用: 成功ログを記録
+        logErrorToDatabase(
+            'info',
+            sprintf(
+                'Table set completed successfully for visitor (id=%d, shop_id=%s, table_id=%s)',
+                $visitorId,
+                isset($visitor['shop_id']) ? (string)$visitor['shop_id'] : 'null',
+                isset($visitor['table_id']) ? (string)$visitor['table_id'] : 'null'
+            )
+        );
         
         // 更新したvisitor情報を返す
         getVisitor($visitorId);
@@ -719,6 +775,17 @@ function deleteVisitor($visitorId) {
         // visitorを削除
         $deleteStmt = $pdo->prepare("DELETE FROM visitors WHERE id = :id");
         $deleteStmt->execute([':id' => $visitorId]);
+
+        // デバッグ用: 成功ログを記録
+        logErrorToDatabase(
+            'info',
+            sprintf(
+                'Visitor deleted successfully (id=%d, shop_id=%s, table_id=%s)',
+                $visitorId,
+                isset($visitor['shop_id']) ? (string)$visitor['shop_id'] : 'null',
+                isset($visitor['table_id']) ? (string)$visitor['table_id'] : 'null'
+            )
+        );
         
         echo json_encode([
             'success' => true,

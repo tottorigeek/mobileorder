@@ -44,6 +44,18 @@
             <span>運営者向け管理ページ</span>
           </div>
         </NuxtLink>
+
+        <NuxtLink
+          to="/owner/dashboard"
+          class="group block w-full p-6 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-2xl text-center text-xl font-semibold hover:from-emerald-600 hover:to-teal-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 touch-target"
+        >
+          <div class="flex items-center justify-center gap-3">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7l9-4 9 4-9 4-9-4zm0 6l9 4 9-4m-9 4v6" />
+            </svg>
+            <span>店舗オーナー用</span>
+          </div>
+        </NuxtLink>
       </div>
     </div>
   </div>

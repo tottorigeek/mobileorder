@@ -177,9 +177,6 @@
       <!-- bottom-nav用のスペーサー -->
       <div class="h-20"></div>
     </div>
-
-    <!-- Bottom Navigation -->
-    <CustomerBottomNav />
   </NuxtLayout>
 </template>
 
@@ -189,7 +186,6 @@ import { useVisitorStore } from '~/stores/visitor'
 import { useCartStore } from '~/stores/cart'
 import { useShopStore } from '~/stores/shop'
 import type { OrderStatus, PaymentMethod } from '~/types'
-import CustomerBottomNav from '~/components/CustomerBottomNav.vue'
 
 const orderStore = useOrderStore()
 const visitorStore = useVisitorStore()

@@ -25,9 +25,9 @@ export const useAuthStore = defineStore('auth', {
     async login(username: string, password: string, companyLogin: boolean = false) {
       this.isLoading = true
       try {
-        const { buildUrl } = useApiBase()
-        
-        const response = await $fetch<{ success: boolean; token: string; user: User }>(buildUrl('auth/login'), {
+        const { apiFetch, buildUrl } = useApiClient()
+
+        const response = await apiFetch<{ success: boolean; token: string; user: User }>('auth/login', {
           method: 'POST',
           body: { username, password, company_login: companyLogin },
           credentials: 'include' // クッキーを含める（後方互換性のため）
@@ -61,9 +61,9 @@ export const useAuthStore = defineStore('auth', {
 
     async logout() {
       try {
-        const { buildUrl } = useApiBase()
-        
-        await $fetch(buildUrl('auth/logout'), {
+        const { apiFetch } = useApiClient()
+
+        await apiFetch('auth/logout', {
           method: 'POST',
           credentials: 'include' // クッキーを含める
         })
@@ -84,8 +84,8 @@ export const useAuthStore = defineStore('auth', {
 
     async checkAuth() {
       try {
-        const { buildUrl } = useApiBase()
-        
+        const { apiFetch, buildUrl } = useApiClient()
+
         // トークンを取得（メモリ → ローカルストレージ → クッキー）
         const cookieToken = useCookie('auth_token').value
         const token = this.token || localStorage.getItem('auth_token') || cookieToken
@@ -104,29 +104,12 @@ export const useAuthStore = defineStore('auth', {
         console.log('checkAuth: URL:', url)
         console.log('checkAuth: Token exists:', !!token, 'Token length:', token.length)
         
-        // 直接fetchを使用して、確実にAuthorizationヘッダーを送信
-        const headers: HeadersInit = {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
-        
-        // トークンが有効な場合のみAuthorizationヘッダーを追加
-        if (token && token.trim() !== '') {
-          headers['Authorization'] = `Bearer ${token}`
-        }
-        
-        console.log('checkAuth: Headers:', headers)
-        
-        const response = await $fetch(url, {
+        const response = await apiFetch(url, {
           method: 'GET',
-          headers,
-          cache: 'no-store',
-          // $fetchはデフォルトでJSONパースするためrawResponseを取得
-          responseType: 'json',
-          retry: 0
-        })
+          cache: 'no-store'
+        }) as unknown as User
         
-        const user = response as unknown as User
+        const user = response
         this.user = user
         this.token = token
         this.isAuthenticated = true

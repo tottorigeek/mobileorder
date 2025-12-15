@@ -1,7 +1,7 @@
-import { defineEventHandler, getCookie, sendRedirect } from 'h3'
+import { defineEventHandler, getCookie, sendRedirect, getRequestURL } from 'h3'
 import { useRuntimeConfig } from '#imports'
 
-// パスごとのアクセス制御
+// パスごとのアクセス制御（クエリ・トレーリングスラッシュを除いたパスで判定する）
 const publicPaths = [
   '/',
   '/staff/login',
@@ -12,27 +12,29 @@ const publicPaths = [
 ]
 
 export default defineEventHandler(async (event) => {
-  const reqUrl = event.node.req.url || '/'
-  // 静的アセットやAPIはスキップ
+  const url = getRequestURL(event)
+  const pathname = url.pathname || '/'
+
+  // 静的アセットや内部APIはスキップ
   if (
-    reqUrl.startsWith('/_nuxt') ||
-    reqUrl.startsWith('/__nuxt') ||
-    reqUrl.startsWith('/_vercel') ||
-    reqUrl.startsWith('/api') ||
-    reqUrl.startsWith('/radish') // APIサーバー側のパスとは別。Nuxt内のパスで判断
+    pathname.startsWith('/_nuxt') ||
+    pathname.startsWith('/__nuxt') ||
+    pathname.startsWith('/_vercel') ||
+    pathname.startsWith('/api') ||
+    pathname.startsWith('/radish') // APIサーバー側のパスとは別。Nuxt内のパスで判断
   ) {
     return
   }
 
   // visitor配下はクライアントレンダリングのためスキップ
-  if (reqUrl.startsWith('/visitor')) return
+  if (pathname.startsWith('/visitor')) return
 
   // 公開パスはスキップ
-  if (publicPaths.includes(reqUrl)) return
+  if (publicPaths.includes(pathname)) return
 
   const token = getCookie(event, 'auth_token')
   if (!token) {
-    const loginPath = reqUrl.startsWith('/company') ? '/company/login' : '/staff/login'
+    const loginPath = pathname.startsWith('/company') ? '/company/login' : '/staff/login'
     return sendRedirect(event, loginPath)
   }
 
@@ -46,7 +48,7 @@ export default defineEventHandler(async (event) => {
       retry: 0
     })
   } catch (e) {
-    const loginPath = reqUrl.startsWith('/company') ? '/company/login' : '/staff/login'
+    const loginPath = pathname.startsWith('/company') ? '/company/login' : '/staff/login'
     return sendRedirect(event, loginPath)
   }
 })
