@@ -3,17 +3,25 @@
  * ページ遷移時にローカルストレージから認証状態を読み込む
  */
 
-export default defineNuxtPlugin(async (nuxtApp) => {
+export default defineNuxtPlugin((nuxtApp) => {
+  if (!process.client) return
+
   const authStore = useAuthStore()
-  
-  // クライアント側でのみ実行
-  if (process.client) {
-    // ストレージから認証状態を復元
+  const router = nuxtApp.$router
+
+  const isVisitorRoute = (path: string) => path.startsWith('/visitor')
+
+  // visitor配下では認証処理を走らせないようガード
+  let authInitialized = false
+  let sessionCheckTimer: number | null = null
+
+  const initAuth = () => {
+    if (authInitialized) return
+
     authStore.loadUserFromStorage()
-    
-    // 定期的にセッションの有効性を確認（5分ごと）
-    if (authStore.isAuthenticated) {
-      setInterval(async () => {
+
+    if (authStore.isAuthenticated && sessionCheckTimer === null) {
+      sessionCheckTimer = window.setInterval(async () => {
         try {
           await authStore.checkAuth()
         } catch (error) {
@@ -22,6 +30,22 @@ export default defineNuxtPlugin(async (nuxtApp) => {
         }
       }, 5 * 60 * 1000) // 5分
     }
+
+    authInitialized = true
   }
+
+  const tryInitAuth = (path: string) => {
+    if (!isVisitorRoute(path)) {
+      initAuth()
+    }
+  }
+
+  // 初回アクセス時のパスで判定
+  tryInitAuth(router?.currentRoute?.value?.path || window.location.pathname)
+
+  // ルート遷移時にvisitor以外へ移動したら初期化
+  router?.afterEach((to) => {
+    tryInitAuth(to.path)
+  })
 })
 
