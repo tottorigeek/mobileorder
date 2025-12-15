@@ -1,5 +1,4 @@
 <template>
-  <NuxtLayout name="visitor" title="お会計">
     <div v-if="isLoading" class="text-center py-8 sm:py-12 px-4">
       <div class="inline-block animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-blue-600"></div>
       <p class="mt-3 sm:mt-4 text-sm sm:text-base text-gray-500">読み込み中...</p>
@@ -177,7 +176,6 @@
       <!-- bottom-nav用のスペーサー -->
       <div class="h-20"></div>
     </div>
-  </NuxtLayout>
 </template>
 
 <script setup lang="ts">
@@ -186,6 +184,10 @@ import { useVisitorStore } from '~/stores/visitor'
 import { useCartStore } from '~/stores/cart'
 import { useShopStore } from '~/stores/shop'
 import type { OrderStatus, PaymentMethod } from '~/types'
+
+definePageMeta({
+  layout: 'visitor'
+})
 
 const orderStore = useOrderStore()
 const visitorStore = useVisitorStore()

@@ -1,5 +1,4 @@
 <template>
-  <NuxtLayout name="visitor" title="メニュー一覧">
     <!-- 来店人数入力モーダル -->
     <div
       v-if="showVisitorModal"
@@ -131,7 +130,6 @@
       <!-- bottom-nav用のスペーサー -->
       <div class="h-20"></div>
     </div>
-  </NuxtLayout>
 </template>
 
 <script setup lang="ts">
@@ -144,6 +142,10 @@ import { useVisitorStore } from '~/stores/visitor'
 import type { ShopTable, ShopCategory, Visitor } from '~/types'
 import MenuCard from '~/components/MenuCard.vue'
 import NumberInput from '~/components/NumberInput.vue'
+
+definePageMeta({
+  layout: 'visitor'
+})
 
 const menuStore = useMenuStore()
 const cartStore = useCartStore()
