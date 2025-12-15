@@ -60,7 +60,8 @@ if ($visitorId && $action) {
             exit;
         
         case 'force-release':
-            if ($method === 'DELETE') {
+            // テーブル強制開放（管理側用）
+            if ($method === 'PUT') {
                 forceReleaseVisitor($visitorId);
             } else {
                 sendErrorResponse(405, 'Method not allowed');
@@ -209,13 +210,17 @@ function getVisitor($visitorId) {
             sendNotFoundError('Visitor');
         }
         
-        // 認証チェック（スタッフの場合、自分の店舗のみ）
+        // 認証チェック（スタッフの場合のみ、自分の店舗に限定）
         $token = getJWTFromHeader();
         if ($token) {
             $payload = verifyJWT($token);
-            if ($payload && isset($payload['shop_id'])) {
-                if ($visitor['shop_id'] != $payload['shop_id']) {
-                    sendForbiddenError('You can only access visitors from your own shop');
+            if ($payload) {
+                $role = $payload['role'] ?? 'staff';
+                // 通常スタッフのみ店舗制限をかける（オーナー/マネージャー/運営者は全店舗参照可）
+                if ($role === 'staff' && isset($payload['shop_id'])) {
+                    if ($visitor['shop_id'] != $payload['shop_id']) {
+                        sendForbiddenError('You can only access visitors from your own shop');
+                    }
                 }
             }
         }
@@ -799,9 +804,193 @@ function deleteVisitor($visitorId) {
 
 /**
  * visitor強制解除（認証必須）
+ * - 管理画面などから、着座状態を強制的に解除する用途
+ * - treatOrdersAsPaid=true の場合: 注文を売上計上しつつテーブルを空席にする
+ * - treatOrdersAsPaid=false の場合: 未完了注文をキャンセル扱いにしてテーブルを空席にする
  */
 function forceReleaseVisitor($visitorId) {
-    // deleteVisitorと同じ処理
-    deleteVisitor($visitorId);
+    try {
+        // 認証チェック（ロールも取得）
+        $auth = checkAuth();
+        $userId = $auth['user_id'];
+        $defaultShopId = $auth['shop_id'] ?? null;
+        $role = $auth['role'] ?? 'staff';
+
+        $pdo = getDbConnection();
+
+        // visitor情報を取得
+        $visitorStmt = $pdo->prepare("SELECT * FROM visitors WHERE id = :id");
+        $visitorStmt->execute([':id' => $visitorId]);
+        $visitor = $visitorStmt->fetch();
+
+        if (!$visitor) {
+            sendNotFoundError('Visitor');
+        }
+
+        // ユーザーが所属する店舗IDのリストを取得（複数店舗対応）
+        $userShopIds = [];
+
+        // shop_usersテーブルが存在するか確認
+        $tableExists = false;
+        try {
+            $checkStmt = $pdo->query("SHOW TABLES LIKE 'shop_users'");
+            $tableExists = $checkStmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            // テーブルが存在しない場合は既存の方法を使用
+        }
+
+        if ($tableExists) {
+            // 複数店舗対応: shop_usersテーブルから取得
+            $shopUsersSql = "SELECT shop_id FROM shop_users WHERE user_id = :user_id";
+            $shopUsersStmt = $pdo->prepare($shopUsersSql);
+            $shopUsersStmt->execute([':user_id' => $userId]);
+            $shopUsers = $shopUsersStmt->fetchAll(PDO::FETCH_COLUMN);
+            $userShopIds = array_map('intval', $shopUsers);
+        } else {
+            // 既存の方法: usersテーブルのshop_idから取得
+            if ($defaultShopId) {
+                $userShopIds = [intval($defaultShopId)];
+            }
+        }
+
+        // 権限チェック：通常スタッフは自分の店舗のみ操作可能
+        // オーナー・マネージャー（およびそれ以外の上位ロール）は全店舗のvisitorを操作可能
+        if ($role === 'staff') {
+            if (!empty($userShopIds) && !in_array(intval($visitor['shop_id']), $userShopIds)) {
+                sendForbiddenError('You can only force release tables from your own shop');
+            }
+        }
+
+        // リクエストボディを取得（treatOrdersAsPaidフラグ）
+        $input = json_decode(file_get_contents('php://input'), true);
+        $treatOrdersAsPaid = isset($input['treatOrdersAsPaid']) ? (bool)$input['treatOrdersAsPaid'] : false;
+
+        $pdo->beginTransaction();
+
+        $shopId = (int)$visitor['shop_id'];
+        $tableNumber = $visitor['table_number'];
+
+        if ($treatOrdersAsPaid) {
+            // ---- A: 注文を清算済み扱いにして席を空ける ----
+
+            // 合計額を計算（キャンセル以外の注文）
+            $totalAmount = 0;
+            $orderSumStmt = $pdo->prepare("
+                SELECT SUM(total_amount) as total
+                FROM orders
+                WHERE shop_id = :shop_id
+                  AND table_number = :table_number
+                  AND status != 'cancelled'
+            ");
+            $orderSumStmt->execute([
+                ':shop_id' => $shopId,
+                ':table_number' => $tableNumber
+            ]);
+            $orderTotal = $orderSumStmt->fetch();
+            if ($orderTotal && $orderTotal['total']) {
+                $totalAmount = (int)$orderTotal['total'];
+            }
+
+            // 進行中の注文ステータスをcompletedに更新
+            $completeOrdersStmt = $pdo->prepare("
+                UPDATE orders
+                SET status = 'completed', updated_at = NOW()
+                WHERE shop_id = :shop_id
+                  AND table_number = :table_number
+                  AND status IN ('pending','accepted','cooking','checkout_pending')
+            ");
+            $completeOrdersStmt->execute([
+                ':shop_id' => $shopId,
+                ':table_number' => $tableNumber
+            ]);
+
+            // visitorを支払い完了状態に更新（支払方法が未設定ならcashとする）
+            $paymentMethod = $visitor['payment_method'] ?: 'cash';
+            $updateVisitorStmt = $pdo->prepare("
+                UPDATE visitors
+                SET payment_method = :payment_method,
+                    payment_status = 'completed',
+                    total_amount = :total_amount,
+                    checkout_time = COALESCE(checkout_time, NOW()),
+                    is_set_completed = 1,
+                    updated_at = NOW()
+                WHERE id = :id
+            ");
+            $updateVisitorStmt->execute([
+                ':id' => $visitorId,
+                ':payment_method' => $paymentMethod,
+                ':total_amount' => $totalAmount
+            ]);
+        } else {
+            // ---- B: 注文を清算せずキャンセル扱いにして席を空ける ----
+
+            // 進行中の注文をキャンセル扱いに更新
+            $cancelOrdersStmt = $pdo->prepare("
+                UPDATE orders
+                SET status = 'cancelled', updated_at = NOW()
+                WHERE shop_id = :shop_id
+                  AND table_number = :table_number
+                  AND status IN ('pending','accepted','cooking','checkout_pending')
+            ");
+            $cancelOrdersStmt->execute([
+                ':shop_id' => $shopId,
+                ':table_number' => $tableNumber
+            ]);
+
+            // visitorを「売上ゼロの終了状態」に更新
+            $updateVisitorStmt = $pdo->prepare("
+                UPDATE visitors
+                SET total_amount = 0,
+                    payment_status = 'pending',
+                    checkout_time = COALESCE(checkout_time, NOW()),
+                    is_set_completed = 1,
+                    updated_at = NOW()
+                WHERE id = :id
+            ");
+            $updateVisitorStmt->execute([
+                ':id' => $visitorId
+            ]);
+        }
+
+        // いずれの場合も、テーブルを空席にする
+        if ($visitor['table_id']) {
+            $tableStmt = $pdo->prepare("
+                UPDATE shop_tables
+                SET status = 'available',
+                    visitor_id = NULL,
+                    updated_at = NOW()
+                WHERE id = :table_id
+            ");
+            $tableStmt->execute([':table_id' => $visitor['table_id']]);
+        }
+
+        // 成功ログ
+        logErrorToDatabase(
+            'info',
+            sprintf(
+                'Visitor force-released (id=%d, shop_id=%s, table_id=%s, treatOrdersAsPaid=%s)',
+                $visitorId,
+                isset($visitor['shop_id']) ? (string)$visitor['shop_id'] : 'null',
+                isset($visitor['table_id']) ? (string)$visitor['table_id'] : 'null',
+                $treatOrdersAsPaid ? 'true' : 'false'
+            )
+        );
+
+        $pdo->commit();
+
+        // 更新後のvisitor情報を返す
+        getVisitor($visitorId);
+
+    } catch (PDOException $e) {
+        if (isset($pdo) && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        handleDatabaseError($e, 'force releasing visitor/table');
+    } catch (Exception $e) {
+        if (isset($pdo) && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        sendErrorResponse(500, 'Internal server error');
+    }
 }
 

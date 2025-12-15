@@ -85,23 +85,53 @@
         <div
           v-for="shop in filteredShops"
           :key="shop.id"
-          class="bg-white p-4 sm:p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-transparent hover:border-green-300"
+          class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-transparent hover:border-green-300 w-full max-w-full overflow-hidden"
         >
-          <div class="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
-            <div class="flex-1 min-w-0">
-              <div class="flex items-start gap-3 mb-3">
+          <!-- ヘッダー（折りたたみトリガー） -->
+          <button
+            type="button"
+            class="w-full px-4 sm:px-6 py-3 flex items-center justify-between rounded-t-xl hover:bg-gray-50"
+            @click="toggleShopOpen(shop.id)"
+          >
+            <div class="flex items-start gap-3 min-w-0">
                 <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center flex-shrink-0">
                   <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                   </svg>
                 </div>
                 <div class="flex-1 min-w-0">
-                  <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
-                    <h3 class="text-lg sm:text-xl font-bold text-gray-900 break-words">{{ shop.name }}</h3>
-                    <span :class="shop.isActive ? 'px-2 sm:px-3 py-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-full text-xs font-semibold shadow-md whitespace-nowrap' : 'px-2 sm:px-3 py-1 bg-gray-200 text-gray-700 rounded-full text-xs font-semibold whitespace-nowrap'">
-                      {{ shop.isActive ? 'アクティブ' : '無効' }}
-                    </span>
-                  </div>
+                <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-1">
+                  <h3 class="text-lg sm:text-xl font-bold text-gray-900 break-words">{{ shop.name }}</h3>
+                  <span :class="shop.isActive ? 'px-2 sm:px-3 py-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-full text-xs font-semibold shadow-md whitespace-nowrap' : 'px-2 sm:px-3 py-1 bg-gray-200 text-gray-700 rounded-full text-xs font-semibold whitespace-nowrap'">
+                    {{ shop.isActive ? 'アクティブ' : '無効' }}
+                  </span>
+                </div>
+                <p class="text-[11px] sm:text-xs text-gray-500 truncate">
+                  コード: {{ shop.code }} ・ {{ shop.address || '住所未設定' }}
+                </p>
+              </div>
+            </div>
+            <svg
+              class="w-5 h-5 text-gray-400 transform transition-transform duration-200 flex-shrink-0 mr-1"
+              :class="isShopOpen(shop.id) ? 'rotate-180' : ''"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          <!-- 本文（折りたたみ可能エリア） -->
+          <div
+            v-if="isShopOpen(shop.id)"
+            class="px-4 sm:px-6 pb-4 sm:pb-6 border-t border-gray-100 rounded-b-xl"
+          >
+            <div class="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4 mt-3">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-start gap-3 mb-3">
+                  <!-- もともとのアイコンはヘッダーに移動したため空の余白調整用 -->
+                  <div class="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 hidden lg:block" />
                   <div class="space-y-1 text-xs sm:text-sm text-gray-600">
                     <p class="flex items-start gap-2 break-words">
                       <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -238,8 +268,9 @@
                         <div
                           v-for="order in getShopOrderDetails(shop.id)"
                           :key="order.id"
-                          class="flex items-center justify-between text-[11px] sm:text-xs px-2 py-1 rounded-md"
+                          class="flex items-center justify-between text-[11px] sm:text-xs px-2 py-1 rounded-md cursor-pointer hover:ring-1 hover:ring-green-400 transition"
                           :class="order.isAlert ? 'bg-red-50 text-red-700' : 'bg-gray-50 text-gray-700'"
+                          @click="openOrderDetail(order.id)"
                         >
                           <div class="flex items-center gap-2 min-w-0">
                             <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white border text-[10px] font-semibold">
@@ -261,31 +292,31 @@
                   </div>
                 </div>
               </div>
-            </div>
-            <div class="flex flex-col sm:flex-row gap-2 lg:ml-4 lg:flex-shrink-0">
-              <button
-                @click="handleGoToShopDashboard(shop)"
-                class="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 shadow-md hover:shadow-lg text-sm font-semibold touch-target"
-              >
-                ダッシュボード
-              </button>
-              <NuxtLink
-                :to="`/unei/shops/${shop.id}/edit`"
-                class="w-full sm:w-auto px-4 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all duration-300 shadow-md hover:shadow-lg text-sm font-semibold text-center touch-target"
-              >
-                編集
-              </NuxtLink>
-              <button
-                @click="handleDeleteShop(shop)"
-                :class="[
-                  'w-full sm:w-auto px-4 py-2 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg text-sm font-semibold touch-target',
-                  (shop.owners && shop.owners.length > 0) || shop.owner
-                    ? 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                    : 'bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700'
-                ]"
-              >
-                削除
-              </button>
+              <div class="flex flex-col sm:flex-row sm:flex-wrap gap-2 lg:ml-4 lg:flex-shrink-0">
+                <button
+                  @click="handleGoToShopDashboard(shop)"
+                  class="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 shadow-md hover:shadow-lg text-sm font-semibold touch-target"
+                >
+                  ダッシュボード
+                </button>
+                <NuxtLink
+                  :to="`/unei/shops/${shop.id}/edit`"
+                  class="w-full sm:w-auto px-4 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all duration-300 shadow-md hover:shadow-lg text-sm font-semibold text-center touch-target"
+                >
+                  編集
+                </NuxtLink>
+                <button
+                  @click="handleDeleteShop(shop)"
+                  :class="[
+                    'w-full sm:w-auto px-4 py-2 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg text-sm font-semibold touch-target',
+                    (shop.owners && shop.owners.length > 0) || shop.owner
+                      ? 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                      : 'bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700'
+                  ]"
+                >
+                  削除
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -402,13 +433,93 @@
         </div>
       </div>
     </div>
-</template>
+    <!-- 注文詳細モーダル -->
+    <div
+      v-if="selectedOrder"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4"
+      @click.self="closeOrderDetail"
+    >
+      <div class="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center px-4 sm:px-6 py-3 border-b">
+          <div>
+            <p class="text-xs text-gray-500 mb-0.5">注文詳細</p>
+            <h3 class="text-base sm:text-lg font-semibold text-gray-900">
+              #{{ selectedOrder.orderNumber }}
+            </h3>
+          </div>
+          <button
+            type="button"
+            class="p-1.5 rounded-full hover:bg-gray-100"
+            @click="closeOrderDetail"
+          >
+            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div class="px-4 sm:px-6 py-4 space-y-4 text-sm">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <p class="text-xs text-gray-500">テーブル</p>
+              <p class="font-semibold text-gray-900">No. {{ selectedOrder.tableNumber || '-' }}</p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-500">ステータス</p>
+              <p class="font-semibold" :class="selectedOrderStatusColor">
+                {{ selectedOrderStatusLabel }}
+              </p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-500">注文時間</p>
+              <p class="font-medium text-gray-900">
+                {{ formatDateTime(selectedOrder.createdAt) }}
+              </p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-500">経過時間</p>
+              <p class="font-semibold text-gray-900">
+                {{ formatDuration(selectedOrderElapsedMinutes) }}
+              </p>
+            </div>
+          </div>
+
+          <div class="border-t pt-3">
+            <p class="text-xs text-gray-500 mb-2">注文内容</p>
+            <div v-if="selectedOrder.items && selectedOrder.items.length > 0" class="space-y-2">
+              <div
+                v-for="item in selectedOrder.items"
+                :key="item.menuId + '-' + item.menuName"
+                class="flex items-center justify-between text-xs sm:text-sm"
+              >
+                <div class="flex flex-col">
+                  <span class="font-medium text-gray-900">{{ item.menuName }}</span>
+                  <span class="text-[11px] text-gray-500">x {{ item.quantity }}</span>
+                </div>
+                <span class="font-semibold text-gray-900">
+                  ¥{{ (item.price * item.quantity).toLocaleString() }}
+                </span>
+              </div>
+            </div>
+            <p v-else class="text-xs text-gray-500">注文内容はありません</p>
+          </div>
+
+          <div class="border-t pt-3 flex items-center justify-between text-sm">
+            <span class="text-gray-600 font-medium">合計金額</span>
+            <span class="text-lg font-bold text-green-600">
+              ¥{{ selectedOrder.totalAmount.toLocaleString() }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
 
 <script setup lang="ts">
 import { useShopStore } from '~/stores/shop'
 import { useAuthStore } from '~/stores/auth'
 import { useOrderStore } from '~/stores/order'
 import type { Shop } from '~/types/multi-shop'
+import type { Order, OrderStatus } from '~/types'
 
 definePageMeta({
   layout: 'company'
@@ -421,6 +532,46 @@ const orderStore = useOrderStore()
 const showAddModal = ref(false)
 const isSubmitting = ref(false)
 const addError = ref('')
+
+// 店舗ごとの開閉状態（デフォルトは全店舗オープン）
+const openShopIds = ref<string[]>([])
+
+// 注文詳細モーダル
+const selectedOrder = ref<Order | null>(null)
+const selectedOrderElapsedMinutes = ref(0)
+
+const selectedOrderStatusLabel = computed(() => {
+  if (!selectedOrder.value) return ''
+  const map: Record<OrderStatus, string> = {
+    pending: '受付待ち',
+    accepted: '受付済み',
+    cooking: '調理中',
+    completed: '完了',
+    cancelled: 'キャンセル',
+    checkout_pending: '会計待ち'
+  }
+  return map[selectedOrder.value.status as OrderStatus] || selectedOrder.value.status
+})
+
+const selectedOrderStatusColor = computed(() => {
+  if (!selectedOrder.value) return ''
+  const status = selectedOrder.value.status as OrderStatus
+  switch (status) {
+    case 'pending':
+      return 'text-yellow-700'
+    case 'accepted':
+    case 'cooking':
+      return 'text-blue-700'
+    case 'completed':
+      return 'text-emerald-700'
+    case 'checkout_pending':
+      return 'text-orange-700'
+    case 'cancelled':
+      return 'text-rose-700'
+    default:
+      return 'text-gray-700'
+  }
+})
 
 // オーナー絞り込み用
 const selectedOwnerId = ref<string>('')
@@ -494,6 +645,25 @@ const filteredShops = computed<Shop[]>(() => {
     return true
   }) as Shop[]
 })
+
+// 店舗カードの開閉制御
+const isShopOpen = (shopId: string) => {
+  // 初期状態: openShopIds が空のときは全店舗オープン扱い
+  if (openShopIds.value.length === 0) return true
+  return openShopIds.value.includes(shopId)
+}
+
+const toggleShopOpen = (shopId: string) => {
+  // まだ初期状態（全てオープン）の場合は、まず全店舗IDをセットしたうえでトグル
+  if (openShopIds.value.length === 0) {
+    openShopIds.value = (shopStore.shops as Shop[]).map(s => s.id)
+  }
+  if (openShopIds.value.includes(shopId)) {
+    openShopIds.value = openShopIds.value.filter(id => id !== shopId)
+  } else {
+    openShopIds.value.push(shopId)
+  }
+}
 
 // オートコンプリート用の店舗候補
 const shopSuggestions = computed<Shop[]>(() => {
@@ -595,6 +765,35 @@ const formatDuration = (minutes: number) => {
   const rest = minutes % 60
   if (rest === 0) return `${hours}時間`
   return `${hours}時間${rest}分`
+}
+
+// 日時を見やすい形式にフォーマット
+const formatDateTime = (value: Date | string) => {
+  const date = value instanceof Date ? value : new Date(value)
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  const hh = String(date.getHours()).padStart(2, '0')
+  const mm = String(date.getMinutes()).padStart(2, '0')
+  return `${y}/${m}/${d} ${hh}:${mm}`
+}
+
+// 注文詳細モーダル制御
+const openOrderDetail = (orderId: string) => {
+  const order = orderStore.orders.find(o => o.id === orderId)
+  if (!order) return
+
+  selectedOrder.value = order
+
+  const now = new Date()
+  const createdAt = order.createdAt instanceof Date ? order.createdAt : new Date(order.createdAt)
+  const diffMs = now.getTime() - createdAt.getTime()
+  selectedOrderElapsedMinutes.value = Math.floor(diffMs / 60000)
+}
+
+const closeOrderDetail = () => {
+  selectedOrder.value = null
+  selectedOrderElapsedMinutes.value = 0
 }
 
 const newShop = ref({

@@ -187,12 +187,19 @@
                     </p>
                   </div>
 
-                  <div class="flex gap-2">
+                  <div class="flex flex-col sm:flex-row gap-2">
                     <button
                       @click="editTable(table)"
                       class="flex-1 px-3 sm:px-4 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all duration-300 shadow-md hover:shadow-lg text-xs sm:text-sm font-semibold"
                     >
                       編集
+                    </button>
+                    <button
+                      v-if="isTableOccupied(table) && table.visitorId"
+                      @click="openForceReleaseModal(table)"
+                      class="flex-1 px-3 sm:px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl hover:from-amber-600 hover:to-orange-600 transition-all duration-300 shadow-md hover:shadow-lg text-xs sm:text-sm font-semibold"
+                    >
+                      着座解除
                     </button>
                     <button
                       @click="deleteTable(table)"
@@ -313,6 +320,77 @@
         </div>
       </div>
     </div>
+
+    <!-- 着座強制解除モーダル -->
+    <div
+      v-if="showForceReleaseModal && targetTableForRelease"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      @click.self="closeForceReleaseModal"
+    >
+      <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div class="p-6 space-y-4">
+          <h2 class="text-xl font-bold text-gray-900">
+            テーブル {{ targetTableForRelease.tableNumber }} の着座を解除しますか？
+          </h2>
+          <p class="text-sm text-gray-700">
+            この操作は、来店中のお客様のテーブル状態を強制的に「空席」に戻します。
+            関連する注文・会計データをどのように扱うかを選択してください。
+          </p>
+
+          <div class="space-y-3">
+            <label class="flex items-start gap-2">
+              <input
+                v-model="treatOrdersAsPaid"
+                type="radio"
+                :value="true"
+                class="mt-1"
+              />
+              <div>
+                <p class="text-sm font-semibold text-gray-900">注文を清算済み扱いにする</p>
+                <p class="text-xs text-gray-600">
+                  現在の注文を売上として計上し、未完了の注文ステータスを完了に更新します。
+                  実際には現金などで支払い済みだが端末操作が漏れている場合などに選択してください。
+                </p>
+              </div>
+            </label>
+
+            <label class="flex items-start gap-2">
+              <input
+                v-model="treatOrdersAsPaid"
+                type="radio"
+                :value="false"
+                class="mt-1"
+              />
+              <div>
+                <p class="text-sm font-semibold text-gray-900">注文を清算せずキャンセル扱いにする</p>
+                <p class="text-xs text-gray-600">
+                  進行中の注文をすべてキャンセル扱いとし、売上には計上しません。
+                  テスト注文や誤操作で発生したデータを破棄したい場合に選択してください。
+                </p>
+              </div>
+            </label>
+          </div>
+
+          <div class="flex gap-3 pt-2">
+            <button
+              type="button"
+              @click="closeForceReleaseModal"
+              class="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
+            >
+              キャンセル
+            </button>
+            <button
+              type="button"
+              @click="executeForceRelease"
+              :disabled="isForceReleasing"
+              class="flex-1 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-sm font-semibold"
+            >
+              {{ isForceReleasing ? '処理中...' : '着座解除を実行' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
 </template>
 
 <script setup lang="ts">
@@ -340,6 +418,12 @@ const expandedShopIds = ref<string[]>([])
 const isLoading = ref(false)
 const showCreateModal = ref(false)
 const editingTable = ref<ShopTable | null>(null)
+
+// 着座強制解除用
+const showForceReleaseModal = ref(false)
+const targetTableForRelease = ref<ShopTable | null>(null)
+const treatOrdersAsPaid = ref<boolean>(true)
+const isForceReleasing = ref(false)
 
 const formData = ref({
   tableNumber: '',
@@ -521,6 +605,55 @@ const closeModal = () => {
     name: '',
     capacity: 4,
     isActive: true
+  }
+}
+
+const openForceReleaseModal = (table: ShopTable) => {
+  targetTableForRelease.value = table
+  // デフォルトは「清算済み扱い」にしておく
+  treatOrdersAsPaid.value = true
+  showForceReleaseModal.value = true
+}
+
+const closeForceReleaseModal = () => {
+  showForceReleaseModal.value = false
+  targetTableForRelease.value = null
+  isForceReleasing.value = false
+}
+
+const executeForceRelease = async () => {
+  if (!targetTableForRelease.value || !targetTableForRelease.value.visitorId) {
+    return
+  }
+
+  if (
+    !confirm(
+      `テーブル「${targetTableForRelease.value.tableNumber}」の着座を解除します。\nこの操作は元に戻せません。実行してよろしいですか？`
+    )
+  ) {
+    return
+  }
+
+  isForceReleasing.value = true
+  try {
+    const config = useRuntimeConfig()
+    const apiBase = config.public.apiBase
+
+    await $fetch(`${apiBase}/visitors/${targetTableForRelease.value.visitorId}/force-release`, {
+      method: 'PUT',
+      body: {
+        treatOrdersAsPaid: treatOrdersAsPaid.value
+      }
+    })
+
+    closeForceReleaseModal()
+    await fetchAllTables()
+    alert('着座状態を解除しました')
+  } catch (error: any) {
+    console.error('着座強制解除に失敗しました:', error)
+    alert(error?.data?.error || error?.message || '着座強制解除に失敗しました')
+  } finally {
+    isForceReleasing.value = false
   }
 }
 
