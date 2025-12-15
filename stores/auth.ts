@@ -79,26 +79,43 @@ export const useAuthStore = defineStore('auth', {
         // トークンを取得
         const token = this.token || localStorage.getItem('auth_token')
         if (!token) {
+          console.error('checkAuth: Token not found')
           throw new Error('Token not found')
         }
         
-        // 直接fetchを使用して、確実にAuthorizationヘッダーを送信
-        const response = await fetch(buildUrl('auth/me'), {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          },
-          cache: 'no-store'
-        })
-        
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-          throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+        // トークンが空文字列でないか確認
+        if (token.trim() === '') {
+          console.error('checkAuth: Token is empty string')
+          throw new Error('Token is empty')
         }
         
-        const user = await response.json() as User
+        const url = buildUrl('auth/me')
+        console.log('checkAuth: URL:', url)
+        console.log('checkAuth: Token exists:', !!token, 'Token length:', token.length)
+        
+        // 直接fetchを使用して、確実にAuthorizationヘッダーを送信
+        const headers: HeadersInit = {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+        
+        // トークンが有効な場合のみAuthorizationヘッダーを追加
+        if (token && token.trim() !== '') {
+          headers['Authorization'] = `Bearer ${token}`
+        }
+        
+        console.log('checkAuth: Headers:', headers)
+        
+        const response = await $fetch(url, {
+          method: 'GET',
+          headers,
+          cache: 'no-store',
+          // $fetchはデフォルトでJSONパースするためrawResponseを取得
+          responseType: 'json',
+          retry: 0
+        })
+        
+        const user = response as unknown as User
         this.user = user
         this.token = token
         this.isAuthenticated = true

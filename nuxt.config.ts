@@ -49,7 +49,7 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'https://api.towndx.com/radish/v1'
+      apiBase: process.env.NUXT_PUBLIC_API_BASE
     }
   }
 })

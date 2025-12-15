@@ -172,38 +172,14 @@ export const useUserStore = defineStore('user', {
         const config = useRuntimeConfig()
         const apiBase = config.public.apiBase
         
-        // サービスワーカーをバイパスするため、直接fetchを使用
         const headers = getAuthHeaders()
-        const response = await fetch(`${apiBase}/users/${userId}/password`, {
+        const result = await $fetch(`${apiBase}/users/${userId}/password`, {
           method: 'PUT',
-          headers: headers,
-          body: JSON.stringify(input),
-          cache: 'no-store', // サービスワーカーのキャッシュをバイパス
-          mode: 'cors' // CORSモードを明示的に指定
+          headers,
+          body: input,
+          cache: 'no-store',
+          retry: 0
         })
-        
-        if (!response.ok) {
-          let errorMessage = `HTTP error! status: ${response.status}`
-          try {
-            const errorData = await response.json()
-            errorMessage = errorData.error || errorMessage
-          } catch (e) {
-            // JSON解析に失敗した場合は、ステータステキストを使用
-            errorMessage = response.statusText || errorMessage
-          }
-          
-          // 401エラーの場合は、より詳細なメッセージを提供
-          if (response.status === 401) {
-            errorMessage = '認証に失敗しました。再度ログインしてください。'
-          }
-          
-          const error = new Error(errorMessage) as any
-          error.status = response.status
-          error.statusText = response.statusText
-          throw error
-        }
-        
-        const result = await response.json()
         return result
       } catch (error: any) {
         console.error('パスワードの変更に失敗しました:', error)

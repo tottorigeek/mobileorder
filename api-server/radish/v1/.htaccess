@@ -1,0 +1,20 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /radish/v1/
+
+    # 既存ファイル・ディレクトリはそのまま
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+
+    # すべてを index.php にルーティング
+    RewriteRule ^(.*)$ index.php [QSA,L]
+
+    # Authorization ヘッダーを環境変数に引き継ぐ（PHP で取得できるようにする）
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule ^ - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+</IfModule>
+
+# Apache で Authorization を渡すための保険
+SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
+
+
