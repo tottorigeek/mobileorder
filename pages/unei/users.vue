@@ -424,36 +424,36 @@ const confirmDelete = async (user: User) => {
 }
 
 onMounted(async () => {
-  console.log('[company/users] onMounted called')
+  console.log('[unei/users] onMounted called')
   
   // 認証チェック
   authStore.loadUserFromStorage()
-  console.log('[company/users] isAuthenticated:', authStore.isAuthenticated)
-  console.log('[company/users] user:', authStore.user)
-  console.log('[company/users] isOwner:', authStore.isOwner)
-  console.log('[company/users] isManager:', authStore.isManager)
+  console.log('[unei/users] isAuthenticated:', authStore.isAuthenticated)
+  console.log('[unei/users] user:', authStore.user)
+  console.log('[unei/users] isOwner:', authStore.isOwner)
+  console.log('[unei/users] isManager:', authStore.isManager)
   
   if (!authStore.isAuthenticated) {
-    console.log('[company/users] Not authenticated, redirecting to login')
+    console.log('[unei/users] Not authenticated, redirecting to login')
     await navigateTo('/unei/login')
     return
   }
   
   // API側で権限チェックを行うため、フロントエンドでは認証のみ確認
   try {
-    console.log('[company/users] Fetching all users...')
+    console.log('[unei/users] Fetching all users...')
     await Promise.all([
       userStore.fetchAllUsers(),
       shopStore.fetchShops()
     ])
-    console.log('[company/users] Users fetched successfully')
+    console.log('[unei/users] Users fetched successfully')
     errorMessage.value = ''
   } catch (error: any) {
-    console.error('[company/users] Error fetching users:', error)
+    console.error('[unei/users] Error fetching users:', error)
     // 権限エラーの場合はエラーメッセージを表示（リダイレクトしない）
     if (error?.statusCode === 403 || error?.data?.status === 403 || error?.status === 403) {
       errorMessage.value = 'オーナーまたはマネージャー権限が必要です。このページにアクセスするには、オーナーまたはマネージャーロールが必要です。'
-      console.warn('[company/users] Owner or Manager permission required')
+      console.warn('[unei/users] Owner or Manager permission required')
     } else {
       errorMessage.value = error?.data?.error || 'ユーザー一覧の取得に失敗しました'
       console.error('ユーザー一覧の取得に失敗しました:', error)

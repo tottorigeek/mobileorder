@@ -660,17 +660,17 @@ const confirmDeleteAll = async () => {
 }
 
 onMounted(async () => {
-  console.log('[company/error-logs] onMounted called')
+  console.log('[unei/error-logs] onMounted called')
   
   // 認証チェック
   authStore.loadUserFromStorage()
-  console.log('[company/error-logs] isAuthenticated:', authStore.isAuthenticated)
-  console.log('[company/error-logs] user:', authStore.user)
-  console.log('[company/error-logs] isOwner:', authStore.isOwner)
-  console.log('[company/error-logs] isManager:', authStore.isManager)
+  console.log('[unei/error-logs] isAuthenticated:', authStore.isAuthenticated)
+  console.log('[unei/error-logs] user:', authStore.user)
+  console.log('[unei/error-logs] isOwner:', authStore.isOwner)
+  console.log('[unei/error-logs] isManager:', authStore.isManager)
   
   if (!authStore.isAuthenticated) {
-    console.log('[company/error-logs] Not authenticated, redirecting to login')
+    console.log('[unei/error-logs] Not authenticated, redirecting to login')
     await navigateTo('/unei/login')
     return
   }

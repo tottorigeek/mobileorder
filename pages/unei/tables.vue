@@ -49,74 +49,170 @@
         <p class="mt-4 text-gray-500 font-medium">読み込み中...</p>
       </div>
 
-      <!-- テーブル一覧 -->
-      <div v-else-if="filteredTables.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- テーブル一覧（店舗別アコーディオン） -->
+      <div v-else-if="shopsForDisplay.length > 0" class="space-y-4">
         <div
-          v-for="table in filteredTables"
-          :key="table.id"
-          class="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-transparent hover:border-green-300"
+          v-for="shop in shopsForDisplay"
+          :key="shop.id"
+          class="bg-white rounded-2xl shadow-lg overflow-hidden"
         >
-          <div class="flex justify-between items-start mb-4">
+          <!-- アコーディオンヘッダー -->
+          <button
+            type="button"
+            class="w-full flex items-center justify-between px-4 sm:px-6 py-4 sm:py-5 hover:bg-gray-50 transition-colors"
+            @click="toggleShop(shop.id)"
+          >
             <div class="flex items-center gap-3">
-              <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center">
-                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
+              <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white font-bold shadow-md">
+                {{ shop.name.slice(0, 2) }}
               </div>
-              <div>
-                <h3 class="text-xl font-bold text-gray-900">
-                  テーブル {{ table.tableNumber }}
-                </h3>
-                <p v-if="table.name" class="text-sm text-gray-600 mt-1">{{ table.name }}</p>
+              <div class="text-left">
+                <p class="font-semibold text-gray-900 text-base sm:text-lg">{{ shop.name }}</p>
+                <p class="text-xs sm:text-sm text-gray-500">
+                  全テーブル {{ getShopStats(shop.id).total }}卓 / 稼働中 {{ getShopStats(shop.id).active }}卓
+                  <span v-if="getShopStats(shop.id).seated > 0" class="ml-2 text-emerald-600 font-semibold">
+                    着座中 {{ getShopStats(shop.id).seated }}卓
+                  </span>
+                </p>
               </div>
             </div>
-            <span
-              :class="[
-                'px-3 py-1 rounded-full text-xs font-semibold',
-                table.isActive ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-md' : 'bg-gray-200 text-gray-700'
-              ]"
-            >
-              {{ table.isActive ? '有効' : '無効' }}
-            </span>
-          </div>
-
-          <div class="space-y-2 mb-4 p-4 bg-gray-50 rounded-xl">
-            <p class="text-sm text-gray-700 flex items-center gap-2">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            <div class="flex items-center gap-3">
+              <div class="flex items-center gap-1 text-xs sm:text-sm text-gray-500">
+                <span class="inline-flex items-center gap-1">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span> 着座中
+                </span>
+                <span class="inline-flex items-center gap-1 ml-2">
+                  <span class="w-2 h-2 rounded-full bg-gray-300"></span> 空席
+                </span>
+              </div>
+              <svg
+                class="w-5 h-5 text-gray-400 transform transition-transform duration-200"
+                :class="{ 'rotate-180': isShopExpanded(shop.id) }"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
               </svg>
-              <span class="font-medium">定員:</span> {{ table.capacity }}名
-            </p>
-            <p class="text-sm text-gray-700 flex items-center gap-2">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
-              <span class="font-medium">店舗:</span> {{ getShopName(table.shopId) }}
-            </p>
-          </div>
+            </div>
+          </button>
 
-          <div class="flex gap-2">
-            <button
-              @click="editTable(table)"
-              class="flex-1 px-4 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all duration-300 shadow-md hover:shadow-lg text-sm font-semibold"
-            >
-              編集
-            </button>
-            <button
-              @click="deleteTable(table)"
-              class="flex-1 px-4 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-300 shadow-md hover:shadow-lg text-sm font-semibold"
-            >
-              削除
-            </button>
-          </div>
+          <!-- アコーディオン中身 -->
+          <transition name="fade" mode="out-in">
+            <div v-show="isShopExpanded(shop.id)" class="border-t border-gray-100 px-4 sm:px-6 py-4 sm:py-5 bg-gray-50/60">
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                <div
+                  v-for="table in tablesByShop[shop.id]"
+                  :key="table.id"
+                  :class="[
+                    'bg-white p-4 sm:p-5 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border-2',
+                    isTableOccupied(table)
+                      ? 'border-emerald-400 ring-1 ring-emerald-100'
+                      : 'border-transparent hover:border-green-200'
+                  ]"
+                >
+                  <div class="flex justify-between items-start mb-3 sm:mb-4">
+                    <div class="flex items-center gap-3">
+                      <div
+                        :class="[
+                          'w-10 h-10 rounded-xl flex items-center justify-center shadow',
+                          isTableOccupied(table)
+                            ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white'
+                            : 'bg-gradient-to-br from-gray-200 to-gray-300 text-gray-700'
+                        ]"
+                      >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                          />
+                        </svg>
+                      </div>
+                      <div>
+                        <h3 class="text-lg font-bold text-gray-900">
+                          テーブル {{ table.tableNumber }}
+                        </h3>
+                        <p v-if="table.name" class="text-xs sm:text-sm text-gray-600 mt-1">{{ table.name }}</p>
+                      </div>
+                    </div>
+                    <div class="flex flex-col items-end gap-1">
+                      <span
+                        :class="[
+                          'px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-semibold inline-flex items-center gap-1',
+                          table.isActive
+                            ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-md'
+                            : 'bg-gray-200 text-gray-700'
+                        ]"
+                      >
+                        <span
+                          class="w-1.5 h-1.5 rounded-full"
+                          :class="table.isActive ? 'bg-white/90' : 'bg-gray-500'"
+                        ></span>
+                        {{ table.isActive ? '有効' : '無効' }}
+                      </span>
+                      <span
+                        v-if="getStatusInfo(table).label"
+                        :class="getStatusInfo(table).class"
+                      >
+                        <span class="w-1.5 h-1.5 rounded-full" :class="getStatusInfo(table).dotClass"></span>
+                        {{ getStatusInfo(table).label }}
+                      </span>
+                    </div>
+                  </div>
 
-          <!-- QRコード表示 -->
-          <div class="mt-4 pt-4 border-t">
-            <QRCodeGenerator
-              :shop-code="getShopCode(table.shopId)"
-              :table-number="table.tableNumber"
-            />
-          </div>
+                  <div class="space-y-2 mb-3 sm:mb-4 p-3 sm:p-4 bg-gray-50 rounded-xl">
+                    <p class="text-xs sm:text-sm text-gray-700 flex items-center gap-2">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                        />
+                      </svg>
+                      <span class="font-medium">定員:</span> {{ table.capacity }}名
+                    </p>
+                    <p class="text-xs sm:text-sm text-gray-700 flex items-center gap-2">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                        />
+                      </svg>
+                      <span class="font-medium">店舗:</span> {{ getShopName(table.shopId) }}
+                    </p>
+                  </div>
+
+                  <div class="flex gap-2">
+                    <button
+                      @click="editTable(table)"
+                      class="flex-1 px-3 sm:px-4 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all duration-300 shadow-md hover:shadow-lg text-xs sm:text-sm font-semibold"
+                    >
+                      編集
+                    </button>
+                    <button
+                      @click="deleteTable(table)"
+                      class="flex-1 px-3 sm:px-4 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-300 shadow-md hover:shadow-lg text-xs sm:text-sm font-semibold"
+                    >
+                      削除
+                    </button>
+                  </div>
+
+                  <!-- QRコード表示 -->
+                  <div class="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t">
+                    <QRCodeGenerator
+                      :shop-code="getShopCode(table.shopId)"
+                      :table-number="table.tableNumber"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </transition>
         </div>
       </div>
 
@@ -240,6 +336,7 @@ const allShops = ref<Shop[]>([])
 const selectedShopId = ref<string>('')
 const allTables = ref<ShopTable[]>([])
 const filteredTables = ref<ShopTable[]>([])
+const expandedShopIds = ref<string[]>([])
 const isLoading = ref(false)
 const showCreateModal = ref(false)
 const editingTable = ref<ShopTable | null>(null)
@@ -261,6 +358,21 @@ const getShopCode = (shopId: string) => {
   return shop?.code || ''
 }
 
+const tablesByShop = computed<Record<string, ShopTable[]>>(() => {
+  const groups: Record<string, ShopTable[]> = {}
+  for (const table of filteredTables.value) {
+    if (!groups[table.shopId]) {
+      groups[table.shopId] = []
+    }
+    groups[table.shopId].push(table)
+  }
+  return groups
+})
+
+const shopsForDisplay = computed(() => {
+  return allShops.value.filter((shop) => tablesByShop.value[shop.id]?.length)
+})
+
 const filterTables = () => {
   if (selectedShopId.value) {
     filteredTables.value = allTables.value.filter(t => t.shopId === selectedShopId.value)
@@ -268,6 +380,71 @@ const filterTables = () => {
     filteredTables.value = allTables.value
   }
 }
+
+const isTableOccupied = (table: ShopTable) => {
+  // status: available / occupied / set_pending / checkout_pending など + visitorId で着座判定
+  const status = table.status || 'available'
+  return status === 'occupied' || status === 'set_pending' || status === 'checkout_pending' || !!table.visitorId
+}
+
+const getStatusInfo = (table: ShopTable) => {
+  const status = table.status || 'available'
+  if (!table.isActive) {
+    return {
+      label: '',
+      class: 'hidden',
+      dotClass: ''
+    }
+  }
+
+  if (status === 'set_pending') {
+    return {
+      label: '入店待ち',
+      class: 'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-semibold bg-amber-100 text-amber-800',
+      dotClass: 'bg-amber-500'
+    }
+  }
+
+  if (status === 'checkout_pending') {
+    return {
+      label: '会計待ち',
+      class: 'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-semibold bg-sky-100 text-sky-800',
+      dotClass: 'bg-sky-500'
+    }
+  }
+
+  if (status === 'occupied' || table.visitorId) {
+    return {
+      label: '着座中',
+      class: 'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-semibold bg-emerald-100 text-emerald-800',
+      dotClass: 'bg-emerald-500'
+    }
+  }
+
+  return {
+    label: '空席',
+    class: 'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-semibold bg-gray-100 text-gray-600',
+    dotClass: 'bg-gray-400'
+  }
+}
+
+const getShopStats = (shopId: string) => {
+  const list = tablesByShop.value[shopId] || []
+  const total = list.length
+  const active = list.filter(t => t.isActive).length
+  const seated = list.filter(t => isTableOccupied(t)).length
+  return { total, active, seated }
+}
+
+const toggleShop = (shopId: string) => {
+  if (expandedShopIds.value.includes(shopId)) {
+    expandedShopIds.value = expandedShopIds.value.filter(id => id !== shopId)
+  } else {
+    expandedShopIds.value.push(shopId)
+  }
+}
+
+const isShopExpanded = (shopId: string) => expandedShopIds.value.includes(shopId)
 
 const fetchAllTables = async () => {
   isLoading.value = true
@@ -359,9 +536,12 @@ onMounted(async () => {
   try {
     await shopStore.fetchShops()
     allShops.value = shopStore.shops
-    
+
     // 全店舗のテーブルを取得
     await fetchAllTables()
+
+    // 初期状態では表示対象店舗をすべて展開
+    expandedShopIds.value = shopsForDisplay.value.map((shop) => shop.id)
   } catch (error) {
     console.error('データの取得に失敗しました:', error)
   }

@@ -66,35 +66,52 @@ function getOrders() {
         
         // 店舗IDの取得
         // 1. 認証されている場合はJWTから取得（店舗スタッフ）
+        //    ただし、オーナー／マネージャーなど複数店舗を管理するロールは
+        //    クエリパラメータの shop（店舗コード）で参照店舗を切り替え可能
         // 2. 認証されていない場合はクエリパラメータからshop_codeを取得（顧客側）
         $shopId = null;
         $token = getJWTFromHeader();
-        
+        $requestedShopCode = $_GET['shop'] ?? null;
+
         if ($token) {
-            // 認証済みの場合：JWTからshop_idを取得
             $payload = verifyJWT($token);
-            if ($payload && isset($payload['shop_id'])) {
+            $role = $payload['role'] ?? null;
+
+            // オーナー／マネージャーで shop パラメータが指定されている場合は、
+            // その店舗コードから shop_id を取得して参照店舗を切り替える
+            if ($requestedShopCode && $role && in_array($role, ['owner', 'manager'], true)) {
+                $stmt = $pdo->prepare("SELECT id FROM shops WHERE code = :code");
+                $stmt->execute([':code' => $requestedShopCode]);
+                $shop = $stmt->fetch();
+
+                if (!$shop) {
+                    sendNotFoundError('Shop');
+                }
+
+                $shopId = $shop['id'];
+            } elseif ($payload && isset($payload['shop_id'])) {
+                // 通常の店舗スタッフは、自分の所属店舗のみ参照
                 $shopId = $payload['shop_id'];
             }
         }
-        
+
         if (!$shopId) {
-            // 認証されていない場合：クエリパラメータからshop_codeを取得
-            $shopCode = $_GET['shop'] ?? null;
-            
+            // 未認証、または shop_id を持たないトークン：クエリパラメータからshop_codeを取得
+            $shopCode = $requestedShopCode;
+
             if (!$shopCode) {
                 sendErrorResponse(400, 'Shop code is required for unauthenticated requests');
             }
-            
-            // shop_codeからshop_idを取得
+
+            // shop_codeからshop_idを取得（公開用はアクティブ店舗のみ）
             $stmt = $pdo->prepare("SELECT id FROM shops WHERE code = :code AND is_active = 1");
             $stmt->execute([':code' => $shopCode]);
             $shop = $stmt->fetch();
-            
+
             if (!$shop) {
                 sendNotFoundError('Shop');
             }
-            
+
             $shopId = $shop['id'];
         }
         

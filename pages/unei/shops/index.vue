@@ -23,18 +23,67 @@
         <p class="mt-4 text-gray-500 font-medium text-sm sm:text-base">読み込み中...</p>
       </div>
 
-      <!-- 店舗一覧 -->
-      <div v-else-if="shopStore.shops.length === 0" class="text-center py-12 sm:py-16 bg-white rounded-2xl shadow-lg px-4">
+      <!-- 店舗一覧（0件時） -->
+      <div v-else-if="filteredShops.length === 0" class="text-center py-12 sm:py-16 bg-white rounded-2xl shadow-lg px-4">
         <svg class="w-16 h-16 sm:w-20 sm:h-20 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
         </svg>
-        <p class="text-gray-500 font-medium text-base sm:text-lg mb-2">店舗が登録されていません</p>
-        <p class="text-gray-400 text-xs sm:text-sm">店舗を追加して管理を開始しましょう</p>
+        <p class="text-gray-500 font-medium text-base sm:text-lg mb-2">
+          店舗が見つかりません
+        </p>
+        <p class="text-gray-400 text-xs sm:text-sm">
+          フィルター条件を変更するか、新しい店舗を追加してください
+        </p>
       </div>
 
       <div v-else class="space-y-4">
+        <!-- フィルター -->
+        <div class="bg-white p-4 sm:p-5 rounded-xl shadow-md flex flex-col sm:flex-row gap-4 sm:items-end">
+          <div class="flex-1 min-w-[200px]">
+            <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+              オーナーで絞り込み
+            </label>
+            <select
+              v-model="selectedOwnerId"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+            >
+              <option value="">すべてのオーナー</option>
+              <option
+                v-for="owner in ownerOptions"
+                :key="owner.id"
+                :value="owner.id"
+              >
+                {{ owner.name }} <span v-if="owner.email">({{ owner.email }})</span>
+              </option>
+            </select>
+          </div>
+
+          <div class="flex-1 min-w-[200px]">
+            <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+              店舗名で検索
+            </label>
+            <input
+              v-model="shopSearchKeyword"
+              type="search"
+              list="shop-name-suggestions"
+              placeholder="例: レストラン, カフェ, shop001 など"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+            />
+            <datalist id="shop-name-suggestions">
+              <option
+                v-for="shop in shopSuggestions"
+                :key="shop.id"
+                :value="shop.name"
+              >
+                {{ shop.code }}
+              </option>
+            </datalist>
+          </div>
+        </div>
+
+        <!-- 店舗一覧 -->
         <div
-          v-for="shop in shopStore.shops"
+          v-for="shop in filteredShops"
           :key="shop.id"
           class="bg-white p-4 sm:p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-transparent hover:border-green-300"
         >
@@ -98,34 +147,115 @@
                     </p>
                   </div>
                   
-                  <!-- 売上情報 -->
-                  <div class="mt-4 pt-4 border-t border-gray-200">
-                    <h4 class="text-xs sm:text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      売上情報
-                    </h4>
-                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-3">
-                      <div class="bg-teal-50 p-2 sm:p-3 rounded-lg border border-teal-200">
-                        <p class="text-[10px] sm:text-xs text-gray-600 mb-1">直近1時間</p>
-                        <p class="text-sm sm:text-lg font-bold text-teal-700 break-all">¥{{ getShopSales(shop.id, '1hour').toLocaleString() }}</p>
+                  <!-- 売上情報 & 注文ステータス -->
+                  <div class="mt-4 pt-4 border-t border-gray-200 space-y-4">
+                    <!-- 売上情報 -->
+                    <div>
+                      <h4 class="text-xs sm:text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        売上情報
+                      </h4>
+                      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-3">
+                        <div class="bg-teal-50 p-2 sm:p-3 rounded-lg border border-teal-200">
+                          <p class="text-[10px] sm:text-xs text-gray-600 mb-1">直近1時間</p>
+                          <p class="text-sm sm:text-lg font-bold text-teal-700 break-all">¥{{ getShopSales(shop.id, '1hour').toLocaleString() }}</p>
+                        </div>
+                        <div class="bg-green-50 p-2 sm:p-3 rounded-lg border border-green-200">
+                          <p class="text-[10px] sm:text-xs text-gray-600 mb-1">本日</p>
+                          <p class="text-sm sm:text-lg font-bold text-green-700 break-all">¥{{ getShopSales(shop.id, 'today').toLocaleString() }}</p>
+                        </div>
+                        <div class="bg-blue-50 p-2 sm:p-3 rounded-lg border border-blue-200">
+                          <p class="text-[10px] sm:text-xs text-gray-600 mb-1">昨日</p>
+                          <p class="text-sm sm:text-lg font-bold text-blue-700 break-all">¥{{ getShopSales(shop.id, 'yesterday').toLocaleString() }}</p>
+                        </div>
+                        <div class="bg-purple-50 p-2 sm:p-3 rounded-lg border border-purple-200">
+                          <p class="text-[10px] sm:text-xs text-gray-600 mb-1">7日間</p>
+                          <p class="text-sm sm:text-lg font-bold text-purple-700 break-all">¥{{ getShopSales(shop.id, '7days').toLocaleString() }}</p>
+                        </div>
+                        <div class="bg-orange-50 p-2 sm:p-3 rounded-lg border border-orange-200">
+                          <p class="text-[10px] sm:text-xs text-gray-600 mb-1">30日間</p>
+                          <p class="text-sm sm:text-lg font-bold text-orange-700 break-all">¥{{ getShopSales(shop.id, '30days').toLocaleString() }}</p>
+                        </div>
                       </div>
-                      <div class="bg-green-50 p-2 sm:p-3 rounded-lg border border-green-200">
-                        <p class="text-[10px] sm:text-xs text-gray-600 mb-1">本日</p>
-                        <p class="text-sm sm:text-lg font-bold text-green-700 break-all">¥{{ getShopSales(shop.id, 'today').toLocaleString() }}</p>
+                    </div>
+
+                    <!-- 注文ステータス -->
+                    <div>
+                      <h4 class="text-xs sm:text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 12h18M3 17h18" />
+                        </svg>
+                        注文ステータス
+                      </h4>
+                      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-3">
+                        <div class="bg-yellow-50 p-2 sm:p-3 rounded-lg border border-yellow-200">
+                          <p class="text-[10px] sm:text-xs text-gray-600 mb-1">受付待ち</p>
+                          <p class="text-sm sm:text-lg font-bold text-yellow-700">
+                            {{ getShopOrderStats(shop.id).pending }}
+                          </p>
+                        </div>
+                        <div class="bg-blue-50 p-2 sm:p-3 rounded-lg border border-blue-200">
+                          <p class="text-[10px] sm:text-xs text-gray-600 mb-1">調理中</p>
+                          <p class="text-sm sm:text-lg font-bold text-blue-700">
+                            {{ getShopOrderStats(shop.id).cooking }}
+                          </p>
+                        </div>
+                        <div class="bg-emerald-50 p-2 sm:p-3 rounded-lg border border-emerald-200">
+                          <p class="text-[10px] sm:text-xs text-gray-600 mb-1">提供済み</p>
+                          <p class="text-sm sm:text-lg font-bold text-emerald-700">
+                            {{ getShopOrderStats(shop.id).completed }}
+                          </p>
+                        </div>
+                        <div class="bg-rose-50 p-2 sm:p-3 rounded-lg border border-rose-200">
+                          <p class="text-[10px] sm:text-xs text-gray-600 mb-1">キャンセル</p>
+                          <p class="text-sm sm:text-lg font-bold text-rose-700">
+                            {{ getShopOrderStats(shop.id).cancelled }}
+                          </p>
+                        </div>
+                        <div class="bg-red-50 p-2 sm:p-3 rounded-lg border border-red-200">
+                          <p class="text-[10px] sm:text-xs text-gray-600 mb-1 flex items-center gap-1">
+                            異常長時間
+                            <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-500 text-white text-[10px]">
+                              !
+                            </span>
+                          </p>
+                          <p class="text-[11px] sm:text-xs font-semibold text-red-700">
+                            {{ formatDuration(getShopOrderStats(shop.id).maxPendingMinutes) }}
+                          </p>
+                        </div>
                       </div>
-                      <div class="bg-blue-50 p-2 sm:p-3 rounded-lg border border-blue-200">
-                        <p class="text-[10px] sm:text-xs text-gray-600 mb-1">昨日</p>
-                        <p class="text-sm sm:text-lg font-bold text-blue-700 break-all">¥{{ getShopSales(shop.id, 'yesterday').toLocaleString() }}</p>
-                      </div>
-                      <div class="bg-purple-50 p-2 sm:p-3 rounded-lg border border-purple-200">
-                        <p class="text-[10px] sm:text-xs text-gray-600 mb-1">7日間</p>
-                        <p class="text-sm sm:text-lg font-bold text-purple-700 break-all">¥{{ getShopSales(shop.id, '7days').toLocaleString() }}</p>
-                      </div>
-                      <div class="bg-orange-50 p-2 sm:p-3 rounded-lg border border-orange-200">
-                        <p class="text-[10px] sm:text-xs text-gray-600 mb-1">30日間</p>
-                        <p class="text-sm sm:text-lg font-bold text-orange-700 break-all">¥{{ getShopSales(shop.id, '30days').toLocaleString() }}</p>
+
+                      <!-- 個別注文の経過時間（上位） -->
+                      <div
+                        v-if="getShopOrderDetails(shop.id).length > 0"
+                        class="mt-3 border-t border-dashed border-gray-200 pt-3 space-y-1.5"
+                      >
+                        <p class="text-[10px] sm:text-xs text-gray-500 font-medium">
+                          個別注文の経過時間（最大5件）
+                        </p>
+                        <div
+                          v-for="order in getShopOrderDetails(shop.id)"
+                          :key="order.id"
+                          class="flex items-center justify-between text-[11px] sm:text-xs px-2 py-1 rounded-md"
+                          :class="order.isAlert ? 'bg-red-50 text-red-700' : 'bg-gray-50 text-gray-700'"
+                        >
+                          <div class="flex items-center gap-2 min-w-0">
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white border text-[10px] font-semibold">
+                              {{ order.tableNumber || '-' }}
+                            </span>
+                            <span class="truncate">
+                              #{{ order.orderNumber }}
+                              <span class="ml-1 text-[10px]" :class="order.isAlert ? 'text-red-600' : 'text-gray-500'">
+                                （{{ order.statusLabel }}）
+                              </span>
+                            </span>
+                          </div>
+                          <span class="ml-2 font-semibold whitespace-nowrap">
+                            {{ formatDuration(order.elapsedMinutes) }}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -291,6 +421,181 @@ const orderStore = useOrderStore()
 const showAddModal = ref(false)
 const isSubmitting = ref(false)
 const addError = ref('')
+
+// オーナー絞り込み用
+const selectedOwnerId = ref<string>('')
+
+// 店舗名検索用
+const shopSearchKeyword = ref<string>('')
+
+type OwnerOption = {
+  id: string
+  name: string
+  email?: string | null
+}
+
+// 店舗データからオーナー候補を抽出
+const ownerOptions = computed<OwnerOption[]>(() => {
+  const map = new Map<string, OwnerOption>()
+
+  for (const shop of shopStore.shops as any[]) {
+    if (shop.owners && Array.isArray(shop.owners)) {
+      for (const owner of shop.owners) {
+        if (!owner?.id) continue
+        if (!map.has(owner.id)) {
+          map.set(owner.id, {
+            id: String(owner.id),
+            name: owner.name || owner.username || '名称未設定',
+            email: owner.email ?? null
+          })
+        }
+      }
+    } else if (shop.owner && shop.owner.id) {
+      const owner = shop.owner
+      if (!map.has(owner.id)) {
+        map.set(owner.id, {
+          id: String(owner.id),
+          name: owner.name || owner.username || '名称未設定',
+          email: owner.email ?? null
+        })
+      }
+    }
+  }
+
+  return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, 'ja'))
+})
+
+// オーナーで絞り込んだ店舗一覧
+const filteredShops = computed<Shop[]>(() => {
+  const targetId = selectedOwnerId.value
+  const keyword = shopSearchKeyword.value.trim().toLowerCase()
+
+  return (shopStore.shops as any[]).filter(shop => {
+    // オーナー絞り込み
+    if (targetId) {
+      let matchOwner = false
+      if (shop.owners && Array.isArray(shop.owners)) {
+        matchOwner = shop.owners.some((owner: any) => String(owner.id) === targetId)
+      } else if (shop.owner && shop.owner.id) {
+        matchOwner = String(shop.owner.id) === targetId
+      }
+      if (!matchOwner) return false
+    }
+
+    // 店舗名・コード検索
+    if (keyword) {
+      const name = (shop.name || '').toLowerCase()
+      const code = (shop.code || '').toLowerCase()
+      if (!name.includes(keyword) && !code.includes(keyword)) {
+        return false
+      }
+    }
+
+    return true
+  }) as Shop[]
+})
+
+// オートコンプリート用の店舗候補
+const shopSuggestions = computed<Shop[]>(() => {
+  // 店舗数が多い場合に備えて、最大30件までに制限
+  return (shopStore.shops as Shop[]).slice(0, 30)
+})
+
+// 店舗ごとの注文ステータス集計と経過時間
+const getShopOrderStats = (shopId: string) => {
+  const now = new Date()
+  const shopOrders = orderStore.orders.filter(order => order.shopId === shopId)
+
+  let pending = 0
+  let cooking = 0
+  let completed = 0
+  let cancelled = 0
+  let maxPendingMinutes = 0
+
+  for (const order of shopOrders) {
+    switch (order.status) {
+      case 'pending':
+        pending++
+        break
+      case 'accepted':
+      case 'cooking':
+        cooking++
+        break
+      case 'completed':
+        completed++
+        break
+      case 'cancelled':
+      case 'checkout_pending':
+        cancelled++
+        break
+    }
+
+    // 未完了系の注文について、最長の経過時間を計算（分）
+    if (order.status !== 'completed' && order.status !== 'cancelled') {
+      const createdAt = order.createdAt instanceof Date ? order.createdAt : new Date(order.createdAt)
+      const diffMs = now.getTime() - createdAt.getTime()
+      const diffMinutes = Math.floor(diffMs / 60000)
+      if (diffMinutes > maxPendingMinutes) {
+        maxPendingMinutes = diffMinutes
+      }
+    }
+  }
+
+  return {
+    pending,
+    cooking,
+    completed,
+    cancelled,
+    maxPendingMinutes
+  }
+}
+
+// 店舗ごとの個別注文詳細（経過時間順 上位5件）
+const getShopOrderDetails = (shopId: string) => {
+  const now = new Date()
+  const activeStatuses: OrderStatus[] = ['pending', 'accepted', 'cooking', 'checkout_pending']
+
+  return orderStore.orders
+    .filter(order => order.shopId === shopId && activeStatuses.includes(order.status as OrderStatus))
+    .map(order => {
+      const createdAt = order.createdAt instanceof Date ? order.createdAt : new Date(order.createdAt)
+      const diffMs = now.getTime() - createdAt.getTime()
+      const diffMinutes = Math.floor(diffMs / 60000)
+
+      const statusLabelMap: Record<OrderStatus, string> = {
+        pending: '受付待ち',
+        accepted: '受付済み',
+        cooking: '調理中',
+        completed: '完了',
+        cancelled: 'キャンセル',
+        checkout_pending: '会計待ち'
+      }
+
+      const isAlert = diffMinutes >= 15 // 例えば15分以上を「要注意」とする
+
+      return {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        tableNumber: order.tableNumber,
+        status: order.status as OrderStatus,
+        statusLabel: statusLabelMap[order.status as OrderStatus] || order.status,
+        elapsedMinutes: diffMinutes,
+        isAlert
+      }
+    })
+    .sort((a, b) => b.elapsedMinutes - a.elapsedMinutes)
+    .slice(0, 5)
+}
+
+// 経過時間（分）を「XX分」「X時間YY分」の形式に変換
+const formatDuration = (minutes: number) => {
+  if (!minutes || minutes <= 0) return 'なし'
+  if (minutes < 60) return `${minutes}分`
+  const hours = Math.floor(minutes / 60)
+  const rest = minutes % 60
+  if (rest === 0) return `${hours}時間`
+  return `${hours}時間${rest}分`
+}
 
 const newShop = ref({
   code: '',

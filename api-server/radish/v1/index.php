@@ -36,8 +36,8 @@ switch ($endpoint) {
         require_once __DIR__ . '/users.php';
         break;
     
-    case 'company-users':
-        // 残りのパスを取得（company-users以降の部分）
+    case 'unei-users':
+        // 残りのパスを取得（unei-users以降の部分）
         $remainingPath = isset($pathParts[1]) ? implode('/', array_slice($pathParts, 1)) : '';
         $_ENV['COMPANY_USERS_REMAINING_PATH'] = $remainingPath;
         require_once __DIR__ . '/unei-users.php';
