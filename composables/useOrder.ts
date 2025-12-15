@@ -32,6 +32,7 @@ export const useOrder = () => {
       method: 'POST',
       body: {
         tableNumber: cartStore.tableNumber,
+        visitorId: cartStore.visitorId,
         items: orderItems,
         totalAmount: cartStore.totalAmount
       }

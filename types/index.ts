@@ -35,6 +35,7 @@ export interface CartItem {
 
 export interface Order {
   id: string
+  visitorId?: string
   orderNumber: string
   tableNumber: string
   items: OrderItem[]

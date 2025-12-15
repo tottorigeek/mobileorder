@@ -709,6 +709,11 @@ DELETE v FROM `visitors` v
 INNER JOIN `shops` s ON v.shop_id = s.id
 WHERE s.code IN ('shop001', 'shop002', 'shop003', 'shop004', 'shop005', 'shop006', 'shop007', 'shop008');
 
+-- 既存の通知データを削除（重複を避けるため）
+DELETE n FROM `notifications` n
+INNER JOIN `shops` s ON n.shop_id = s.id
+WHERE s.code IN ('shop001', 'shop002', 'shop003', 'shop004', 'shop005', 'shop006', 'shop007', 'shop008');
+
 -- テーブルIDを取得（各店舗の最初のテーブルを使用）
 SET @shop1_table1_id = (SELECT id FROM shop_tables WHERE shop_id = @shop1_id AND table_number = '1' LIMIT 1);
 SET @shop1_table2_id = (SELECT id FROM shop_tables WHERE shop_id = @shop1_id AND table_number = '2' LIMIT 1);
@@ -750,6 +755,22 @@ INSERT INTO `visitors` (`shop_id`, `table_id`, `table_number`, `number_of_guests
 (@shop4_id, (SELECT id FROM shop_tables WHERE shop_id = @shop4_id AND table_number = '1' LIMIT 1), '1', 4, DATE_SUB(NOW(), INTERVAL 5 MINUTE), 0, 'pending', 1);
 SET @visitor7_id = LAST_INSERT_ID();
 
+-- ============================================
+-- 通知（notifications）サンプルデータ
+-- ============================================
+
+-- shop001: テーブル3で、来店者4が着座中のテーブルからQRコードを読み取ってスタッフ呼び出しをしたケース
+INSERT INTO `notifications` (`shop_id`, `table_id`, `type`, `message`, `status`, `source`, `created_at`)
+VALUES (
+  @shop1_id,
+  (SELECT id FROM shop_tables WHERE shop_id = @shop1_id AND table_number = '3' LIMIT 1),
+  'staff_call',
+  'QRコードからスタッフ呼び出し（テーブル3）',
+  'pending',
+  'customer_qr',
+  DATE_SUB(NOW(), INTERVAL 3 MINUTE)
+);
+
 -- shop_tablesテーブルのvisitor_idとstatusを更新
 UPDATE `shop_tables` SET `visitor_id` = @visitor4_id, `status` = 'occupied' WHERE shop_id = @shop1_id AND table_number = '3';
 UPDATE `shop_tables` SET `visitor_id` = @visitor5_id, `status` = 'occupied' WHERE shop_id = @shop2_id AND table_number = '2';
@@ -770,139 +791,139 @@ AND (
     OR `order_number` LIKE CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-%')
 );
 
--- 【一昨日】shop001: テーブル1の注文1（完了）
-INSERT INTO `orders` (`shop_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
-(@shop1_id, CONCAT('ORD-', DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 2 DAY), '%Y%m%d'), '-001'), '1', 'completed', 3500, DATE_SUB(CURDATE(), INTERVAL 2 DAY) + INTERVAL 19 HOUR + INTERVAL 15 MINUTE);
+-- 【一昨日】shop001: テーブル1の注文1（完了、来店者1に関連）
+INSERT INTO `orders` (`shop_id`, `visitor_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
+(@shop1_id, @visitor1_id, CONCAT('ORD-', DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 2 DAY), '%Y%m%d'), '-001'), '1', 'completed', 3500, DATE_SUB(CURDATE(), INTERVAL 2 DAY) + INTERVAL 19 HOUR + INTERVAL 15 MINUTE);
 SET @order1_id = LAST_INSERT_ID();
 
--- 【昨日】shop002: テーブル1の注文2（完了）
-INSERT INTO `orders` (`shop_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
-(@shop2_id, CONCAT('ORD-', DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), '%Y%m%d'), '-001'), '1', 'completed', 1200, DATE_SUB(CURDATE(), INTERVAL 1 DAY) + INTERVAL 18 HOUR + INTERVAL 20 MINUTE);
+-- 【昨日】shop002: テーブル1の注文2（完了、来店者2に関連）
+INSERT INTO `orders` (`shop_id`, `visitor_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
+(@shop2_id, @visitor2_id, CONCAT('ORD-', DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), '%Y%m%d'), '-001'), '1', 'completed', 1200, DATE_SUB(CURDATE(), INTERVAL 1 DAY) + INTERVAL 18 HOUR + INTERVAL 20 MINUTE);
 SET @order2_id = LAST_INSERT_ID();
 
 -- 【今日】shop001: テーブル1の注文3（完了、4時間前に作成、来店者3に関連）
-INSERT INTO `orders` (`shop_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
-(@shop1_id, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-001'), '1', 'completed', 3500, DATE_SUB(NOW(), INTERVAL 4 HOUR));
+INSERT INTO `orders` (`shop_id`, `visitor_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
+(@shop1_id, @visitor3_id, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-001'), '1', 'completed', 3500, DATE_SUB(NOW(), INTERVAL 4 HOUR));
 SET @order3_id = LAST_INSERT_ID();
 
 -- 【今日】shop001: テーブル3の注文9（受付待ち、12分前に作成、来店者4に関連）
-INSERT INTO `orders` (`shop_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
-(@shop1_id, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-007'), '3', 'pending', 2800, DATE_SUB(NOW(), INTERVAL 12 MINUTE));
+INSERT INTO `orders` (`shop_id`, `visitor_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
+(@shop1_id, @visitor4_id, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-007'), '3', 'pending', 2800, DATE_SUB(NOW(), INTERVAL 12 MINUTE));
 SET @order9_id = LAST_INSERT_ID();
 
 -- 【今日】shop001: テーブル2の注文8（調理中、3時間前に作成、来店者なし）
-INSERT INTO `orders` (`shop_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
-(@shop1_id, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-006'), '2', 'cooking', 3500, DATE_SUB(NOW(), INTERVAL 3 HOUR));
+INSERT INTO `orders` (`shop_id`, `visitor_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
+(@shop1_id, NULL, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-006'), '2', 'cooking', 3500, DATE_SUB(NOW(), INTERVAL 3 HOUR));
 SET @order8_id = LAST_INSERT_ID();
 
 -- 【今日】shop001: テーブル2の注文4（受付済み、1時間前に作成、来店者なし）
-INSERT INTO `orders` (`shop_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
-(@shop1_id, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-002'), '2', 'accepted', 2400, DATE_SUB(NOW(), INTERVAL 1 HOUR));
+INSERT INTO `orders` (`shop_id`, `visitor_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
+(@shop1_id, NULL, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-002'), '2', 'accepted', 2400, DATE_SUB(NOW(), INTERVAL 1 HOUR));
 SET @order4_id = LAST_INSERT_ID();
 
 -- 【今日】shop003: テーブル1の注文5（受付済み、25分前に作成、来店者6に関連）
-INSERT INTO `orders` (`shop_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
-(@shop3_id, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-003'), '1', 'accepted', 2800, DATE_SUB(NOW(), INTERVAL 25 MINUTE));
+INSERT INTO `orders` (`shop_id`, `visitor_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
+(@shop3_id, @visitor6_id, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-003'), '1', 'accepted', 2800, DATE_SUB(NOW(), INTERVAL 25 MINUTE));
 SET @order5_id = LAST_INSERT_ID();
 
 -- 【今日】shop002: テーブル3の注文6（pending、20分前に作成、来店者なし）
-INSERT INTO `orders` (`shop_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
-(@shop2_id, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-004'), '3', 'pending', 1800, DATE_SUB(NOW(), INTERVAL 20 MINUTE));
+INSERT INTO `orders` (`shop_id`, `visitor_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
+(@shop2_id, NULL, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-004'), '3', 'pending', 1800, DATE_SUB(NOW(), INTERVAL 20 MINUTE));
 SET @order6_id = LAST_INSERT_ID();
 
 -- 【今日】shop002: テーブル4の注文10（調理中、50分前に作成、来店者なし）
-INSERT INTO `orders` (`shop_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
-(@shop2_id, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-008'), '4', 'cooking', 2200, DATE_SUB(NOW(), INTERVAL 50 MINUTE));
+INSERT INTO `orders` (`shop_id`, `visitor_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
+(@shop2_id, NULL, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-008'), '4', 'cooking', 2200, DATE_SUB(NOW(), INTERVAL 50 MINUTE));
 SET @order10_id = LAST_INSERT_ID();
 
 -- 【今日】shop002: テーブル5の注文11（完了、5時間前に作成、来店者なし）
-INSERT INTO `orders` (`shop_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
-(@shop2_id, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-009'), '5', 'completed', 1500, DATE_SUB(NOW(), INTERVAL 5 HOUR));
+INSERT INTO `orders` (`shop_id`, `visitor_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
+(@shop2_id, NULL, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-009'), '5', 'completed', 1500, DATE_SUB(NOW(), INTERVAL 5 HOUR));
 SET @order11_id = LAST_INSERT_ID();
 
 -- 【今日】shop003: テーブル2の注文12（調理中、40分前に作成、来店者なし）
-INSERT INTO `orders` (`shop_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
-(@shop3_id, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-010'), '2', 'cooking', 3600, DATE_SUB(NOW(), INTERVAL 40 MINUTE));
+INSERT INTO `orders` (`shop_id`, `visitor_id`, `order_number`, `tableNumber`, `status`, `total_amount`, `created_at`) VALUES
+(@shop3_id, NULL, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-010'), '2', 'cooking', 3600, DATE_SUB(NOW(), INTERVAL 40 MINUTE));
 SET @order12_id = LAST_INSERT_ID();
 
 -- 【今日】shop003: テーブル3の注文13（受付待ち、8分前に作成、来店者なし）
-INSERT INTO `orders` (`shop_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
-(@shop3_id, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-011'), '3', 'pending', 2500, DATE_SUB(NOW(), INTERVAL 8 MINUTE));
+INSERT INTO `orders` (`shop_id`, `visitor_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
+(@shop3_id, NULL, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-011'), '3', 'pending', 2500, DATE_SUB(NOW(), INTERVAL 8 MINUTE));
 SET @order13_id = LAST_INSERT_ID();
 
 -- 【今日】shop004: テーブル2の注文7（調理中、45分前に作成、来店者なし）
-INSERT INTO `orders` (`shop_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
-(@shop4_id, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-005'), '2', 'cooking', 3200, DATE_SUB(NOW(), INTERVAL 45 MINUTE));
+INSERT INTO `orders` (`shop_id`, `visitor_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
+(@shop4_id, NULL, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-005'), '2', 'cooking', 3200, DATE_SUB(NOW(), INTERVAL 45 MINUTE));
 SET @order7_id = LAST_INSERT_ID();
 
 -- 【今日】shop004: テーブル3の注文14（受付待ち、18分前に作成、来店者なし）
-INSERT INTO `orders` (`shop_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
-(@shop4_id, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-012'), '3', 'pending', 1600, DATE_SUB(NOW(), INTERVAL 18 MINUTE));
+INSERT INTO `orders` (`shop_id`, `visitor_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
+(@shop4_id, NULL, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-012'), '3', 'pending', 1600, DATE_SUB(NOW(), INTERVAL 18 MINUTE));
 SET @order14_id = LAST_INSERT_ID();
 
 -- 【今日】shop004: テーブル4の注文15（完了、6時間前に作成、来店者なし）
-INSERT INTO `orders` (`shop_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
-(@shop4_id, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-013'), '4', 'completed', 2400, DATE_SUB(NOW(), INTERVAL 6 HOUR));
+INSERT INTO `orders` (`shop_id`, `visitor_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
+(@shop4_id, NULL, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-013'), '4', 'completed', 2400, DATE_SUB(NOW(), INTERVAL 6 HOUR));
 SET @order15_id = LAST_INSERT_ID();
 
 -- 【今日】shop005: テーブル1の注文16（受付待ち、14分前に作成、来店者なし）
-INSERT INTO `orders` (`shop_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
-(@shop5_id, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-014'), '1', 'pending', 2100, DATE_SUB(NOW(), INTERVAL 14 MINUTE));
+INSERT INTO `orders` (`shop_id`, `visitor_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
+(@shop5_id, NULL, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-014'), '1', 'pending', 2100, DATE_SUB(NOW(), INTERVAL 14 MINUTE));
 SET @order16_id = LAST_INSERT_ID();
 
 -- 【今日】shop005: テーブル2の注文17（調理中、35分前に作成、来店者なし）
-INSERT INTO `orders` (`shop_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
-(@shop5_id, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-015'), '2', 'cooking', 3300, DATE_SUB(NOW(), INTERVAL 35 MINUTE));
+INSERT INTO `orders` (`shop_id`, `visitor_id`, `order_number`, `table_number`, `status`, `totalAmount`, `created_at`) VALUES
+(@shop5_id, NULL, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-015'), '2', 'cooking', 3300, DATE_SUB(NOW(), INTERVAL 35 MINUTE));
 SET @order17_id = LAST_INSERT_ID();
 
 -- 【今日】shop005: テーブル3の注文18（完了、5時間30分前に作成、来店者なし）
-INSERT INTO `orders` (`shop_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
-(@shop5_id, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-016'), '3', 'completed', 2800, DATE_SUB(NOW(), INTERVAL 330 MINUTE));
+INSERT INTO `orders` (`shop_id`, `visitor_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
+(@shop5_id, NULL, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-016'), '3', 'completed', 2800, DATE_SUB(NOW(), INTERVAL 330 MINUTE));
 SET @order18_id = LAST_INSERT_ID();
 
 -- 【今日】shop006: テーブル1の注文19（受付待ち、16分前に作成、来店者なし）
-INSERT INTO `orders` (`shop_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
-(@shop6_id, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-017'), '1', 'pending', 4500, DATE_SUB(NOW(), INTERVAL 16 MINUTE));
+INSERT INTO `orders` (`shop_id`, `visitor_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
+(@shop6_id, NULL, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-017'), '1', 'pending', 4500, DATE_SUB(NOW(), INTERVAL 16 MINUTE));
 SET @order19_id = LAST_INSERT_ID();
 
 -- 【今日】shop006: テーブル2の注文20（調理中、55分前に作成、来店者なし）
-INSERT INTO `orders` (`shop_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
-(@shop6_id, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-018'), '2', 'cooking', 7000, DATE_SUB(NOW(), INTERVAL 55 MINUTE));
+INSERT INTO `orders` (`shop_id`, `visitor_id`, `orderNumber`, `tableNumber`, `status`, `total_amount`, `created_at`) VALUES
+(@shop6_id, NULL, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-018'), '2', 'cooking', 7000, DATE_SUB(NOW(), INTERVAL 55 MINUTE));
 SET @order20_id = LAST_INSERT_ID();
 
 -- 【今日】shop006: テーブル3の注文21（完了、4時間30分前に作成、来店者なし）
-INSERT INTO `orders` (`shop_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
-(@shop6_id, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-019'), '3', 'completed', 5500, DATE_SUB(NOW(), INTERVAL 270 MINUTE));
+INSERT INTO `orders` (`shop_id`, `visitor_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
+(@shop6_id, NULL, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-019'), '3', 'completed', 5500, DATE_SUB(NOW(), INTERVAL 270 MINUTE));
 SET @order21_id = LAST_INSERT_ID();
 
 -- 【今日】shop007: テーブル1の注文22（受付待ち、11分前に作成、来店者なし）
-INSERT INTO `orders` (`shop_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
-(@shop7_id, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-020'), '1', 'pending', 1500, DATE_SUB(NOW(), INTERVAL 11 MINUTE));
+INSERT INTO `orders` (`shop_id`, `visitor_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
+(@shop7_id, NULL, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-020'), '1', 'pending', 1500, DATE_SUB(NOW(), INTERVAL 11 MINUTE));
 SET @order22_id = LAST_INSERT_ID();
 
 -- 【今日】shop007: テーブル2の注文23（調理中、38分前に作成、来店者なし）
-INSERT INTO `orders` (`shop_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
-(@shop7_id, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-021'), '2', 'cooking', 2000, DATE_SUB(NOW(), INTERVAL 38 MINUTE));
+INSERT INTO `orders` (`shop_id`, `visitor_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
+(@shop7_id, NULL, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-021'), '2', 'cooking', 2000, DATE_SUB(NOW(), INTERVAL 38 MINUTE));
 SET @order23_id = LAST_INSERT_ID();
 
 -- 【今日】shop007: テーブル3の注文24（完了、3時間45分前に作成、来店者なし）
-INSERT INTO `orders` (`shop_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
-(@shop7_id, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-022'), '3', 'completed', 1800, DATE_SUB(NOW(), INTERVAL 225 MINUTE));
+INSERT INTO `orders` (`shop_id`, `visitor_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
+(@shop7_id, NULL, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-022'), '3', 'completed', 1800, DATE_SUB(NOW(), INTERVAL 225 MINUTE));
 SET @order24_id = LAST_INSERT_ID();
 
 -- 【今日】shop008: テーブル1の注文25（受付待ち、9分前に作成、来店者なし）
-INSERT INTO `orders` (`shop_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
-(@shop8_id, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-023'), '1', 'pending', 1900, DATE_SUB(NOW(), INTERVAL 9 MINUTE));
+INSERT INTO `orders` (`shop_id`, `visitor_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
+(@shop8_id, NULL, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-023'), '1', 'pending', 1900, DATE_SUB(NOW(), INTERVAL 9 MINUTE));
 SET @order25_id = LAST_INSERT_ID();
 
 -- 【今日】shop008: テーブル2の注文26（調理中、42分前に作成、来店者なし）
-INSERT INTO `orders` (`shop_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
-(@shop8_id, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-024'), '2', 'cooking', 2500, DATE_SUB(NOW(), INTERVAL 42 MINUTE));
+INSERT INTO `orders` (`shop_id`, `visitor_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
+(@shop8_id, NULL, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-024'), '2', 'cooking', 2500, DATE_SUB(NOW(), INTERVAL 42 MINUTE));
 SET @order26_id = LAST_INSERT_ID();
 
 -- 【今日】shop008: テーブル3の注文27（完了、4時間15分前に作成、来店者なし）
-INSERT INTO `orders` (`shop_id`, `order_number`, `table_number`, `status`, `total_amount`, `created_at`) VALUES
-(@shop8_id, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-025'), '3', 'completed', 2100, DATE_SUB(NOW(), INTERVAL 255 MINUTE));
+INSERT INTO `orders` (`shop_id`, `visitor_id`, `order_number`, `tableNumber`, `status`, `total_amount`, `created_at`) VALUES
+(@shop8_id, NULL, CONCAT('ORD-', DATE_FORMAT(NOW(), '%Y%m%d'), '-025'), '3', 'completed', 2100, DATE_SUB(NOW(), INTERVAL 255 MINUTE));
 SET @order27_id = LAST_INSERT_ID();
 
 -- ============================================

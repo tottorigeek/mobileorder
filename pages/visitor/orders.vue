@@ -86,7 +86,32 @@ const shopStore = useShopStore()
 const visitorStore = useVisitorStore()
 
 const isLoading = ref(false)
-const orders = computed(() => orderStore.orders)
+
+// 現在のvisitorに紐づく注文のみを表示する
+const orders = computed(() => {
+  const visitor = visitorStore.currentVisitor
+  const allOrders = orderStore.orders
+
+  if (!visitor) {
+    return allOrders
+  }
+
+  const arrival = new Date(visitor.arrivalTime)
+  const checkout = visitor.checkoutTime ? new Date(visitor.checkoutTime) : null
+
+  return allOrders.filter((order) => {
+    const created =
+      typeof order.createdAt === 'string' ? new Date(order.createdAt) : order.createdAt
+
+    // 来店前の注文は表示しない
+    if (created < arrival) return false
+
+    // 退店済みの場合はcheckoutTime以降の注文も除外
+    if (checkout && created > checkout) return false
+
+    return true
+  })
+})
 
 const getStatusLabel = (status: OrderStatus) => {
   const labels: Record<OrderStatus, string> = {

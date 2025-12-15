@@ -160,6 +160,7 @@ function getOrders() {
             return [
                 'id' => (string)$order['id'],
                 'shopId' => (string)$order['shop_id'],
+                'visitorId' => isset($order['visitor_id']) && $order['visitor_id'] !== null ? (string)$order['visitor_id'] : null,
                 'orderNumber' => $order['order_number'],
                 'tableNumber' => $order['table_number'],
                 'items' => $items,
@@ -267,6 +268,7 @@ function getOrder($orderId) {
         $result = [
             'id' => (string)$order['id'],
             'shopId' => (string)$order['shop_id'],
+            'visitorId' => isset($order['visitor_id']) && $order['visitor_id'] !== null ? (string)$order['visitor_id'] : null,
             'orderNumber' => $order['order_number'],
             'tableNumber' => $order['table_number'],
             'items' => $items,
@@ -340,17 +342,29 @@ function createOrder() {
         // 注文番号の生成
         $orderNumber = 'ORD-' . date('YmdHis') . '-' . mt_rand(1000, 9999);
         
-        // 注文の作成（shop_idを含める）
-        $sql = "INSERT INTO orders (shop_id, order_number, table_number, status, total_amount, created_at, updated_at)
-                VALUES (:shop_id, :order_number, :table_number, 'pending', :total_amount, NOW(), NOW())";
+        // visitor_id（オプション）を取得
+        $visitorId = isset($input['visitorId']) ? (int)$input['visitorId'] : null;
+
+        // 注文の作成（shop_id, visitor_id を含める）
+        if ($visitorId) {
+            $sql = "INSERT INTO orders (shop_id, visitor_id, order_number, table_number, status, total_amount, created_at, updated_at)
+                    VALUES (:shop_id, :visitor_id, :order_number, :table_number, 'pending', :total_amount, NOW(), NOW())";
+        } else {
+            $sql = "INSERT INTO orders (shop_id, order_number, table_number, status, total_amount, created_at, updated_at)
+                    VALUES (:shop_id, :order_number, :table_number, 'pending', :total_amount, NOW(), NOW())";
+        }
         
         $stmt = $pdo->prepare($sql);
-        $stmt->execute([
+        $params = [
             ':shop_id' => $shopId,
             ':order_number' => $orderNumber,
             ':table_number' => $input['tableNumber'],
             ':total_amount' => $input['totalAmount']
-        ]);
+        ];
+        if ($visitorId) {
+            $params[':visitor_id'] = $visitorId;
+        }
+        $stmt->execute($params);
         
         $orderId = $pdo->lastInsertId();
         
