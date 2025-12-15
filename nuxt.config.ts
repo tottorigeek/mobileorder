@@ -22,7 +22,6 @@ export default defineNuxtConfig({
   // Nuxt UIのカラーモード設定
   ui: {
     global: true,
-    icons: ['heroicons'],
     safelistColors: ['primary', 'red', 'orange', 'amber', 'yellow', 'lime', 'green', 'emerald', 'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose']
   },
 
@@ -44,8 +43,12 @@ export default defineNuxtConfig({
     buildAssetsDir: '/_nuxt/'
   },
 
-  // 静的サイト生成の設定
-  ssr: false, // SPAモード（GitHub Pages用）
+  // SSRを有効化（/visitor配下のみクライアントレンダリングに限定）
+  ssr: true,
+
+  routeRules: {
+    '/visitor/**': { ssr: false }
+  },
 
   runtimeConfig: {
     public: {

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import type { User } from '~/types'
+import type { User } from '~/types/multi-shop'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -37,6 +37,14 @@ export const useAuthStore = defineStore('auth', {
           this.user = response.user
           this.token = response.token
           this.isAuthenticated = true
+          // クッキーにも保存（SSR用）
+          const authCookie = useCookie('auth_token', {
+            sameSite: 'none',
+            secure: true,
+            path: '/',
+            maxAge: 60 * 60 * 24 * 7 // 7日
+          })
+          authCookie.value = response.token
           // ローカルストレージに保存
           localStorage.setItem('auth_user', JSON.stringify(response.user))
           localStorage.setItem('auth_token', response.token)
@@ -67,6 +75,8 @@ export const useAuthStore = defineStore('auth', {
         this.isAuthenticated = false
         localStorage.removeItem('auth_user')
         localStorage.removeItem('auth_token')
+        const authCookie = useCookie('auth_token', { path: '/' })
+        authCookie.value = null
         // ログアウト後はトップページにリダイレクト
         await navigateTo('/')
       }
@@ -76,8 +86,9 @@ export const useAuthStore = defineStore('auth', {
       try {
         const { buildUrl } = useApiBase()
         
-        // トークンを取得
-        const token = this.token || localStorage.getItem('auth_token')
+        // トークンを取得（メモリ → ローカルストレージ → クッキー）
+        const cookieToken = useCookie('auth_token').value
+        const token = this.token || localStorage.getItem('auth_token') || cookieToken
         if (!token) {
           console.error('checkAuth: Token not found')
           throw new Error('Token not found')
@@ -122,6 +133,13 @@ export const useAuthStore = defineStore('auth', {
         // ローカルストレージも更新
         localStorage.setItem('auth_user', JSON.stringify(user))
         localStorage.setItem('auth_token', token)
+        const authCookie = useCookie('auth_token', {
+          sameSite: 'none',
+          secure: true,
+          path: '/',
+          maxAge: 60 * 60 * 24 * 7
+        })
+        authCookie.value = token
         return true
       } catch (error: any) {
         // 開発環境（localhost）から本番環境へのリクエストでは、セッションクッキーが送信されないため
@@ -165,10 +183,12 @@ export const useAuthStore = defineStore('auth', {
     loadUserFromStorage() {
       const stored = localStorage.getItem('auth_user')
       const storedToken = localStorage.getItem('auth_token')
-      if (stored && storedToken) {
+      const cookieToken = useCookie('auth_token').value
+      const token = storedToken || cookieToken
+      if (stored && token) {
         try {
           this.user = JSON.parse(stored)
-          this.token = storedToken
+          this.token = token
           this.isAuthenticated = true
           
           // トークンの有効性をバックグラウンドで確認（非同期）
@@ -189,7 +209,8 @@ export const useAuthStore = defineStore('auth', {
     
     // トークンを取得するヘルパー関数
     getAuthToken(): string | null {
-      return this.token || localStorage.getItem('auth_token')
+      const cookieToken = useCookie('auth_token').value || null
+      return this.token || localStorage.getItem('auth_token') || cookieToken
     }
   }
 })
