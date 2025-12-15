@@ -1,5 +1,4 @@
 <template>
-  <NuxtLayout name="company" title="エラーログ">
     <div class="space-y-6">
       <!-- ヘッダー -->
       <div class="flex justify-between items-center">
@@ -322,11 +321,14 @@
         </div>
       </div>
     </div>
-  </NuxtLayout>
 </template>
 
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth'
+
+definePageMeta({
+  layout: 'company'
+})
 
 interface ErrorLog {
   id: string

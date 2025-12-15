@@ -170,6 +170,10 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth'
 
+definePageMeta({
+  layout: false
+})
+
 const authStore = useAuthStore()
 
 const username = ref('')

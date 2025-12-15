@@ -1,5 +1,4 @@
 <template>
-  <NuxtLayout name="company" title="店舗詳細設定">
     <div class="space-y-6">
       <!-- ヘッダー -->
       <div class="flex justify-between items-center">
@@ -175,7 +174,6 @@
         </div>
       </div>
     </div>
-  </NuxtLayout>
 </template>
 
 <script setup lang="ts">
@@ -184,7 +182,7 @@ import { useAuthStore } from '~/stores/auth'
 import type { Shop } from '~/types'
 
 definePageMeta({
-  layout: 'default'
+  layout: 'company'
 })
 
 const route = useRoute()

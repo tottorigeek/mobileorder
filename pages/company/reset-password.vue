@@ -111,6 +111,10 @@
 </template>
 
 <script setup lang="ts">
+definePageMeta({
+  layout: false
+})
+
 const route = useRoute()
 const token = computed(() => route.query.token as string || '')
 

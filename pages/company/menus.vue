@@ -1,5 +1,4 @@
 <template>
-  <NuxtLayout name="company" title="メニュー管理">
     <div class="space-y-6">
       <!-- ヘッダー -->
       <div class="flex justify-between items-center mb-6">
@@ -97,7 +96,6 @@
         </div>
       </div>
     </div>
-  </NuxtLayout>
 </template>
 
 <script setup lang="ts">
@@ -105,6 +103,10 @@ import { useMenuStore } from '~/stores/menu'
 import { useAuthStore } from '~/stores/auth'
 import { useShopStore } from '~/stores/shop'
 import type { Shop, Menu } from '~/types'
+
+definePageMeta({
+  layout: 'company'
+})
 
 const authStore = useAuthStore()
 const shopStore = useShopStore()

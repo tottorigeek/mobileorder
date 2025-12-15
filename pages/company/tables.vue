@@ -1,5 +1,4 @@
 <template>
-  <NuxtLayout name="company" title="テーブル管理">
     <div class="space-y-6">
       <!-- ヘッダー -->
       <div class="flex justify-between items-center mb-6">
@@ -218,7 +217,6 @@
         </div>
       </div>
     </div>
-  </NuxtLayout>
 </template>
 
 <script setup lang="ts">
@@ -227,6 +225,10 @@ import { useAuthStore } from '~/stores/auth'
 import { useShopStore } from '~/stores/shop'
 import QRCodeGenerator from '~/components/QRCodeGenerator.vue'
 import type { ShopTable, Shop } from '~/types'
+
+definePageMeta({
+  layout: 'company'
+})
 
 const { handleLogout } = useAuthCheck()
 

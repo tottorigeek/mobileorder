@@ -1,5 +1,4 @@
 <template>
-  <NuxtLayout name="company" title="店舗管理">
     <div class="space-y-6">
       <!-- ヘッダー -->
       <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
@@ -273,7 +272,6 @@
         </div>
       </div>
     </div>
-  </NuxtLayout>
 </template>
 
 <script setup lang="ts">
@@ -283,7 +281,7 @@ import { useOrderStore } from '~/stores/order'
 import type { Shop } from '~/types/multi-shop'
 
 definePageMeta({
-  layout: 'default'
+  layout: 'company'
 })
 
 const shopStore = useShopStore()

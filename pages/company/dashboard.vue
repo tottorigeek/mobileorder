@@ -1,5 +1,4 @@
 <template>
-  <NuxtLayout name="company" title="運営者向け管理ダッシュボード">
     <div class="space-y-6">
       <!-- ヘッダー -->
       <div class="bg-gradient-to-br from-green-600 to-emerald-700 p-8 rounded-2xl shadow-xl text-white">
@@ -189,13 +188,16 @@
         </div>
       </div>
     </div>
-  </NuxtLayout>
 </template>
 
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth'
 import { useShopStore } from '~/stores/shop'
 import { useOrderStore } from '~/stores/order'
+
+definePageMeta({
+  layout: 'company'
+})
 
 const authStore = useAuthStore()
 const shopStore = useShopStore()

@@ -1,5 +1,4 @@
 <template>
-  <NuxtLayout name="company" title="ユーザー管理">
     <div class="space-y-6">
       <!-- ヘッダー -->
       <div class="mb-6">
@@ -262,7 +261,6 @@
         </div>
       </div>
     </div>
-  </NuxtLayout>
 </template>
 
 <script setup lang="ts">
@@ -270,6 +268,10 @@ import { useUserStore, type UpdateUserInput } from '~/stores/user'
 import { useAuthStore } from '~/stores/auth'
 import { useShopStore } from '~/stores/shop'
 import type { User } from '~/types'
+
+definePageMeta({
+  layout: 'company'
+})
 
 const userStore = useUserStore()
 const authStore = useAuthStore()

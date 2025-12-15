@@ -46,7 +46,7 @@
       </div>
       
       <button
-        @click="showConfirmModal = true"
+        @click="openConfirmModal"
         :disabled="!isValid"
         class="w-full bg-blue-600 text-white py-4 rounded-lg text-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors touch-target"
       >
@@ -77,12 +77,41 @@
         <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
           <h3 class="text-xl font-bold text-gray-900 mb-4 text-center">メニューを追加しますか？</h3>
           <div v-if="foundMenu" class="mb-6 p-4 bg-gray-50 rounded-lg">
-            <div class="flex items-center justify-between mb-2">
-              <span class="font-semibold text-gray-800">{{ foundMenu.number }}. {{ foundMenu.name }}</span>
+            <div class="flex items-center justify-between mb-3">
+              <span class="font-semibold text-gray-800">
+                {{ foundMenu.number }}. {{ foundMenu.name }}
+              </span>
+            </div>
+            <!-- 数量選択 -->
+            <div class="flex items-center justify-between gap-4 mb-3">
+              <span class="text-sm text-gray-600">数量</span>
+              <div class="flex items-center gap-2 bg-white rounded-lg border border-gray-200">
+                <button
+                  @click="decreaseQuantity"
+                  :disabled="quantity <= 1"
+                  class="w-8 h-8 rounded-l-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-bold text-gray-700 transition-colors touch-target"
+                >
+                  -
+                </button>
+                <input
+                  v-model.number="quantity"
+                  type="number"
+                  min="1"
+                  max="99"
+                  class="w-12 h-8 text-center text-sm font-semibold bg-transparent border-0 focus:ring-0 focus:outline-none"
+                  @input="handleQuantityInput"
+                />
+                <button
+                  @click="increaseQuantity"
+                  :disabled="quantity >= 99"
+                  class="w-8 h-8 rounded-r-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-bold text-gray-700 transition-colors touch-target"
+                >
+                  +
+                </button>
+              </div>
             </div>
             <div class="text-sm text-gray-600">
-              <p>数量: 1</p>
-              <p class="text-lg font-bold text-blue-600 mt-1">¥{{ foundMenu.price.toLocaleString() }}</p>
+              <p>小計: ¥{{ (foundMenu.price * quantity).toLocaleString() }}</p>
             </div>
           </div>
           <div class="flex gap-3">
@@ -127,7 +156,7 @@
           0
         </button>
         <button
-          @click="showConfirmModal = true"
+          @click="openConfirmModal"
           :disabled="!isValid"
           class="aspect-square bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed rounded-lg text-xl font-semibold text-white transition-colors touch-target"
         >
@@ -148,6 +177,7 @@ const cartStore = useCartStore()
 const inputValue = ref('')
 const showSuccessMessage = ref(false)
 const showConfirmModal = ref(false)
+const quantity = ref(1)
 
 // メニュー番号を3桁のゼロパディング形式に変換（例: "1" -> "001", "01" -> "001"）
 const formatMenuNumber = (num: string): string => {
@@ -195,7 +225,37 @@ const handleInput = (event: Event) => {
 
 const handleSubmit = () => {
   if (!isValid.value || !foundMenu.value) return
+  openConfirmModal()
+}
+
+const openConfirmModal = () => {
+  if (!isValid.value || !foundMenu.value) return
+  quantity.value = 1
   showConfirmModal.value = true
+}
+
+const decreaseQuantity = () => {
+  if (quantity.value > 1) {
+    quantity.value--
+  }
+}
+
+const increaseQuantity = () => {
+  if (quantity.value < 99) {
+    quantity.value++
+  }
+}
+
+const handleQuantityInput = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const value = parseInt(target.value) || 1
+  if (value < 1) {
+    quantity.value = 1
+  } else if (value > 99) {
+    quantity.value = 99
+  } else {
+    quantity.value = value
+  }
 }
 
 const confirmAddMenu = () => {
@@ -203,10 +263,12 @@ const confirmAddMenu = () => {
 
   const menu = foundMenu.value
   if (menu.isAvailable) {
-    cartStore.addItem(menu, 1)
+    cartStore.addItem(menu, quantity.value)
     
     // モーダルを閉じる
     showConfirmModal.value = false
+    // 数量をリセット
+    quantity.value = 1
     
     // 成功メッセージを表示
     showSuccessMessage.value = true

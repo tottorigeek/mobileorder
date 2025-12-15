@@ -1,5 +1,4 @@
 <template>
-  <NuxtLayout name="company" title="パスワード変更">
     <div class="max-w-md mx-auto space-y-6 px-4">
       <div class="bg-white p-4 sm:p-6 rounded-lg shadow">
         <h2 class="text-lg sm:text-xl font-bold mb-4">パスワード変更</h2>
@@ -73,12 +72,15 @@
         </form>
       </div>
     </div>
-  </NuxtLayout>
 </template>
 
 <script setup lang="ts">
 import { useUserStore, type ChangePasswordInput } from '~/stores/user'
 import { useAuthStore } from '~/stores/auth'
+
+definePageMeta({
+  layout: 'company'
+})
 
 const router = useRouter()
 const userStore = useUserStore()

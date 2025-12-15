@@ -3,12 +3,12 @@
       <svg class="w-24 h-24 mx-auto text-gray-300 mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
       </svg>
-      <p class="text-gray-500 text-xl font-medium mb-6">注文書が空です</p>
+      <p class="text-gray-500 text-xl font-medium mb-6">未発注の注文はありません</p>
       <NuxtLink
         to="/visitor"
         class="inline-block px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 touch-target font-semibold text-lg"
       >
-        メニューに戻る
+        注文画面に戻る
       </NuxtLink>
 
       <!-- bottom-nav用のスペーサー -->
