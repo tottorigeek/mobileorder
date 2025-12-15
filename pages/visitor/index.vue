@@ -204,6 +204,11 @@ onMounted(async () => {
     // 精算完了前の注文がある場合は、店舗やテーブル番号がなくても/shop-selectにリダイレクトしない
     const activeOrderId = typeof window !== 'undefined' ? localStorage.getItem('activeOrderId') : null
     const activeVisitorId = typeof window !== 'undefined' ? localStorage.getItem('activeVisitorId') : null
+
+    // activeVisitorId があれば、注文がなくても visitorId を復元しておく（再表示時に人数入力を求めないため）
+    if (!cartStore.visitorId && activeVisitorId) {
+      cartStore.setVisitorId(activeVisitorId)
+    }
     
     if (activeOrderId && activeVisitorId) {
       // アクティブな注文がある場合は、visitor情報から店舗とテーブル情報を復元を試みる

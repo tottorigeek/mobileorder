@@ -93,6 +93,14 @@ export const useCartStore = defineStore('cart', {
 
     setVisitorId(visitorId: string | null) {
       this.visitorId = visitorId
+      // ブラウザリロード後も来店情報を維持するため、ローカルストレージに保存
+      if (typeof window !== 'undefined') {
+        if (visitorId) {
+          localStorage.setItem('activeVisitorId', visitorId)
+        } else {
+          localStorage.removeItem('activeVisitorId')
+        }
+      }
     }
   }
 })
