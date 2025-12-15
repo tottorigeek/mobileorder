@@ -426,7 +426,9 @@ function checkAuth() {
     }
     
     // ペイロードから認証情報を取得
-    if (!isset($payload['user_id']) || !isset($payload['shop_id'])) {
+    // shop_id は会社ログイン（/company/login）では null の場合があるため必須にしない
+    // user_id は必須
+    if (!isset($payload['user_id'])) {
         http_response_code(401);
         echo json_encode(['error' => 'Unauthorized: Invalid token payload']);
         exit;
