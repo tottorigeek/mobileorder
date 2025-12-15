@@ -190,9 +190,30 @@ function login() {
         }
         
         // 3. パスワード検証（すべてのログインタイプで共通）
-        if ($userCheck && !password_verify($input['password'], $userCheck['password_hash'])) {
-            $loginCheckFailed = true;
-            $failureReasons[] = 'password_mismatch';
+        if ($userCheck) {
+            $passwordMatch = password_verify($input['password'], $userCheck['password_hash']);
+            
+            if (defined('DEBUG_MODE') && DEBUG_MODE) {
+                error_log("Login - Password verification for user: {$input['username']}");
+                error_log("  Input password length: " . strlen($input['password']));
+                error_log("  Stored hash length: " . strlen($userCheck['password_hash']));
+                error_log("  Stored hash preview: " . substr($userCheck['password_hash'], 0, 20) . "...");
+                error_log("  Password match: " . ($passwordMatch ? 'yes' : 'no'));
+                
+                if (!$passwordMatch) {
+                    // パスワード検証が失敗した場合、より詳細な情報を記録
+                    error_log("  Password verification failed - possible causes:");
+                    error_log("    - Password was not correctly hashed during reset");
+                    error_log("    - Password hash was truncated in database");
+                    error_log("    - Character encoding issue");
+                    error_log("    - Wrong password entered");
+                }
+            }
+            
+            if (!$passwordMatch) {
+                $loginCheckFailed = true;
+                $failureReasons[] = 'password_mismatch';
+            }
         }
         
         if ($loginCheckFailed) {
@@ -619,6 +640,7 @@ function resetPassword() {
         $affectedRows = $updateStmt->rowCount();
         
         if (defined('DEBUG_MODE') && DEBUG_MODE) {
+            error_log("Password reset - Updating password for user ID: {$tokenData['user_id']}");
             error_log("Password reset - Update affected rows: {$affectedRows}");
         }
         
@@ -627,18 +649,31 @@ function resetPassword() {
             sendServerError('Failed to update password');
         }
         
-        // 更新後のパスワード検証（デバッグ用）
+        // 更新後のパスワード検証（必ず実行）
+        // データベースから最新のパスワードハッシュを取得して検証
+        $verifyStmt = $pdo->prepare("SELECT password_hash FROM users WHERE id = :user_id");
+        $verifyStmt->execute([':user_id' => $tokenData['user_id']]);
+        $updatedUser = $verifyStmt->fetch();
+        
+        if (!$updatedUser) {
+            error_log("Password reset - Failed to retrieve updated user for user ID: {$tokenData['user_id']}");
+            sendServerError('Failed to verify password update');
+        }
+        
+        // パスワード検証を実行
+        $verifyResult = password_verify($newPassword, $updatedUser['password_hash']);
+        
         if (defined('DEBUG_MODE') && DEBUG_MODE) {
-            $verifyStmt = $pdo->prepare("SELECT password_hash FROM users WHERE id = :user_id");
-            $verifyStmt->execute([':user_id' => $tokenData['user_id']]);
-            $updatedUser = $verifyStmt->fetch();
-            if ($updatedUser) {
-                $verifyResult = password_verify($newPassword, $updatedUser['password_hash']);
-                error_log("Password reset - Password verification test: " . ($verifyResult ? 'SUCCESS' : 'FAILED'));
-                if (!$verifyResult) {
-                    error_log("Password reset - WARNING: Password verification failed after update!");
-                }
-            }
+            error_log("Password reset - Password verification test: " . ($verifyResult ? 'SUCCESS' : 'FAILED'));
+            error_log("Password reset - Stored hash length: " . strlen($updatedUser['password_hash']));
+            error_log("Password reset - Stored hash preview: " . substr($updatedUser['password_hash'], 0, 20) . "...");
+        }
+        
+        // 検証が失敗した場合はエラーを返す
+        if (!$verifyResult) {
+            error_log("Password reset - CRITICAL: Password verification failed after update for user ID: {$tokenData['user_id']}");
+            error_log("Password reset - This indicates a serious problem with password hashing or storage");
+            sendServerError('パスワードの更新に失敗しました。管理者にお問い合わせください。');
         }
         
         // トークンを無効化
