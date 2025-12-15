@@ -125,14 +125,14 @@
           <!-- 本文（折りたたみ可能エリア） -->
           <div
             v-if="isShopOpen(shop.id)"
-            class="px-4 sm:px-6 pb-4 sm:pb-6 border-t border-gray-100 rounded-b-xl"
+            class="px-4 sm:px-6 pb-4 sm:pb-6 border-t border-gray-100 rounded-b-xl shop-card-body"
           >
-            <div class="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4 mt-3">
-              <div class="flex-1 min-w-0">
-                <div class="flex items-start gap-3 mb-3">
+            <div class="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4 mt-3 shop-card-body-layout">
+              <div class="flex-1 min-w-0 shop-card-body-info">
+                <div class="flex flex-col lg:flex-row items-start gap-3 mb-3 shop-card-info-row">
                   <!-- もともとのアイコンはヘッダーに移動したため空の余白調整用 -->
                   <div class="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 hidden lg:block" />
-                  <div class="space-y-1 text-xs sm:text-sm text-gray-600">
+                  <div class="space-y-1 text-xs sm:text-sm text-gray-600 max-w-[300px] shop-card-basic-info">
                     <p class="flex items-start gap-2 break-words">
                       <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
@@ -178,16 +178,16 @@
                   </div>
                   
                   <!-- 売上情報 & 注文ステータス -->
-                  <div class="mt-4 pt-4 border-t border-gray-200 space-y-4">
+                  <div class="mt-4 pt-4 border-t border-gray-200 space-y-4 shop-card-metrics">
                     <!-- 売上情報 -->
-                    <div>
+                    <div class="shop-card-sales-section">
                       <h4 class="text-xs sm:text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         売上情報
                       </h4>
-                      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-3">
+                      <div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3 shop-card-sales-grid">
                         <div class="bg-teal-50 p-2 sm:p-3 rounded-lg border border-teal-200">
                           <p class="text-[10px] sm:text-xs text-gray-600 mb-1">直近1時間</p>
                           <p class="text-sm sm:text-lg font-bold text-teal-700 break-all">¥{{ getShopSales(shop.id, '1hour').toLocaleString() }}</p>
@@ -212,14 +212,14 @@
                     </div>
 
                     <!-- 注文ステータス -->
-                    <div>
+                    <div class="shop-card-order-status-section">
                       <h4 class="text-xs sm:text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 12h18M3 17h18" />
                         </svg>
                         注文ステータス
                       </h4>
-                      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-3">
+                      <div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3 shop-card-order-status-grid">
                         <div class="bg-yellow-50 p-2 sm:p-3 rounded-lg border border-yellow-200">
                           <p class="text-[10px] sm:text-xs text-gray-600 mb-1">受付待ち</p>
                           <p class="text-sm sm:text-lg font-bold text-yellow-700">
@@ -260,7 +260,7 @@
                       <!-- 個別注文の経過時間（上位） -->
                       <div
                         v-if="getShopOrderDetails(shop.id).length > 0"
-                        class="mt-3 border-t border-dashed border-gray-200 pt-3 space-y-1.5"
+                        class="mt-3 border-t border-dashed border-gray-200 pt-3 space-y-1.5 shop-card-orders-list"
                       >
                         <p class="text-[10px] sm:text-xs text-gray-500 font-medium">
                           個別注文の経過時間（最大5件）
@@ -268,7 +268,7 @@
                         <div
                           v-for="order in getShopOrderDetails(shop.id)"
                           :key="order.id"
-                          class="flex items-center justify-between text-[11px] sm:text-xs px-2 py-1 rounded-md cursor-pointer hover:ring-1 hover:ring-green-400 transition"
+                          class="flex items-center justify-between text-[11px] sm:text-xs px-2 py-1 rounded-md cursor-pointer hover:ring-1 hover:ring-green-400 transition shop-card-order-row"
                           :class="order.isAlert ? 'bg-red-50 text-red-700' : 'bg-gray-50 text-gray-700'"
                           @click="openOrderDetail(order.id)"
                         >
@@ -292,23 +292,26 @@
                   </div>
                 </div>
               </div>
-              <div class="flex flex-col sm:flex-row sm:flex-wrap gap-2 lg:ml-4 lg:flex-shrink-0">
+            </div>
+            <!-- アクションボタン（カード下部右寄せ） -->
+            <div class="mt-4 flex justify-end shop-card-actions-wrapper">
+              <div class="flex flex-row flex-wrap gap-2 lg:flex-shrink-0 shop-card-actions">
                 <button
                   @click="handleGoToShopDashboard(shop)"
-                  class="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 shadow-md hover:shadow-lg text-sm font-semibold touch-target"
+                  class="px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 shadow-md hover:shadow-lg text-sm font-semibold touch-target"
                 >
                   ダッシュボード
                 </button>
                 <NuxtLink
                   :to="`/unei/shops/${shop.id}/edit`"
-                  class="w-full sm:w-auto px-4 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all duration-300 shadow-md hover:shadow-lg text-sm font-semibold text-center touch-target"
+                  class="px-4 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all duration-300 shadow-md hover:shadow-lg text-sm font-semibold text-center touch-target"
                 >
                   編集
                 </NuxtLink>
                 <button
                   @click="handleDeleteShop(shop)"
                   :class="[
-                    'w-full sm:w-auto px-4 py-2 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg text-sm font-semibold touch-target',
+                    'px-4 py-2 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg text-sm font-semibold touch-target',
                     (shop.owners && shop.owners.length > 0) || shop.owner
                       ? 'bg-gray-200 text-gray-600 hover:bg-gray-300'
                       : 'bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700'
