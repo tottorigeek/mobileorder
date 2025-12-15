@@ -1,9 +1,9 @@
 <template>
-  <NuxtLayout name="company" title="弊社向け管理ダッシュボード">
+  <NuxtLayout name="company" title="運営者向け管理ダッシュボード">
     <div class="space-y-6">
       <!-- ヘッダー -->
       <div class="bg-gradient-to-br from-green-600 to-emerald-700 p-8 rounded-2xl shadow-xl text-white">
-        <h2 class="text-3xl font-bold mb-2">弊社向け管理ダッシュボード</h2>
+        <h2 class="text-3xl font-bold mb-2">運営者向け管理ダッシュボード</h2>
         <p class="text-green-100">システム全体の管理を行います</p>
       </div>
 

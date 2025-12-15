@@ -1,5 +1,5 @@
 <template>
-  <NuxtLayout name="company" title="弊社向け管理ログイン" :show-header="false">
+  <NuxtLayout name="company" title="運営者向け管理ログイン" :show-header="false">
     <div class="flex flex-col items-center justify-center min-h-screen p-6 bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50">
       <div class="w-full max-w-md">
         <div class="text-center mb-8">
@@ -9,7 +9,7 @@
             </svg>
           </div>
           <h1 class="text-3xl font-bold mb-2 bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-            弊社向け管理ログイン
+            運営者向け管理ログイン
           </h1>
           <p class="text-gray-600">システム管理にアクセス</p>
         </div>
@@ -207,7 +207,7 @@ const handleLogin = async () => {
     const success = await authStore.login(username.value, password.value, true) // companyLoginフラグをtrueに設定
     
     if (success && authStore.user) {
-      // 弊社向け管理ページにリダイレクト
+      // 運営者向け管理ページにリダイレクト
       await navigateTo('/company/dashboard')
     } else {
       errorMessage.value = 'ユーザー名またはパスワードが正しくありません'
