@@ -117,60 +117,99 @@
         ユーザーが登録されていません
       </div>
 
-      <div v-else-if="filteredUsers.length === 0" class="text-center py-12 text-gray-500">
+      <div v-else-if="nonAdminFilteredUsers.length === 0" class="text-center py-12 text-gray-500">
         フィルター条件に一致するユーザーが見つかりませんでした
       </div>
 
+      <!-- 店舗ごとのアコーディオン -->
       <div v-else class="space-y-3">
         <div
-          v-for="user in filteredUsers"
-          :key="user.id"
-          class="bg-white p-4 rounded-lg shadow"
+          v-for="group in groupedUsersByShop"
+          :key="group.shopId"
+          class="bg-white rounded-lg shadow overflow-hidden"
         >
-          <div class="flex justify-between items-start">
-            <div class="flex-1">
-              <div class="flex items-center gap-2 mb-2">
-                <h3 class="text-lg font-semibold">{{ user.name }}</h3>
-                <span :class="getRoleBadgeClass(user.role)">
-                  {{ getRoleLabel(user.role) }}
-                </span>
-                <span v-if="!user.isActive" class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-sm">
-                  無効
-                </span>
+          <!-- 見出し（店舗ごと） -->
+          <button
+            type="button"
+            class="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50"
+            @click="toggleShop(group.shopId)"
+          >
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-sm font-semibold">
+                {{ group.users.length }}
               </div>
-              <p class="text-sm text-gray-600 mb-1">ユーザー名: {{ user.username }}</p>
-              <div v-if="user.shop" class="flex items-center gap-2 mb-1">
-                <p class="text-sm text-gray-600">
-                  店舗: {{ user.shop.name }} ({{ user.shop.code }})
+              <div class="text-left">
+                <p class="font-semibold text-gray-900">
+                  {{ group.shopName }}
                 </p>
-                <NuxtLink
-                  :to="`/unei/shops/${user.shop.id}/edit`"
-                  class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium hover:bg-green-200 transition-colors"
-                  @click.stop
-                >
-                  店舗設定
-                </NuxtLink>
+                <p class="text-xs text-gray-500" v-if="group.shopCode">
+                  コード: {{ group.shopCode }}
+                </p>
+                <p class="text-xs text-gray-500" v-else>
+                  店舗未設定のユーザー
+                </p>
               </div>
-              <p v-else class="text-sm text-gray-500 mb-1">店舗: 未設定</p>
-              <p v-if="user.email" class="text-sm text-gray-600 mb-1">メール: {{ user.email }}</p>
-              <p v-if="user.lastLoginAt" class="text-xs text-gray-500">
-                最終ログイン: {{ formatDate(user.lastLoginAt) }}
-              </p>
             </div>
-            <div class="flex flex-wrap gap-2">
-              <button
-                @click="editUser(user)"
-                class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors touch-target text-sm"
-              >
-                編集
-              </button>
-              <button
-                v-if="user.id !== authStore.user?.id && authStore.isOwner"
-                @click="confirmDelete(user)"
-                class="px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors touch-target text-sm"
-              >
-                削除
-              </button>
+            <svg
+              class="w-5 h-5 text-gray-400 transform transition-transform duration-200"
+              :class="isShopOpen(group.shopId) ? 'rotate-180' : ''"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          <!-- 本文（ユーザー一覧） -->
+          <div v-if="isShopOpen(group.shopId)" class="border-t border-gray-100 px-4 py-3 space-y-3">
+            <div
+              v-for="user in group.users"
+              :key="user.id"
+              class="flex justify-between items-start bg-white rounded-md p-3 shadow-sm"
+            >
+              <div class="flex-1">
+                <div class="flex items-center gap-2 mb-1.5">
+                  <h3 class="text-base font-semibold">{{ user.name }}</h3>
+                  <span :class="getRoleBadgeClass(user.role)">
+                    {{ getRoleLabel(user.role) }}
+                  </span>
+                  <span v-if="!user.isActive" class="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
+                    無効
+                  </span>
+                </div>
+                <p class="text-sm text-gray-600 mb-0.5">ユーザー名: {{ user.username }}</p>
+                <p v-if="user.email" class="text-sm text-gray-600 mb-0.5">メール: {{ user.email }}</p>
+                <p v-if="user.lastLoginAt" class="text-xs text-gray-500">
+                  最終ログイン: {{ formatDate(user.lastLoginAt) }}
+                </p>
+              </div>
+              <div class="flex flex-col items-end gap-2 ml-4">
+                <div v-if="user.shop" class="flex items-center gap-2 mb-1">
+                  <NuxtLink
+                    :to="`/unei/shops/${user.shop.id}/edit`"
+                    class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium hover:bg-green-200 transition-colors"
+                    @click.stop
+                  >
+                    店舗設定
+                  </NuxtLink>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  <button
+                    @click="editUser(user)"
+                    class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors touch-target text-sm"
+                  >
+                    編集
+                  </button>
+                  <button
+                    v-if="user.id !== authStore.user?.id && authStore.isOwner"
+                    @click="confirmDelete(user)"
+                    class="px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors touch-target text-sm"
+                  >
+                    削除
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -364,6 +403,74 @@ const filteredUsers = computed(() => {
 
   return users
 })
+
+// 管理者ユーザーを除外したリスト（画面表示用）
+const nonAdminFilteredUsers = computed(() => {
+  return filteredUsers.value.filter(user => user.role !== 'manager')
+})
+
+// 店舗ごとにグルーピング（アコーディオン用）
+const groupedUsersByShop = computed(() => {
+  const map: Record<string, { shopId: string; shopName: string; shopCode: string; users: User[] }> = {}
+
+  for (const user of nonAdminFilteredUsers.value) {
+    const key = (user as any).shopId || 'none'
+
+    if (!map[key]) {
+      let shopName = '店舗未設定'
+      let shopCode = ''
+
+      if (key !== 'none') {
+        // ユーザーに紐づく店舗情報 or 店舗ストアから名称を取得
+        const shopFromUser = (user as any).shop
+        const shopFromStore = shopStore.shops.find(s => s.id === key)
+        const shop = shopFromUser || shopFromStore
+        if (shop) {
+          shopName = shop.name || shopName
+          shopCode = shop.code || ''
+        }
+      }
+
+      map[key] = {
+        shopId: key,
+        shopName,
+        shopCode,
+        users: []
+      }
+    }
+
+    map[key].users.push(user)
+  }
+
+  // 店舗名でソート（店舗未設定は最後）
+  return Object.values(map).sort((a, b) => {
+    if (a.shopId === 'none') return 1
+    if (b.shopId === 'none') return -1
+    return a.shopName.localeCompare(b.shopName, 'ja')
+  })
+})
+
+// 店舗ごとの開閉状態
+const openShopIds = ref<string[]>([])
+
+const isShopOpen = (shopId: string) => {
+  // 初期状態では全てオープン扱い
+  if (openShopIds.value.length === 0) return true
+  return openShopIds.value.includes(shopId)
+}
+
+const toggleShop = (shopId: string) => {
+  // まだ初期状態（全てオープン）の場合は、まず全店舗IDをセットしたうえでトグル
+  if (openShopIds.value.length === 0) {
+    openShopIds.value = groupedUsersByShop.value.map(group => group.shopId)
+  }
+
+  if (openShopIds.value.includes(shopId)) {
+    openShopIds.value = openShopIds.value.filter(id => id !== shopId)
+  } else {
+    openShopIds.value.push(shopId)
+  }
+}
 
 // フィルターリセット
 const resetFilters = () => {
