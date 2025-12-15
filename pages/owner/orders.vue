@@ -1,7 +1,5 @@
 <template>
-  <NuxtLayout name="owner" title="注文一覧">
-    <OrdersPage />
-  </NuxtLayout>
+  <OrdersPage />
 </template>
 
 <script setup lang="ts">
@@ -11,5 +9,4 @@ definePageMeta({
   layout: 'owner'
 })
 </script>
-
 

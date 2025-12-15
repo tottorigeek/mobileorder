@@ -1,7 +1,5 @@
 <template>
-  <NuxtLayout name="owner" title="店舗選択">
-    <ShopSelect />
-  </NuxtLayout>
+  <ShopSelect />
 </template>
 
 <script setup lang="ts">
@@ -11,5 +9,4 @@ definePageMeta({
   layout: 'owner'
 })
 </script>
-
 

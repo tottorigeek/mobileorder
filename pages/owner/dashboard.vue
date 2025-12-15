@@ -1,7 +1,5 @@
 <template>
-  <NuxtLayout name="owner" title="ダッシュボード">
-    <DashboardPage />
-  </NuxtLayout>
+  <DashboardPage />
 </template>
 
 <script setup lang="ts">
@@ -11,5 +9,4 @@ definePageMeta({
   layout: 'owner'
 })
 </script>
-
 

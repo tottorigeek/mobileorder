@@ -1,7 +1,5 @@
 <template>
-  <NuxtLayout name="owner" title="スタッフ管理">
-    <StaffPage />
-  </NuxtLayout>
+  <StaffPage />
 </template>
 
 <script setup lang="ts">
@@ -11,5 +9,4 @@ definePageMeta({
   layout: 'owner'
 })
 </script>
-
 
