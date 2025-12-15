@@ -126,7 +126,7 @@
             </form>
 
             <div v-else class="text-center space-y-4">
-              <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+              <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify中心 mx-auto">
                 <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                 </svg>
@@ -189,12 +189,9 @@ const forgotPasswordError = ref('')
 const forgotPasswordSuccess = ref(false)
 
 onMounted(() => {
-  // ストレージからユーザー情報を読み込み
   authStore.loadUserFromStorage()
-  
-  // 既に認証済みの場合は管理ページにリダイレクト
   if (authStore.isAuthenticated) {
-    navigateTo('/company/dashboard')
+    navigateTo('/unei/dashboard')
   }
 })
 
@@ -208,11 +205,9 @@ const handleLogin = async () => {
   errorMessage.value = ''
   
   try {
-    const success = await authStore.login(username.value, password.value, true) // companyLoginフラグをtrueに設定
-    
+    const success = await authStore.login(username.value, password.value, true)
     if (success && authStore.user) {
-      // 運営者向け管理ページにリダイレクト
-      await navigateTo('/company/dashboard')
+      await navigateTo('/unei/dashboard')
     } else {
       errorMessage.value = 'ユーザー名またはパスワードが正しくありません'
     }
@@ -235,17 +230,15 @@ const handleForgotPassword = async () => {
 
   try {
     const { buildUrl } = useApiBase()
-    
-    // ユーザー名かメールアドレスかを判定
     const isEmail = forgotPasswordIdentifier.value.includes('@')
     const requestBody = isEmail 
       ? { 
           email: forgotPasswordIdentifier.value,
-          reset_path: '/company/reset-password'
+          reset_path: '/unei/reset-password'
         }
       : { 
           username: forgotPasswordIdentifier.value,
-          reset_path: '/company/reset-password'
+          reset_path: '/unei/reset-password'
         }
     
     const response = await $fetch<{ success: boolean; message: string }>(
@@ -268,4 +261,5 @@ const handleForgotPassword = async () => {
   }
 }
 </script>
+
 

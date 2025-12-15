@@ -144,7 +144,7 @@
                   店舗: {{ user.shop.name }} ({{ user.shop.code }})
                 </p>
                 <NuxtLink
-                  :to="`/company/shops/${user.shop.id}/edit`"
+                  :to="`/unei/shops/${user.shop.id}/edit`"
                   class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium hover:bg-green-200 transition-colors"
                   @click.stop
                 >
@@ -435,7 +435,7 @@ onMounted(async () => {
   
   if (!authStore.isAuthenticated) {
     console.log('[company/users] Not authenticated, redirecting to login')
-    await navigateTo('/company/login')
+    await navigateTo('/unei/login')
     return
   }
   

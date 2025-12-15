@@ -149,7 +149,7 @@ chmod +x test-api.sh
 ### 方法3: ブラウザで確認
 
 #### 1. ログインページ
-- URL: `http://localhost:3000/staff/login` または `http://localhost:3000/company/login`
+- URL: `http://localhost:3000/staff/login` または `http://localhost:3000/unei/login`
 - テストユーザー: `seki` / `password123`
 
 #### 2. メニュー一覧

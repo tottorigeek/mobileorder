@@ -572,7 +572,7 @@ const fetchUsers = async () => {
     const apiBase = config.public.apiBase
     
     const data = await $fetch<Array<{ id: string; name: string; username: string }>>(
-      `${apiBase}/company-users`,
+      `${apiBase}/unei-users`,
       {
         headers: getAuthHeaders()
       }
@@ -671,7 +671,7 @@ onMounted(async () => {
   
   if (!authStore.isAuthenticated) {
     console.log('[company/error-logs] Not authenticated, redirecting to login')
-    await navigateTo('/company/login')
+    await navigateTo('/unei/login')
     return
   }
   

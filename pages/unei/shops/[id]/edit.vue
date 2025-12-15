@@ -4,7 +4,7 @@
       <div class="flex justify-between items-center">
         <h2 class="text-2xl font-bold">店舗編集</h2>
         <NuxtLink
-          to="/company/shops"
+          to="/unei/shops"
           class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
         >
           一覧に戻る
@@ -21,7 +21,7 @@
         <p class="font-semibold mb-2">エラーが発生しました</p>
         <p>{{ error }}</p>
         <NuxtLink
-          to="/company/shops"
+          to="/unei/shops"
           class="mt-4 inline-block px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
         >
           一覧に戻る
@@ -283,7 +283,7 @@
 
           <div class="flex gap-3 justify-end">
             <NuxtLink
-              to="/company/shops"
+              to="/unei/shops"
               class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
             >
               キャンセル
@@ -632,7 +632,7 @@ const handleUpdateShop = async () => {
     
     // 2秒後にリダイレクト
     setTimeout(() => {
-      navigateTo('/company/shops')
+      navigateTo('/unei/shops')
     }, 2000)
   } catch (err: any) {
     updateError.value = err?.data?.error || err?.message || '店舗情報の更新に失敗しました'
@@ -704,7 +704,7 @@ onMounted(async () => {
   // 認証チェック
   authStore.loadUserFromStorage()
   if (!authStore.isAuthenticated) {
-    await navigateTo('/company/login')
+    await navigateTo('/unei/login')
     return
   }
 

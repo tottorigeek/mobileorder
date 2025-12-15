@@ -81,7 +81,7 @@ export const useUserStore = defineStore('user', {
         const config = useRuntimeConfig()
         const apiBase = config.public.apiBase
         
-        const data = await $fetch<User[]>(`${apiBase}/company-users`, {
+        const data = await $fetch<User[]>(`${apiBase}/unei-users`, {
           headers: getAuthHeaders()
         })
         this.users = data || []
@@ -202,7 +202,7 @@ export const useUserStore = defineStore('user', {
         const config = useRuntimeConfig()
         const apiBase = config.public.apiBase
         
-        const user = await $fetch<User>(`${apiBase}/company-users/${userId}`, {
+        const user = await $fetch<User>(`${apiBase}/unei-users/${userId}`, {
           method: 'PUT',
           body: input,
           headers: getAuthHeaders()
@@ -232,7 +232,7 @@ export const useUserStore = defineStore('user', {
         const config = useRuntimeConfig()
         const apiBase = config.public.apiBase
         
-        await $fetch(`${apiBase}/company-users/${userId}`, {
+        await $fetch(`${apiBase}/unei-users/${userId}`, {
           method: 'DELETE',
           headers: getAuthHeaders()
         })

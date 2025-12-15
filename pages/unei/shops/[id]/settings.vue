@@ -8,13 +8,13 @@
         </div>
         <div class="flex gap-2">
           <NuxtLink
-            :to="`/company/shops/${shopId}/edit`"
+            :to="`/unei/shops/${shopId}/edit`"
             class="px-4 py-2 bg-blue-200 text-blue-700 rounded-lg hover:bg-blue-300 transition-colors"
           >
             基本情報を編集
           </NuxtLink>
           <NuxtLink
-            to="/company/shops"
+            to="/unei/shops"
             class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
           >
             一覧に戻る
@@ -32,7 +32,7 @@
         <p class="font-semibold mb-2">エラーが発生しました</p>
         <p>{{ error }}</p>
         <NuxtLink
-          to="/company/shops"
+          to="/unei/shops"
           class="mt-4 inline-block px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
         >
           一覧に戻る
@@ -225,7 +225,7 @@ onMounted(async () => {
   // 認証チェック
   authStore.loadUserFromStorage()
   if (!authStore.isAuthenticated) {
-    await navigateTo('/company/login')
+    await navigateTo('/unei/login')
     return
   }
 

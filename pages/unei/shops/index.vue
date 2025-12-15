@@ -140,7 +140,7 @@
                 ダッシュボード
               </button>
               <NuxtLink
-                :to="`/company/shops/${shop.id}/edit`"
+                :to="`/unei/shops/${shop.id}/edit`"
                 class="w-full sm:w-auto px-4 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all duration-300 shadow-md hover:shadow-lg text-sm font-semibold text-center touch-target"
               >
                 編集
@@ -418,7 +418,7 @@ onMounted(async () => {
   // 認証チェック
   authStore.loadUserFromStorage()
   if (!authStore.isAuthenticated) {
-    await navigateTo('/company/login')
+    await navigateTo('/unei/login')
     return
   }
 

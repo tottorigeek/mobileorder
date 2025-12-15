@@ -154,7 +154,7 @@
         <h3 class="text-xl font-bold mb-6 text-gray-900">クイックアクション</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <NuxtLink
-            to="/company/shops"
+            to="/unei/shops"
             class="group p-6 border-2 border-gray-200 rounded-xl hover:border-green-500 hover:bg-gradient-to-br hover:from-green-50 hover:to-emerald-50 transition-all duration-300"
           >
             <div class="flex items-center gap-4">
@@ -170,7 +170,7 @@
             </div>
           </NuxtLink>
           <NuxtLink
-            to="/company/users"
+            to="/unei/users"
             class="group p-6 border-2 border-gray-200 rounded-xl hover:border-green-500 hover:bg-gradient-to-br hover:from-green-50 hover:to-emerald-50 transition-all duration-300"
           >
             <div class="flex items-center gap-4">
@@ -287,7 +287,7 @@ onMounted(async () => {
   // 認証チェック
   authStore.loadUserFromStorage()
   if (!authStore.isAuthenticated) {
-    await navigateTo('/company/login')
+    await navigateTo('/unei/login')
     return
   }
 

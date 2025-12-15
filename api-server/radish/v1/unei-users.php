@@ -1,10 +1,10 @@
 <?php
 /**
  * 会社ユーザー管理API（全店舗のユーザー管理）
- * GET /api/company-users - 全店舗のユーザー一覧取得（認証必要、オーナー・マネージャーのみ）
- * GET /api/company-users/{id} - ユーザー情報取得（認証必要、オーナー・マネージャーのみ）
- * PUT /api/company-users/{id} - ユーザー情報更新（認証必要、オーナー・マネージャーのみ）
- * DELETE /api/company-users/{id} - ユーザー削除（認証必要、オーナーのみ）
+ * GET /api/unei-users - 全店舗のユーザー一覧取得（認証必要、オーナー・マネージャーのみ）
+ * GET /api/unei-users/{id} - ユーザー情報取得（認証必要、オーナー・マネージャーのみ）
+ * PUT /api/unei-users/{id} - ユーザー情報更新（認証必要、オーナー・マネージャーのみ）
+ * DELETE /api/unei-users/{id} - ユーザー削除（認証必要、オーナーのみ）
  */
 
 require_once __DIR__ . '/../config.php';
@@ -19,8 +19,8 @@ $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 if (isset($_ENV['COMPANY_USERS_REMAINING_PATH']) && !empty($_ENV['COMPANY_USERS_REMAINING_PATH'])) {
     $path = $_ENV['COMPANY_USERS_REMAINING_PATH'];
 } else {
-    // 直接呼び出された場合、/radish/v1/company-users/ または /radish/api/company-users/ を削除
-    $path = preg_replace('#^/radish/(v1|api)/company-users/#', '', $path);
+    // 直接呼び出された場合、/radish/v1/unei-users/ または /radish/api/unei-users/ を削除
+    $path = preg_replace('#^/radish/(v1|api)/unei-users/#', '', $path);
 }
 $path = trim($path, '/');
 $pathParts = explode('/', $path);

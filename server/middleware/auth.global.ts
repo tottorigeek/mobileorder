@@ -5,10 +5,11 @@ import { useRuntimeConfig } from '#imports'
 const publicPaths = [
   '/',
   '/staff/login',
-  '/company/login',
+  '/owner/login',
+  '/unei/login',
   '/staff/forgot-password',
   '/staff/reset-password',
-  '/company/reset-password'
+  '/unei/reset-password'
 ]
 
 export default defineEventHandler(async (event) => {
@@ -34,7 +35,11 @@ export default defineEventHandler(async (event) => {
 
   const token = getCookie(event, 'auth_token')
   if (!token) {
-    const loginPath = pathname.startsWith('/company') ? '/company/login' : '/staff/login'
+    const loginPath = pathname.startsWith('/unei') || pathname.startsWith('/unei')
+      ? '/unei/login'
+      : pathname.startsWith('/owner')
+        ? '/owner/login'
+        : '/staff/login'
     return sendRedirect(event, loginPath)
   }
 
@@ -48,7 +53,11 @@ export default defineEventHandler(async (event) => {
       retry: 0
     })
   } catch (e) {
-    const loginPath = pathname.startsWith('/company') ? '/company/login' : '/staff/login'
+    const loginPath = pathname.startsWith('/unei') || pathname.startsWith('/unei')
+      ? '/unei/login'
+      : pathname.startsWith('/owner')
+        ? '/owner/login'
+        : '/staff/login'
     return sendRedirect(event, loginPath)
   }
 })

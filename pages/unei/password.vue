@@ -135,7 +135,7 @@ const handleChangePassword = async () => {
 
     // 3秒後にリダイレクト
     setTimeout(() => {
-      navigateTo('/company/dashboard')
+      navigateTo('/unei/dashboard')
     }, 3000)
   } catch (err: any) {
     // エラーメッセージの取得
@@ -153,7 +153,7 @@ const handleChangePassword = async () => {
     if (err?.status === 401) {
       error.value = 'セッションが無効です。再度ログインしてください。'
       setTimeout(() => {
-        navigateTo('/company/login')
+        navigateTo('/unei/login')
       }, 2000)
       return
     }
@@ -168,7 +168,7 @@ onMounted(async () => {
   // 認証チェック
   authStore.loadUserFromStorage()
   if (!authStore.isAuthenticated) {
-    await navigateTo('/company/login')
+    await navigateTo('/unei/login')
     return
   }
 })

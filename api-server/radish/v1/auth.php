@@ -117,13 +117,13 @@ function login() {
         /**
          * ログインタイプの判定
          * 
-         * 【重要】運営者向け管理ログイン（/company/login）の判定
+         * 【重要】運営者向け管理ログイン（/unei/login）の判定
          * - company_loginフラグがtrueの場合、運営者向け管理ログインとして扱う
          * - 運営者向け管理ログインの場合は店舗の状態チェックをスキップする
          * - 理由: 運営者向け管理画面は店舗の状態に関係なくアクセスできる必要がある
          * 
          * 【注意】将来の変更時:
-         * - この判定ロジックを変更する場合は、/company/loginと/staff/loginの両方の動作を確認すること
+         * - この判定ロジックを変更する場合は、/unei/loginと/staff/loginの両方の動作を確認すること
          * - 店舗チェックを追加する場合は、運営者向け管理ログインの場合はスキップする条件を維持すること
          */
         $isCompanyLogin = isset($input['company_login']) && $input['company_login'] === true;
@@ -144,7 +144,7 @@ function login() {
          * 4. 店舗IDの存在確認（shop_id）
          * 5. 店舗の有効性（shop_active）
          * 
-         * 【運営者向け管理ログイン（/company/login）の場合】
+         * 【運営者向け管理ログイン（/unei/login）の場合】
          * - 上記の4と5をスキップする
          * - 理由: 運営者向け管理画面は店舗の状態に関係なくアクセスできる必要がある
          * 
@@ -170,7 +170,7 @@ function login() {
             /**
              * 【重要】通常ログイン（/staff/login）の場合のみ店舗チェックを実行
              * 
-             * 運営者向け管理ログイン（/company/login）の場合はこのブロックをスキップする
+             * 運営者向け管理ログイン（/unei/login）の場合はこのブロックをスキップする
              * - 理由: 運営者向け管理画面は店舗の状態に関係なくアクセスできる必要がある
              * 
              * 【注意】将来の変更時:
@@ -228,7 +228,7 @@ function login() {
          * 
          * 【重要】ログインタイプに応じて異なるSQLクエリを使用
          * 
-         * 【運営者向け管理ログイン（/company/login）の場合】
+         * 【運営者向け管理ログイン（/unei/login）の場合】
          * - LEFT JOINを使用して店舗が無効でも取得可能
          * - shop_activeの条件を追加しない
          * - 理由: 運営者向け管理画面は店舗の状態に関係なくアクセスできる必要がある
@@ -498,7 +498,7 @@ function forgotPassword() {
         $resetPath = $input['reset_path'] ?? '/staff/reset-password';
         
         // セキュリティ: 許可されたパスのみ受け付ける
-        $allowedPaths = ['/staff/reset-password', '/company/reset-password'];
+        $allowedPaths = ['/staff/reset-password', '/unei/reset-password'];
         if (!in_array($resetPath, $allowedPaths)) {
             $resetPath = '/staff/reset-password'; // デフォルトにフォールバック
         }

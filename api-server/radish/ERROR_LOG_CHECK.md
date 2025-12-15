@@ -80,7 +80,7 @@
 
 1. **管理画面から確認**（推奨）
    - ログイン後、エラーログ一覧ページにアクセス
-   - URL: `https://your-domain.com/company/error-logs`
+   - URL: `https://your-domain.com/unei/error-logs`
    - オーナーまたはマネージャー権限が必要です
 
 2. **phpMyAdminから直接確認**

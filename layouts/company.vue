@@ -29,7 +29,7 @@
             <!-- ログインユーザー情報 -->
             <div v-if="authStore.isAuthenticated && authStore.user" class="user-info-container flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
               <AccountMenu
-                password-change-path="/company/password"
+                password-change-path="/unei/password"
               />
             </div>
             <slot name="header-actions" />

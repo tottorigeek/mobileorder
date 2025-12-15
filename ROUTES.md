@@ -41,20 +41,20 @@
 - `/multi-shop/menus` - メニュー管理ページ
 - `/multi-shop/staff` - スタッフ管理ページ
 
-## 会社管理（/company配下）
+## 会社管理（/unei配下）
 
 ### 認証
 
-- `/company/login` - 会社管理ログインページ
+- `/unei/login` - 会社管理ログインページ
 
 ### ダッシュボード・管理
 
-- `/company/dashboard` - 会社管理ダッシュボード
-- `/company/shops` - 店舗一覧・管理ページ
-- `/company/shops/[id]/edit` - 店舗編集ページ（動的ルート）
-- `/company/shops/[id]/settings` - 店舗詳細設定ページ（動的ルート）
-- `/company/users` - ユーザー管理ページ
-- `/company/error-logs` - エラーログ一覧ページ
+- `/unei/dashboard` - 会社管理ダッシュボード
+- `/unei/shops` - 店舗一覧・管理ページ
+- `/unei/shops/[id]/edit` - 店舗編集ページ（動的ルート）
+- `/unei/shops/[id]/settings` - 店舗詳細設定ページ（動的ルート）
+- `/unei/users` - ユーザー管理ページ
+- `/unei/error-logs` - エラーログ一覧ページ
 
 ## その他
 
@@ -79,7 +79,7 @@
 3. **複数店舗管理** (`/multi-shop/*`)
    - 複数店舗を所有するオーナー向けの統合管理
 
-4. **会社管理** (`/company/*`)
+4. **会社管理** (`/unei/*`)
    - システム全体の管理（店舗管理、ユーザー管理、エラーログ）
 
 ---

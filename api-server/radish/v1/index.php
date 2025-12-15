@@ -40,7 +40,7 @@ switch ($endpoint) {
         // 残りのパスを取得（company-users以降の部分）
         $remainingPath = isset($pathParts[1]) ? implode('/', array_slice($pathParts, 1)) : '';
         $_ENV['COMPANY_USERS_REMAINING_PATH'] = $remainingPath;
-        require_once __DIR__ . '/company-users.php';
+        require_once __DIR__ . '/unei-users.php';
         break;
     
     case 'my-shops':

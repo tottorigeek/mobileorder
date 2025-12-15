@@ -86,7 +86,7 @@
               </p>
             </div>
             <NuxtLink
-              to="/company/login"
+              to="/unei/login"
               class="inline-block w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-xl text-lg font-semibold hover:from-green-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 touch-target text-center"
             >
               ログインページに戻る
@@ -96,7 +96,7 @@
 
         <div class="mt-6 text-center">
           <NuxtLink
-            to="/company/login"
+            to="/unei/login"
             class="text-green-600 hover:text-green-700 font-medium transition-colors inline-flex items-center gap-2"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

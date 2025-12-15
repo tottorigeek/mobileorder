@@ -426,7 +426,7 @@ function checkAuth() {
     }
     
     // ペイロードから認証情報を取得
-    // shop_id は会社ログイン（/company/login）では null の場合があるため必須にしない
+    // shop_id は会社ログイン（/unei/login）では null の場合があるため必須にしない
     // user_id は必須
     if (!isset($payload['user_id'])) {
         http_response_code(401);

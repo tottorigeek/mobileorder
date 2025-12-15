@@ -34,7 +34,7 @@
         </NuxtLink>
 
         <NuxtLink
-          to="/company/login"
+          to="/unei/login"
           class="group block w-full p-6 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl text-center text-xl font-semibold hover:from-green-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 touch-target"
         >
           <div class="flex items-center justify-center gap-3">
@@ -46,7 +46,7 @@
         </NuxtLink>
 
         <NuxtLink
-          to="/owner/dashboard"
+          to="/owner/login"
           class="group block w-full p-6 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-2xl text-center text-xl font-semibold hover:from-emerald-600 hover:to-teal-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 touch-target"
         >
           <div class="flex items-center justify-center gap-3">

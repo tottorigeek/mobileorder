@@ -31,7 +31,7 @@
               </svg>
               店舗切替
             </NuxtLink>
-            <AccountMenu password-change-path="/company/password" />
+            <AccountMenu password-change-path="/unei/password" />
           </div>
         </div>
       </div>

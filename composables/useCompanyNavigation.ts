@@ -6,13 +6,13 @@ export const useCompanyNavigation = () => {
   
   const navigationItems = computed(() => {
     const items = [
-      { to: '/company/dashboard', label: 'ダッシュボード' },
-      { to: '/company/shops', label: '店舗管理' },
-      { to: '/company/users', label: 'ユーザー管理' },
-      { to: '/company/orders', label: '注文管理' },
-      { to: '/company/tables', label: 'テーブル管理' },
-      { to: '/company/menus', label: 'メニュー管理' },
-      { to: '/company/error-logs', label: 'エラーログ' }
+      { to: '/unei/dashboard', label: 'ダッシュボード' },
+      { to: '/unei/shops', label: '店舗管理' },
+      { to: '/unei/users', label: 'ユーザー管理' },
+      { to: '/unei/orders', label: '注文管理' },
+      { to: '/unei/tables', label: 'テーブル管理' },
+      { to: '/unei/menus', label: 'メニュー管理' },
+      { to: '/unei/error-logs', label: 'エラーログ' }
     ]
     
     // 現在のパスに基づいてアクティブ状態を設定
